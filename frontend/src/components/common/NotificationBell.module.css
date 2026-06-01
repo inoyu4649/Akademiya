@@ -1,0 +1,234 @@
+/* ── 컨테이너 (relative 포지셔닝 기준점) ── */
+.container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* ── 종 버튼 ── */
+.bellBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.bellBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ── 미읽음 뱃지 (빨간 원) ── */
+.badge2 {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 8px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* ── 드롭다운 패널 ──
+   position: fixed — JS(getBoundingClientRect)로 top/left/width를 인라인 스타일로 주입.
+   sidebar의 overflow:hidden을 우회하기 위해 fixed 사용. */
+.dropdown {
+  position: fixed;   /* top / left / width 는 JS 인라인 스타일로 주입 */
+  max-height: 420px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 9999;
+}
+
+/* ── 드롭다운 헤더 ── */
+.dropdownHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.dropdownTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.markAllBtn {
+  font-size: 11px;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s;
+}
+
+.markAllBtn:hover {
+  background: rgba(19, 229, 106, 0.1);
+}
+
+/* ── 알림 목록 ── */
+.list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ── 알림 아이템 ── */
+.item {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+  box-sizing: border-box;
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.item:hover {
+  background: var(--bg-hover);
+}
+
+.itemUnread {
+  background: rgba(19, 229, 106, 0.06);
+}
+
+.itemUnread:hover {
+  background: rgba(19, 229, 106, 0.12);
+}
+
+.itemTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.itemTime {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  margin-left: 6px;
+  margin-right: auto;
+}
+
+/* ── 알림 삭제 버튼 ── */
+.deleteBtn {
+  flex-shrink: 0;
+  margin-left: 4px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s, background 0.12s;
+}
+
+.item:hover .deleteBtn {
+  opacity: 1;
+}
+
+.deleteBtn:hover {
+  color: var(--danger);
+  background: rgba(244, 67, 54, 0.12);
+}
+
+.itemTitle {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.itemBody {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ── 타입 뱃지 ── */
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+
+.badgeNew {
+  background: rgba(19, 229, 106, 0.15);
+  color: var(--accent);
+}
+
+.badgeDeadline {
+  background: rgba(255, 152, 0, 0.15);
+  color: #ff9800;
+}
+
+.badgeUrgent {
+  background: rgba(244, 67, 54, 0.15);
+  color: var(--danger);
+}
+
+.badgeBroadcast {
+  background: rgba(156, 39, 176, 0.15);
+  color: #9c27b0;
+}
+
+.badgeSystem {
+  background: rgba(158, 158, 158, 0.15);
+  color: #9e9e9e;
+}

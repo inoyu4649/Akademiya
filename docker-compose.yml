@@ -1,0 +1,87 @@
+version: "3.9"
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  Akademiya — Docker Compose 프로덕션 구성
+#
+#  사전 준비:
+#    1. backend/.env 파일 작성 (NODE_ENV=production 포함)
+#    2. nginx/ssl/ 폴더에 SSL 인증서 배치
+#         fullchain.pem  ← 인증서 체인
+#         privkey.pem    ← 개인키
+#    3. docker-compose up -d --build
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ── Backend (Node.js / Express 5) ──────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      NODE_ENV: production
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # 컨테이너 → 호스트 MySQL 접근 (Linux)
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - akademiya_net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ── Frontend (Nginx + Vite 빌드 결과) ──────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      gmcauto:
+        condition: service_healthy
+    networks:
+      - akademiya_net
+
+  # ── GMCAuto (GMC PASS 자동신청 — gmc.akademiya.kr) ─────────────────────────
+  gmcauto:
+    build:
+      context: ./gmc
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "3001"
+      NODE_ENV: production
+      # Playwright가 사용할 Chromium 경로 (컨테이너 내 설치 필요 시 별도 설정)
+      # CHROME_PATH: /usr/bin/chromium-browser
+    volumes:
+      - gmc_data:/app/data
+      - gmc_backup:/app/backup
+    networks:
+      - akademiya_net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  uploads_data:
+  gmc_data:
+  gmc_backup:
+
+networks:
+  akademiya_net:
+    driver: bridge

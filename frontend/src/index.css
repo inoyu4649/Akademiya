@@ -1,0 +1,181 @@
+/* =============================================
+   Akademiya Design Tokens
+   Dark-first; light overrides via [data-theme="light"]
+   Accent: #13E56A (green)
+   ============================================= */
+
+/* ── Dark theme (default) ─────────────────────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  /* Background layers */
+  --bg-base:        #1a1a1a;
+  --bg-sidebar:     #212121;
+  --bg-panel:       #2a2a2a;
+  --bg-input:       #333333;
+  --bg-hover:       #2d2d2d;
+  --bg-card:        #212121;
+
+  /* Text */
+  --text-primary:   #e8e8e8;
+  --text-secondary: #9d9d9d;
+  --text-muted:     #6e6e6e;
+  --text-on-accent: #ffffff;
+
+  /* Accent — green */
+  --accent:         #13e56a;
+  --accent-dark:    #0a7a3c;
+  --accent-hover:   #2aed80;
+
+  /* Semantic */
+  --success:        #4caf50;
+  --warning:        #ff9800;
+  --danger:         #f44336;
+
+  /* Borders */
+  --border:         #3a3a3a;
+  --border-focus:   var(--accent);
+
+  /* Shadows */
+  --shadow-sm:      0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md:      0 4px 12px rgba(0, 0, 0, 0.5);
+
+  /* Scrollbar */
+  --scrollbar-thumb: #4a4a4a;
+
+  /* Radius */
+  --radius-sm:      4px;
+  --radius-md:      8px;
+  --radius-lg:      12px;
+  --radius:         8px;
+
+  /* Sidebar */
+  --sidebar-width:  240px;
+
+  /* Typography */
+  --font-sans:      'Noto Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono:      'Cascadia Code', 'Consolas', monospace;
+  font-size:        14px;
+  line-height:      1.5;
+}
+
+/* ── Light theme ──────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-base:        #f7f7f7;
+  --bg-sidebar:     #ffffff;
+  --bg-panel:       #f0f0f0;
+  --bg-input:       #ffffff;
+  --bg-hover:       #e8e8e8;
+  --bg-card:        #ffffff;
+
+  --text-primary:   #1a1a1a;
+  --text-secondary: #555555;
+  --text-muted:     #999999;
+  --text-on-accent: #ffffff;
+
+  --accent:         #0bb854;
+  --accent-dark:    #0a7a3c;
+  --accent-hover:   #13e56a;
+
+  --border:         #e0e0e0;
+  --border-focus:   var(--accent);
+
+  --shadow-sm:      0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md:      0 4px 12px rgba(0, 0, 0, 0.12);
+
+  --scrollbar-thumb: #c0c0c0;
+}
+
+/* ── CJKV 언어별 폰트 스택 ──────────────────────────────────────────────── */
+html[lang="ko"],
+html[lang="ko"] body,
+html[lang="ko"] button,
+html[lang="ko"] input,
+html[lang="ko"] select,
+html[lang="ko"] textarea {
+  font-family: 'Pretendard', 'Noto Sans KR', 'Noto Sans CJK KR',
+    'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
+}
+
+html[lang="ja"],
+html[lang="ja"] body,
+html[lang="ja"] button,
+html[lang="ja"] input,
+html[lang="ja"] select,
+html[lang="ja"] textarea {
+  font-family: 'UD Digi Kyokasho NK', 'UD Digi Kyokasho NK-R', 'UD Digital Kyokasho NK-R',
+    'UD デジタル 教科書体 NK-R', 'KyokashoICA-Medium', 'MotoyaKyokasho', 'BIZ UDKyokasho',
+    'BIZ UDPGothic', 'BIZ UDPゴシック',
+    'Noto Sans JP', 'Noto Sans CJK JP', 'Meiryo', sans-serif !important;
+}
+
+html[lang="zh"],
+html[lang="zh"] body,
+html[lang="zh"] button,
+html[lang="zh"] input,
+html[lang="zh"] select,
+html[lang="zh"] textarea {
+  font-family: 'KaiTi', 'PingFang SC', 'Helvetica Neue',
+    'Microsoft YaHei', '微软雅黑',
+    'Noto Sans SC', 'Noto Sans CJK SC', sans-serif !important;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100%;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgba(19, 229, 106, 0.2);
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }

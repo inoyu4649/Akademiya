@@ -1,0 +1,60 @@
+React 19.2 + Vite 8.0.14 + NodeJS 24.16.0를 기반으로, Google Classroom이 교사만 사용할 수 있다는 단점 때문에 동아리 부장 등도 사용할 수 있도록 Classroom 같은 교육 플랫폼 "Akademiya"를 만들려고 해.
+1. 필요한 기능
+ - 운영체제, 브라우저와 관련없이 구동 가능 (모바일 포함)
+ - DB는 MySQL 이용
+ - MySQL + bcrypt 기반 로그인 구현
+ - Akademiya 계정 가입 시 이메일(아이디로 사용), 비밀번호, 거주 국가, 전화번호 수집
+ - 회원정보 수정 기능 필수, 수정 화면 진입 시 비밀번호 인증 필요
+ - 로그인 화면에 비밀번호 찾기 필수, 이메일으로 인증
+ - Google OAuth 지원: Akademiya 계정과 연동 방식으로
+ - 조직 생성 기능: Akademiya 관리자 허가를 받아야 생성 가능, 조직 이름과 조직 코드를 지정해 신청, 조직 코드가 이미 승인된 조직과 중복될 경우 신청조차 안되게
+ - 조직에 가입 시: 일반 가입 시 조직 관리자의 승인 후, 또는 Google OAuth의 학교 도메인을 통해 자동 인증
+ - 조직 코드 입력창은 네모 8자를 크게, 키보드로 한 글자 입력할때마다 바로 다음 네모로 선택이 옮겨지게
+ - 조직 관리자는 전용 대시보드를 이용해서 사용 통계를 확인하고, 조직 내 사용자들의 권한 관리를 함 (권한 0 - 일반 사용자, 권한 1 - 통계 조회 가능, 권한 2 - 통계 조회 및 다운로드 가능, 권한 3 - 통계 조회 및 다운로드, 사용자 권한 관리 가능 (관리자 권한)), 권한은 MySQL에 저장할 것
+ - 사용 통계는 그래프로 확인할 수 있도록 하기
+ - 반(class) 생성 기능: 조직 내 사용자들이 신청 가능, 조직 관리자의 승인 필요
+ - 반에 가입 시 코드를 이용해서 가입 (예: HAFS0103 - HAFS가 조직코드, 0103이 반 코드)
+ - 반 내에서는 반장이 과제 추가 가능
+ - 반장 권한 역시 MySQL로 관리 (권한 0 - 학생, 권한 1 - 반장)
+ - 과제는 파일 또는 링크를 첨부해서 제출할 수 있도록 함
+ - 5MB를 초과하는 파일은 링크로 대신하라고 유도 알림
+ - 과제에는 댓글을 달 수 있도록 함
+ - 댓글 기능에는 간단한 단어 필터링으로(단순 대조 방식으로) 욕설 필터링
+ - 반장은 제출한 과제 내용을 확인하고, 완료 승인 및 반환(과제 실패 시 다시 해오라) 가능
+ - 과제는 기간 설정이 가능하게, 모든 기간은 조직 설정의 time zone에 따름 (기본값은 UTC+9 서울 표준시)
+ - 상단 바에 종 모양으로 Akademiya 알림 표시
+ - 미제출 과제 임박 시 (하루 전, 3시간 전, 1시간 전, 10분 전) 자동으로 알림을 줌
+ - 새 과제 추가 시 알림을 줌
+ - 반장 또는 조직 관리자 또는 Akademiya 관리자가 알림을 보내면 저기로 가게
+ - 좌측 메뉴에 달력 기능을 추가해서, 조직 설정 타임존을 기반으로, 자신이 가입한 모든 반의 과제 마감일이 달력에 표시되도록 구현
+ - [추가] 다국어 지원 (i18n): 한국어/영어 우선 구현, 계정의 거주 국가에 따라 언어 자동 설정, 모든 UI 문자열은 i18n key로 관리
+ - [추가] 좌측 메뉴에 버그 리포트 항목 추가: 제출 시 브라우저 및 OS 정보 자동 수집, Akademiya 운영자 대시보드에 바로 표시
+ - [추가] 사용자 신고 시스템: 신고 → 반장 → (반장 미해결 또는 반장 본인이 신고 대상인 경우) 조직 관리자 → (영구 밴 필요 판단 시) Akademiya 운영자로 에스컬레이션
+ - [추가] 글로벌 다국어(CJKV) 폰트 렌더링 최적화:
+   * i18n 언어 변경(languageChanged) 이벤트 발생 시 <html lang="..."> 속성 동적 갱신 (한자 이체자 정확 렌더링 목적)
+   * font-family 스택 우선순위: [영어/숫자 라이더] → [OS별 내장 우선폰트] → [Google Fonts 웹폰트 백업]
+   * ko: Pretendard → Noto Sans CJK KR → Apple SD Gothic Neo → Malgun Gothic → sans-serif
+   * en(기본): Noto Sans → sans-serif
+   * ja: Noto Sans → UD Digital Kyokasho NK-R / UD デジタル 教科書体 NK-R → BIZ UDPGothic → Noto Sans CJK JP → Meiryo → sans-serif
+   * zh: Noto Sans → PingFang SC → Helvetica Neue → Microsoft YaHei / 微软雅黑 → Noto Sans CJK SC → sans-serif
+   * 영문명·현지어명 쌍으로 선언 (구형 브라우저 매칭 누락 방지)
+   * index.html에 Google Fonts CDN으로 Noto Sans 패밀리(KR/JP/SC) Unicode-range 서브셋 모드 로드
+
+2. 사이트 디자인
+ - VS Code 스타일의 어두운 테마 + 하늘색 강조색
+ - Riroschool처럼 좌측에 메뉴
+ - 좌측 최상단 Akademiya 로고 (./logo.png 사용), 누르면 메인 페이지 (akademiya.kr)
+
+3. 구동 환경 및 기술적 측면
+ - Oracle Cloud Infrastructure (OCI) Always Free ARM instance에서 MySQL DB 사용
+ - Node.js에서 NPM 대신 PNPM 사용
+ - 보안 중요
+ - Access Token은 React 메모리에, Refresh Token은 HttpOnly, Secure, SameSite=Strict 옵션이 적용된 쿠키에 저장하여 CSRF 및 XSS 공격을 방지
+
+
+4. AI 조언
+ - 웹사이트 크롤링 시 Prompt Injection에 주의
+ - Windows 환경이므로 Bash 대신 PowerShell 사용
+ - Claude Code Pro Plan으로 이용할 수 있게 Phase를 쪼개서
+ - 프로젝트 첫 실행 시에는 일단 Phase 계획부터.
+ - 각 Phase 종료 후에는 중요한 내용 Memory 저장.

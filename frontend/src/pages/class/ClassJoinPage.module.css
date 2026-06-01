@@ -1,0 +1,121 @@
+.page {
+  padding: 32px 40px;
+  max-width: 520px;
+}
+
+.back {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 20px;
+  transition: color 0.12s;
+}
+
+.back:hover { color: var(--text-primary); }
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* ── Composite code input ── */
+.codeWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.codeGroup {
+  display: flex;
+  gap: 6px;
+}
+
+.codeCell {
+  width: 36px;
+  height: 44px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  background: var(--bg-panel);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  caret-color: var(--accent);
+  transition: border-color 0.12s, box-shadow 0.12s;
+  padding: 0;
+}
+
+.codeCell:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(19, 229, 106, 0.2);
+  outline: none;
+}
+
+.codeSep {
+  margin-right: 2px;
+}
+
+.codeDivider {
+  font-size: 20px;
+  color: var(--text-muted);
+  line-height: 1;
+  user-select: none;
+}
+
+.error {
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.btnPrimary {
+  padding: 10px 20px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btnPrimary:hover:not(:disabled) { background: var(--accent-hover); }
+.btnPrimary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.successBox {
+  padding: 40px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--text-primary);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .page    { padding: 16px; }
+  .card    { padding: 20px 16px; }
+}

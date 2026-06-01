@@ -1,0 +1,337 @@
+.layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Mobile top header (hidden on desktop) ── */
+.mobileHeader {
+  display: none;
+}
+
+.hamburger {
+  display: none;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebarHeader {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.sidebarHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.desktopOnly {
+  display: contents;
+}
+
+.closeSidebarBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+
+.closeSidebarBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ── Theme toggle button ── */
+.themeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+
+.themeBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ── Mobile header right group ── */
+.mobileHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.logoLink {
+  display: block;
+  text-decoration: none;
+}
+
+.mobileLogoLink {
+  display: block;
+  text-decoration: none;
+}
+
+.logoImg {
+  height: 34px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  display: block;
+  transition: opacity 0.12s;
+}
+
+.logoLink:hover .logoImg,
+.mobileLogoLink:hover .logoImg {
+  opacity: 0.8;
+}
+
+/* ── External link badge (GMCAuto ↗) ── */
+.externalBadge {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ── Navigation ── */
+.nav {
+  flex: 1;
+  padding: 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 13.5px;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.navItem:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.navActive {
+  background: rgba(19, 229, 106, 0.10);
+  color: var(--accent) !important;
+}
+
+/* ── Sidebar bottom ── */
+.sidebarBottom {
+  border-top: 1px solid var(--border);
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bottomItem {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  min-width: 0;
+  transition: background 0.12s, color 0.12s;
+}
+
+.bottomItem:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.bottomItem.navActive {
+  color: var(--accent) !important;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.userName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userEmail {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logoutBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.logoutBtn:hover {
+  background: rgba(244, 67, 54, 0.12);
+  color: var(--danger);
+}
+
+/* ── Main content ── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-base);
+}
+
+/* ── Mobile overlay (hidden on desktop) ── */
+.overlay {
+  display: none;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE  (≤ 768px)
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  /* ── Mobile top header ── */
+  .mobileHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    height: 52px;
+    min-height: 52px;
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .hamburger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .hamburger:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  /* ── Sidebar: fixed overlay on mobile ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    height: 100vh;
+    z-index: 200;
+    transition: left 0.25s ease;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  }
+
+  .sidebarOpen {
+    left: 0;
+  }
+
+  /* Show close (X) button in mobile sidebar header */
+  .closeSidebarBtn {
+    display: flex;
+  }
+
+  /* Hide bell inside sidebar on mobile — it's in the mobileHeader */
+  .desktopOnly {
+    display: none;
+  }
+
+  /* Dark backdrop when sidebar is open */
+  .overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 150;
+    animation: fadeOverlay 0.2s ease;
+  }
+
+  @keyframes fadeOverlay {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    height: calc(100vh - 52px);
+  }
+}

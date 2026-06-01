@@ -1,0 +1,47 @@
+{
+  "name": "gmcauto2",
+  "private": true,
+  "version": "2.5.0",
+  "type": "module",
+  "description": "GMCAuto 2 - GMC PASS 자동신청 프로그램 (Akademiya 통합 버전)",
+  "scripts": {
+    "dev": "vite --host",
+    "server": "node server/index.js",
+    "start": "concurrently \"npm run server\" \"npm run dev\"",
+    "build": "vite build",
+    "prod": "npm run build && node server/index.js",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.14.0",
+    "better-sqlite3": "^12.8.0",
+    "cheerio": "^1.2.0",
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "i18next": "^24.2.0",
+    "i18next-browser-languagedetector": "^8.0.5",
+    "iconv-lite": "^0.7.2",
+    "playwright-core": "^1.59.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-i18next": "^15.4.0",
+    "recharts": "^3.8.1",
+    "set-cookie-parser": "^3.1.0",
+    "tough-cookie": "^6.0.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "esbuild": "^0.28.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.4.0",
+    "vite": "^8.0.1"
+  }
+}

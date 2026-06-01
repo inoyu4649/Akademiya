@@ -1,0 +1,140 @@
+/* =============================================
+   GMCAuto 2 — Akademiya 다크 테마 (VS Code Dark + 하늘색 강조)
+   Akademiya frontend/src/index.css와 동일한 색상 체계 사용
+   ============================================= */
+
+:root {
+  /* ── Background layers (Akademiya 동일) */
+  --bg:             #1e1e1e;
+  --bg-sidebar:     #252526;
+  --bg-panel:       #2d2d30;
+  --bg-input:       #3c3c3c;
+  --bg-hover:       #2a2d2e;
+
+  /* ── Text */
+  --text:           #d4d4d4;
+  --text-secondary: #9d9d9d;
+  --text-muted:     #6e6e6e;
+
+  /* ── Accent — sky blue (Akademiya 동일) */
+  --primary:        #4fc3f7;
+  --primary-hover:  #0288d1;
+  --primary-light:  rgba(79, 195, 247, 0.15);
+
+  /* ── Semantic */
+  --success:        #4caf50;
+  --success-light:  rgba(76, 175, 80, 0.15);
+  --danger:         #f44336;
+  --danger-light:   rgba(244, 67, 54, 0.15);
+  --warning:        #ff9800;
+  --warning-light:  rgba(255, 152, 0, 0.15);
+
+  /* ── Borders & shadows */
+  --border:         #3e3e42;
+  --shadow:         0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-lg:      0 4px 12px rgba(0, 0, 0, 0.5);
+
+  /* ── Card */
+  --card-bg:        #252526;
+
+  /* ── Radius */
+  --radius:         8px;
+  --radius-sm:      4px;
+
+  /* ── Typography */
+  font-family: 'Noto Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* ── CJKV 언어별 폰트 스택 (Akademiya 구조 그대로 이식) ──────────── */
+html[lang="ko"],
+html[lang="ko"] body,
+html[lang="ko"] button,
+html[lang="ko"] input,
+html[lang="ko"] select,
+html[lang="ko"] textarea {
+  font-family: 'Pretendard', 'Noto Sans KR', 'Noto Sans CJK KR',
+    'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
+}
+
+html[lang="ja"],
+html[lang="ja"] body,
+html[lang="ja"] button,
+html[lang="ja"] input,
+html[lang="ja"] select,
+html[lang="ja"] textarea {
+  font-family: 'UD Digi Kyokasho NK', 'UD Digi Kyokasho NK-R',
+    'UD デジタル 教科書体 NK-R', 'BIZ UDPGothic', 'BIZ UDPゴシック',
+    'Noto Sans JP', 'Noto Sans CJK JP', 'Meiryo', sans-serif !important;
+}
+
+html[lang="zh"],
+html[lang="zh"] body,
+html[lang="zh"] button,
+html[lang="zh"] input,
+html[lang="zh"] select,
+html[lang="zh"] textarea {
+  font-family: 'PingFang SC', 'Helvetica Neue',
+    'Microsoft YaHei', '微软雅黑',
+    'Noto Sans SC', 'Noto Sans CJK SC', sans-serif !important;
+}
+
+/* ── Reset ───────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  background-color: var(--bg-input);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.2);
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg-input); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }

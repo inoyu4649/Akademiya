@@ -1,0 +1,397 @@
+.page {
+  padding: 32px 40px;
+  max-width: 900px;
+  position: relative;
+}
+
+.loading {
+  padding: 60px 40px;
+  color: var(--text-secondary);
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--bg-panel);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  z-index: 100;
+  box-shadow: var(--shadow-md);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.pageTitle {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 28px;
+}
+
+.section {
+  margin-bottom: 40px;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 20px 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cardMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.orgCode {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  margin-bottom: 4px;
+}
+
+.orgName {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.orgMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.orgMeta span {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.metaLabel {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.cardActions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btnApprove {
+  padding: 7px 18px;
+  background: rgba(76, 175, 80, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btnApprove:hover {
+  background: rgba(76, 175, 80, 0.25);
+}
+
+.btnReject {
+  padding: 7px 18px;
+  background: rgba(244, 67, 54, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(244, 67, 54, 0.25);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btnReject:hover {
+  background: rgba(244, 67, 54, 0.2);
+}
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  padding: 8px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: color 0.12s;
+  margin-bottom: -1px;
+}
+.tab:hover  { color: var(--text-primary); }
+.tabActive  {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 500;
+}
+
+/* ── Bug filter ── */
+.bugFilter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filterLabel {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.filterBtn {
+  padding: 4px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.filterBtn:hover { background: var(--bg-hover); }
+.filterActive {
+  background: rgba(19, 229, 106, 0.10);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Bug cards ── */
+.bugCard {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.bugHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  cursor: pointer;
+  gap: 12px;
+  transition: background 0.1s;
+}
+.bugHeader:hover { background: var(--bg-hover); }
+
+.bugHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.bugHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.bugTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bugMeta {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.expandIcon {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ── Bug detail ── */
+.bugDetail {
+  border-top: 1px solid var(--border);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detailRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.detailLabel {
+  font-weight: 500;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.envBadge {
+  font-size: 11.5px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  color: var(--text-secondary);
+}
+
+.bugBody {
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.55;
+}
+
+/* ── Admin controls ── */
+.adminControls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.controlRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.controlLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  padding-top: 6px;
+  min-width: 56px;
+}
+
+.statusSelect {
+  padding: 5px 8px;
+  font-size: 12.5px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.noteArea {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  resize: vertical;
+  font-family: inherit;
+}
+
+.saveBtn {
+  align-self: flex-end;
+  padding: 6px 16px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.saveBtn:hover    { background: var(--accent-hover); }
+.saveBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Status badges ── */
+.badge {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badgeOpen       { background: rgba(33,150,243,0.12); color: #2196F3; }
+.badgeInProgress { background: rgba(255,152,0,0.12);  color: #FF9800; }
+.badgeClosed     { background: rgba(76,175,80,0.12);  color: #4CAF50; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .page    { padding: 16px; }
+  .loading { padding: 40px 16px; }
+
+  .card {
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .cardActions {
+    flex-direction: row;
+  }
+
+  .bugHeader {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}

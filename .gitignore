@@ -1,0 +1,32 @@
+# 환경변수 (절대 커밋 금지)
+.env
+.env.local
+.env.*.local
+
+# 의존성
+node_modules/
+**/node_modules/
+
+# 빌드 결과
+dist/
+**/dist/
+
+# 업로드 파일
+backend/uploads/
+
+# 로그
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# 에디터
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# pnpm
+.pnpm-store/

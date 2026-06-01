@@ -1,0 +1,534 @@
+.page {
+  padding: 32px 40px;
+  max-width: 860px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.loading {
+  padding: 60px 40px;
+  color: var(--text-secondary);
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 20px;
+  font-size: 13px;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+  z-index: 9000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ── Header ── */
+.header {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.back {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  transition: color 0.15s;
+}
+.back:hover { color: var(--text-primary); }
+
+.meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.className { font-weight: 500; }
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.info {
+  display: flex;
+  gap: 20px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.dueDate  { color: var(--text-secondary); }
+.pastDue  { color: var(--danger); font-weight: 500; }
+.noDue    { color: var(--text-muted); }
+.creator  { color: var(--text-muted); }
+.pastDueLabel { color: var(--danger); }
+
+.description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  margin-top: 4px;
+}
+
+/* ── Shared ── */
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+}
+
+.badge {
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 10px;
+}
+.status_submitted { background: rgba(33, 150, 243, 0.12); color: var(--accent); }
+.status_approved  { background: rgba(76, 175, 80, 0.12);  color: var(--success); }
+.status_returned  { background: rgba(255, 152, 0, 0.12);  color: var(--warning); }
+
+.fileLink {
+  color: var(--accent);
+  font-size: 13px;
+  text-decoration: none;
+}
+.fileLink:hover { text-decoration: underline; }
+
+/* ── Submit section ── */
+.submitSection {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+}
+
+.submissionStatus {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.statusLabel {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.statusDate {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.feedback {
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 6px;
+}
+.feedbackLabel {
+  font-weight: 500;
+  color: var(--warning);
+  flex-shrink: 0;
+}
+
+/* Submit form */
+.submitForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  width: fit-content;
+}
+
+.tab {
+  padding: 7px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.tabActive {
+  background: var(--accent);
+  color: #000;
+  font-weight: 500;
+}
+
+.fileArea {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fileInput { color: var(--text-secondary); font-size: 13px; }
+
+.hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.linkInput {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.linkInput:focus { border-color: var(--accent); }
+
+.error {
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.pastDueMsg {
+  font-size: 13px;
+  color: var(--danger);
+  margin-top: 8px;
+}
+
+.btnPrimary {
+  padding: 9px 20px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  width: fit-content;
+  transition: background 0.15s;
+}
+.btnPrimary:hover { background: var(--accent-hover); }
+.btnPrimary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Submission management ── */
+.submissionMgmt {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+}
+
+.subTable {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.subRow {
+  display: grid;
+  grid-template-columns: 1fr 120px 180px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-panel);
+  font-size: 13.5px;
+}
+
+.subHeader {
+  background: var(--bg-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.subName {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.notSubmitted {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.subActions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.subLinks {
+  display: flex;
+  gap: 6px;
+  margin-left: 4px;
+}
+
+.btnApprove {
+  padding: 4px 10px;
+  background: rgba(76, 175, 80, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btnApprove:hover { background: rgba(76, 175, 80, 0.2); }
+
+.btnReturn {
+  padding: 4px 10px;
+  background: rgba(255, 152, 0, 0.1);
+  color: var(--warning);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btnReturn:hover { background: rgba(255, 152, 0, 0.2); }
+
+/* ── Modal ── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 8000;
+}
+
+.modal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  width: 420px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modalTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.textarea {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  padding: 10px 12px;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.textarea:focus { border-color: var(--accent); }
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btnCancel {
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btnCancel:hover { background: var(--bg-hover); }
+
+.btnDanger {
+  padding: 8px 16px;
+  background: rgba(244, 67, 54, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btnDanger:hover { background: rgba(244, 67, 54, 0.2); }
+
+/* ── Comments ── */
+.comments {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+}
+
+.commentList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  padding-right: 4px;
+}
+
+.commentItem {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+
+.commentHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.commentAuthor {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.commentDate {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.deleteBtn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color 0.15s;
+}
+.deleteBtn:hover { color: var(--danger); }
+
+.commentContent {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.filteredNote {
+  font-size: 11px;
+  color: var(--warning);
+  font-style: italic;
+}
+
+.commentForm {
+  display: flex;
+  gap: 8px;
+}
+
+.commentInput {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.commentInput:focus { border-color: var(--accent); }
+
+.btnPost {
+  padding: 9px 16px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.btnPost:hover { background: var(--accent-hover); }
+.btnPost:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .page    { padding: 16px; gap: 16px; }
+  .loading { padding: 40px 16px; }
+
+  .header,
+  .submitSection,
+  .submissionMgmt,
+  .comments {
+    padding: 16px;
+    border-radius: var(--radius-md);
+  }
+
+  .title { font-size: 18px; }
+
+  .subRow {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .subHeader { display: none; }
+
+  .commentForm { flex-direction: column; }
+  .btnPost { width: 100%; }
+}
