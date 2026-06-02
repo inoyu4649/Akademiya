@@ -1,6 +1,8 @@
 {
+  "common": { "cancel": "Cancel" },
+  "theme": { "light": "Switch to Light Mode", "dark": "Switch to Dark Mode" },
   "app": {
-    "title": "GMCAuto 2",
+    "title": "GMCAuto",
     "subtitle": "GMC PASS Auto-Application",
     "version": "v2.5",
     "contact": "Contact: 022207@hafs.hs.kr",
@@ -15,10 +17,28 @@
     "passwordLabel": "Password",
     "passwordPlaceholder": "Enter your password",
     "loginBtn": "Sign In",
+    "loginFailed": "Login failed.",
+    "serverError": "Cannot connect to server.",
     "logging": "Processing reCAPTCHA...",
     "sessionExpired": "Your session has expired. Please sign in again.",
     "loginHelp": "Sign in with your going.hafs.hs.kr account",
-    "recaptchaNote": "reCAPTCHA v3 is handled automatically (Chrome required)"
+    "recaptchaNote": "reCAPTCHA v3 is handled automatically (Chrome required)",
+    "tabGmc": "GMCAuto Account",
+    "tabAkademiya": "Sign in with Akademiya",
+    "ak": {
+      "desc": "Sign in with Akademiya account",
+      "descSub": "After linking your going.hafs.hs.kr credentials once, you will be signed in automatically.",
+      "loginBtn": "Sign in with Akademiya",
+      "hafsOnly": "Only accounts enrolled in the HAFS organization on Akademiya can use this.",
+      "verifying": "Verifying Akademiya authentication...",
+      "verifyFailed": "Code verification failed. Please try again.",
+      "relink": "Automatic login failed with the saved password. Please re-enter your password.",
+      "linkDesc": "Enter your going.hafs.hs.kr credentials to link. Afterward, Akademiya login will be automatic.",
+      "goingPasswordLabel": "going.hafs.hs.kr Password",
+      "goingPasswordPlaceholder": "Enter your going.hafs.hs.kr password",
+      "linkBtn": "Link and Sign In",
+      "linkFailed": "Linking failed."
+    }
   },
   "nav": {
     "home": "Home",

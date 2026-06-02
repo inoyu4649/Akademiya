@@ -1,6 +1,8 @@
 {
+  "common": { "cancel": "キャンセル" },
+  "theme": { "light": "ライトモードに切り替え", "dark": "ダークモードに切り替え" },
   "app": {
-    "title": "GMCAuto 2",
+    "title": "GMCAuto",
     "subtitle": "GMC PASS 自動申請プログラム",
     "version": "v2.5",
     "contact": "お問い合わせ: 022207@hafs.hs.kr",
@@ -15,10 +17,28 @@
     "passwordLabel": "パスワード",
     "passwordPlaceholder": "パスワードを入力してください",
     "loginBtn": "ログイン",
+    "loginFailed": "ログインに失敗しました。",
+    "serverError": "サーバーに接続できません。",
     "logging": "reCAPTCHA 処理中...",
     "sessionExpired": "セッションが期限切れになりました。再ログインしてください。",
     "loginHelp": "going.hafs.hs.kr アカウントでログイン",
-    "recaptchaNote": "reCAPTCHA v3 自動処理（Chrome 必要）"
+    "recaptchaNote": "reCAPTCHA v3 自動処理（Chrome 必要）",
+    "tabGmc": "GMCAuto アカウント",
+    "tabAkademiya": "Akademiya でログイン",
+    "ak": {
+      "desc": "Akademiya アカウントでログイン",
+      "descSub": "going.hafs.hs.kr の認証情報を一度連携すると、次回から自動ログインされます。",
+      "loginBtn": "Akademiya でログイン",
+      "hafsOnly": "Akademiya の HAFS 組織に参加しているアカウントのみ使用できます。",
+      "verifying": "Akademiya 認証を確認中...",
+      "verifyFailed": "コード認証に失敗しました。もう一度お試しください。",
+      "relink": "保存されたパスワードでのログインに失敗しました。パスワードを再入力してください。",
+      "linkDesc": "going.hafs.hs.kr の学籍番号とパスワードを入力して連携してください。",
+      "goingPasswordLabel": "going.hafs.hs.kr パスワード",
+      "goingPasswordPlaceholder": "going.hafs.hs.kr のパスワードを入力",
+      "linkBtn": "連携してログイン",
+      "linkFailed": "連携に失敗しました。"
+    }
   },
   "nav": {
     "home": "ホーム",

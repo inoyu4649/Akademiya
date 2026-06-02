@@ -7,6 +7,7 @@ import { orgApi } from "../../api/org.api";
 import NotificationBell from "../common/NotificationBell";
 import { useTheme } from "../../hooks/useTheme";
 import styles from "./AppLayout.module.css";
+import client from "../../api/client";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -153,9 +154,10 @@ export default function AppLayout() {
   const { t } = useTranslation();
   const { user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpen, setMobileOpen]       = useState(false);
   const [isHafsOrgMember, setIsHafsOrgMember] = useState(false);
-  const { theme, toggle: toggleTheme } = useTheme();
+  const [gmcLoading, setGmcLoading]       = useState(false);
+  const { theme, toggle: toggleTheme }    = useTheme();
 
   // HAFS 조직 가입 여부 확인 (사이드바 GMCAuto 메뉴 노출 조건)
   useEffect(() => {
@@ -182,6 +184,22 @@ export default function AppLayout() {
 
   function closeMobile() {
     setMobileOpen(false);
+  }
+
+  async function handleGmcAutoClick() {
+    if (gmcLoading) return;
+    setGmcLoading(true);
+    closeMobile();
+    try {
+      const res  = await client.post<{ code: string }>("/oauth/gmcauto-code");
+      const code = res.data.code;
+      window.open(`https://gmc.akademiya.kr/auth/callback?code=${encodeURIComponent(code)}`, "_blank", "noopener");
+    } catch {
+      // 코드 발급 실패 시 직접 접속 (로그인 화면)
+      window.open("https://gmc.akademiya.kr", "_blank", "noopener");
+    } finally {
+      setGmcLoading(false);
+    }
   }
 
   return (
@@ -297,17 +315,16 @@ export default function AppLayout() {
 
           {/* GMCAuto — HAFS 조직 가입자에게만 표시 */}
           {isHafsOrgMember && (
-            <a
-              href="https://gmc.akademiya.kr"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
               className={styles.navItem}
-              onClick={closeMobile}
+              onClick={handleGmcAutoClick}
+              disabled={gmcLoading}
+              style={{ background: "none", border: "none", cursor: gmcLoading ? "wait" : "pointer", width: "100%", textAlign: "left" }}
             >
               <IconGmc />
-              <span>{t("nav.gmcAuto")}</span>
+              <span>{gmcLoading ? t("nav.gmcAutoLoading") || "연결 중..." : t("nav.gmcAuto")}</span>
               <span className={styles.externalBadge}>↗</span>
-            </a>
+            </button>
           )}
 
           {user?.role === "admin" && (

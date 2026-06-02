@@ -1,6 +1,13 @@
 {
+  "common": {
+    "cancel": "취소"
+  },
+  "theme": {
+    "light": "라이트 모드로 전환",
+    "dark": "다크 모드로 전환"
+  },
   "app": {
-    "title": "GMCAuto 2",
+    "title": "GMCAuto",
     "subtitle": "GMC PASS 자동신청 프로그램",
     "version": "v2.5",
     "contact": "문의: 022207@hafs.hs.kr",
@@ -15,10 +22,28 @@
     "passwordLabel": "비밀번호",
     "passwordPlaceholder": "비밀번호를 입력하세요",
     "loginBtn": "로그인",
+    "loginFailed": "로그인에 실패했습니다.",
+    "serverError": "서버에 연결할 수 없습니다.",
     "logging": "reCAPTCHA 처리 중...",
     "sessionExpired": "세션이 만료되어 자동 로그아웃되었습니다. 다시 로그인해주세요.",
     "loginHelp": "going.hafs.hs.kr 계정으로 로그인",
-    "recaptchaNote": "reCAPTCHA v3 자동 처리 (Chrome 필요)"
+    "recaptchaNote": "reCAPTCHA v3 자동 처리 (Chrome 필요)",
+    "tabGmc": "GMCAuto 계정",
+    "tabAkademiya": "Akademiya 로그인",
+    "ak": {
+      "desc": "Akademiya 계정으로 로그인",
+      "descSub": "최초 1회 going.hafs.hs.kr 비밀번호 연동 후 자동 로그인됩니다.",
+      "loginBtn": "Akademiya로 로그인",
+      "hafsOnly": "Akademiya에 HAFS 조직으로 가입된 계정만 사용 가능합니다.",
+      "verifying": "Akademiya 인증 확인 중...",
+      "verifyFailed": "코드 검증 실패. 다시 시도해주세요.",
+      "relink": "저장된 비밀번호로 로그인에 실패했습니다. 비밀번호를 다시 입력해주세요.",
+      "linkDesc": "going.hafs.hs.kr 학번과 비밀번호를 입력해 연동해주세요. 이후 Akademiya 계정으로 자동 로그인됩니다.",
+      "goingPasswordLabel": "going.hafs.hs.kr 비밀번호",
+      "goingPasswordPlaceholder": "going.hafs.hs.kr 비밀번호 입력",
+      "linkBtn": "연동하고 로그인",
+      "linkFailed": "연동에 실패했습니다."
+    }
   },
   "nav": {
     "home": "홈",

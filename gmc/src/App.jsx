@@ -5,14 +5,43 @@ import LoginPage from './components/LoginPage'
 import Dashboard from './components/Dashboard'
 
 const SESSION_KEY = 'gmcauto_session'
+const THEME_KEY   = 'gmcauto_theme'
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme)
+}
 
 function App() {
   const { t } = useTranslation()
-  const [session, setSession] = useState(null)
-  const [bootChecked, setBootChecked] = useState(false)
+  const [session, setSession]               = useState(null)
+  const [bootChecked, setBootChecked]       = useState(false)
   const [sessionExpired, setSessionExpired] = useState(false)
 
-  // 페이지 로드 시 localStorage 세션 복원 + 서버 검증
+  // 다크모드 (localStorage 저장, data-theme 속성으로 적용)
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem(THEME_KEY)
+    return saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+  })
+
+  useEffect(() => {
+    applyTheme(theme)
+    localStorage.setItem(THEME_KEY, theme)
+  }, [theme])
+
+  const toggleTheme = useCallback(() => {
+    setTheme(t => t === 'dark' ? 'light' : 'dark')
+  }, [])
+
+  // /auth/callback?code=XXX → /?code=XXX 처리 (Akademiya OAuth 콜백)
+  useEffect(() => {
+    if (window.location.pathname === '/auth/callback') {
+      const params = new URLSearchParams(window.location.search)
+      const code   = params.get('code')
+      window.history.replaceState({}, '', code ? `/?code=${encodeURIComponent(code)}` : '/')
+    }
+  }, [])
+
+  // 페이지 로드 시 세션 복원
   useEffect(() => {
     const saved = localStorage.getItem(SESSION_KEY)
     if (!saved) { setBootChecked(true); return }
@@ -49,9 +78,9 @@ function App() {
     if (session?.sessionId) {
       try {
         await fetch('/api/logout', {
-          method: 'POST',
+          method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: session.sessionId }),
+          body:    JSON.stringify({ sessionId: session.sessionId }),
         })
       } catch { /* ignore */ }
     }
@@ -64,9 +93,9 @@ function App() {
     if (session?.sessionId) {
       try {
         await fetch('/api/account/delete', {
-          method: 'POST',
+          method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: session.sessionId }),
+          body:    JSON.stringify({ sessionId: session.sessionId }),
         })
       } catch { /* ignore */ }
     }
@@ -89,8 +118,8 @@ function App() {
           </div>
         )
         : !session
-          ? <LoginPage onLogin={handleLogin} sessionExpired={sessionExpired} />
-          : <Dashboard session={session} onLogout={handleLogout} onAccountDelete={handleAccountDelete} />
+          ? <LoginPage onLogin={handleLogin} sessionExpired={sessionExpired} theme={theme} toggleTheme={toggleTheme} />
+          : <Dashboard session={session} onLogout={handleLogout} onAccountDelete={handleAccountDelete} theme={theme} toggleTheme={toggleTheme} />
       }
 
       {/* 푸터 */}

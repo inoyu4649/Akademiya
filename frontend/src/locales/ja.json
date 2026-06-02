@@ -117,6 +117,7 @@
     "calendar": "カレンダー",
     "bugReport": "バグ報告",
     "gmcAuto": "GMCAuto",
+    "gmcAutoLoading": "接続中...",
     "admin": "管理者パネル",
     "profile": "プロフィール",
     "logout": "ログアウト"

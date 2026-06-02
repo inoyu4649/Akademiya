@@ -60,13 +60,15 @@ services:
       context: ./gmc
       dockerfile: Dockerfile
     restart: unless-stopped
+    env_file: ./gmc/.env          # GMC_DB_HOST, GMC_DB_USER, GMC_DB_PASSWORD 등
     environment:
       PORT: "3001"
       NODE_ENV: production
-      # Playwright가 사용할 Chromium 경로 (컨테이너 내 설치 필요 시 별도 설정)
-      # CHROME_PATH: /usr/bin/chromium-browser
+      # Akademiya OAuth 연동 설정
+      AKADEMIYA_API_URL: "http://backend:3000/api"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
-      - gmc_data:/app/data
       - gmc_backup:/app/backup
     networks:
       - akademiya_net
@@ -79,7 +81,6 @@ services:
 
 volumes:
   uploads_data:
-  gmc_data:
   gmc_backup:
 
 networks:

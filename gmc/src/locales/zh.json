@@ -1,6 +1,8 @@
 {
+  "common": { "cancel": "取消" },
+  "theme": { "light": "切换到浅色模式", "dark": "切换到深色模式" },
   "app": {
-    "title": "GMCAuto 2",
+    "title": "GMCAuto",
     "subtitle": "GMC PASS 自动申请程序",
     "version": "v2.5",
     "contact": "联系方式: 022207@hafs.hs.kr",
@@ -15,10 +17,28 @@
     "passwordLabel": "密码",
     "passwordPlaceholder": "请输入密码",
     "loginBtn": "登录",
+    "loginFailed": "登录失败。",
+    "serverError": "无法连接服务器。",
     "logging": "正在处理 reCAPTCHA...",
     "sessionExpired": "会话已过期，已自动退出登录。请重新登录。",
     "loginHelp": "使用 going.hafs.hs.kr 账户登录",
-    "recaptchaNote": "reCAPTCHA v3 自动处理（需要 Chrome）"
+    "recaptchaNote": "reCAPTCHA v3 自动处理（需要 Chrome）",
+    "tabGmc": "GMCAuto 账户",
+    "tabAkademiya": "使用 Akademiya 登录",
+    "ak": {
+      "desc": "使用 Akademiya 账户登录",
+      "descSub": "关联 going.hafs.hs.kr 凭据一次后，将自动登录。",
+      "loginBtn": "使用 Akademiya 登录",
+      "hafsOnly": "仅限已加入 Akademiya HAFS 组织的账户使用。",
+      "verifying": "正在验证 Akademiya 身份...",
+      "verifyFailed": "代码验证失败，请重试。",
+      "relink": "使用保存的密码自动登录失败，请重新输入密码。",
+      "linkDesc": "请输入 going.hafs.hs.kr 的学号和密码进行关联。",
+      "goingPasswordLabel": "going.hafs.hs.kr 密码",
+      "goingPasswordPlaceholder": "请输入 going.hafs.hs.kr 密码",
+      "linkBtn": "关联并登录",
+      "linkFailed": "关联失败。"
+    }
   },
   "nav": {
     "home": "首页",

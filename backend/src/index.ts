@@ -19,6 +19,7 @@ import notificationsRouter from "./routes/notifications.js";
 import calendarRouter from "./routes/calendar.js";
 import statsRouter from "./routes/stats.js";
 import bugReportsRouter from "./routes/bugReports.js";
+import oauthRouter from "./routes/oauth.js";
 import { startDeadlineScheduler } from "./scheduler/deadlines.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -70,9 +71,22 @@ app.use(
 );
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
+const allowedOrigins = [
+  process.env.FRONTEND_URL ?? "http://localhost:5173",
+  "https://gmc.akademiya.kr",
+  "http://localhost:5174",
+  "http://localhost:3001",
+];
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL ?? "http://localhost:5173",
+    origin: (origin, callback) => {
+      // no origin (server-to-server) 또는 허용 목록에 있으면 통과
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
@@ -118,6 +132,7 @@ app.use("/api/notifications",notificationsRouter);
 app.use("/api/calendar",     calendarRouter);
 app.use("/api/stats",        statsRouter);
 app.use("/api/bug-reports",  bugReportsRouter);
+app.use("/api/oauth",        oauthRouter);        // GMCAuto ↔ Akademiya OAuth
 
 // ── 헬스체크 ─────────────────────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {

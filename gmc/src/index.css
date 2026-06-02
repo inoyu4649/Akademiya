@@ -1,63 +1,84 @@
 /* =============================================
-   GMCAuto 2 — Akademiya 다크 테마 (VS Code Dark + 하늘색 강조)
-   Akademiya frontend/src/index.css와 동일한 색상 체계 사용
+   GMCAuto — 라이트/다크 테마 (Akademiya 동일 체계)
+   강조색: #2563eb (라이트) / #60a5fa (다크)
    ============================================= */
 
-:root {
-  /* ── Background layers (Akademiya 동일) */
-  --bg:             #1e1e1e;
-  --bg-sidebar:     #252526;
-  --bg-panel:       #2d2d30;
-  --bg-input:       #3c3c3c;
-  --bg-hover:       #2a2d2e;
+/* ── 라이트 테마 (기본) ───────────────────────────────────────── */
+:root,
+[data-theme="light"] {
+  --primary:        #2563eb;
+  --primary-hover:  #1d4ed8;
+  --primary-light:  #dbeafe;
 
-  /* ── Text */
-  --text:           #d4d4d4;
-  --text-secondary: #9d9d9d;
-  --text-muted:     #6e6e6e;
+  --success:        #16a34a;
+  --success-light:  #dcfce7;
+  --danger:         #dc2626;
+  --danger-light:   #fef2f2;
+  --warning:        #f59e0b;
+  --warning-light:  #fffbeb;
 
-  /* ── Accent — sky blue (Akademiya 동일) */
-  --primary:        #4fc3f7;
-  --primary-hover:  #0288d1;
-  --primary-light:  rgba(79, 195, 247, 0.15);
+  --text:           #1f2937;
+  --text-secondary: #6b7280;
+  --text-muted:     #9ca3af;
 
-  /* ── Semantic */
-  --success:        #4caf50;
-  --success-light:  rgba(76, 175, 80, 0.15);
-  --danger:         #f44336;
-  --danger-light:   rgba(244, 67, 54, 0.15);
-  --warning:        #ff9800;
-  --warning-light:  rgba(255, 152, 0, 0.15);
+  --bg:             #f8fafc;
+  --bg-sidebar:     #f1f5f9;
+  --bg-panel:       #ffffff;
+  --bg-input:       #ffffff;
+  --bg-hover:       #f1f5f9;
 
-  /* ── Borders & shadows */
-  --border:         #3e3e42;
-  --shadow:         0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-lg:      0 4px 12px rgba(0, 0, 0, 0.5);
+  --card-bg:        #ffffff;
+  --border:         #e5e7eb;
 
-  /* ── Card */
-  --card-bg:        #252526;
+  --shadow:         0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-lg:      0 10px 15px -3px rgba(0,0,0,0.10), 0 4px 6px -2px rgba(0,0,0,0.05);
 
-  /* ── Radius */
   --radius:         8px;
   --radius-sm:      4px;
 
-  /* ── Typography */
-  font-family: 'Noto Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--text);
-  background: var(--bg);
+  color-scheme: light;
 }
 
-/* ── CJKV 언어별 폰트 스택 (Akademiya 구조 그대로 이식) ──────────── */
+/* ── 다크 테마 ──────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --primary:        #60a5fa;
+  --primary-hover:  #3b82f6;
+  --primary-light:  rgba(96, 165, 250, 0.15);
+
+  --success:        #4ade80;
+  --success-light:  rgba(74, 222, 128, 0.15);
+  --danger:         #f87171;
+  --danger-light:   rgba(248, 113, 113, 0.15);
+  --warning:        #fbbf24;
+  --warning-light:  rgba(251, 191, 36, 0.15);
+
+  --text:           #f3f4f6;
+  --text-secondary: #9ca3af;
+  --text-muted:     #6b7280;
+
+  --bg:             #0f172a;
+  --bg-sidebar:     #1e293b;
+  --bg-panel:       #1e293b;
+  --bg-input:       #0f172a;
+  --bg-hover:       #1e3a5f;
+
+  --card-bg:        #1e293b;
+  --border:         #334155;
+
+  --shadow:         0 1px 3px rgba(0,0,0,0.40);
+  --shadow-lg:      0 10px 15px -3px rgba(0,0,0,0.40);
+
+  color-scheme: dark;
+}
+
+/* ── CJKV 언어별 폰트 스택 ──────────────────────────────────── */
 html[lang="ko"],
 html[lang="ko"] body,
 html[lang="ko"] button,
 html[lang="ko"] input,
 html[lang="ko"] select,
 html[lang="ko"] textarea {
-  font-family: 'Pretendard', 'Noto Sans KR', 'Noto Sans CJK KR',
-    'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
+  font-family: 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
 }
 
 html[lang="ja"],
@@ -66,9 +87,7 @@ html[lang="ja"] button,
 html[lang="ja"] input,
 html[lang="ja"] select,
 html[lang="ja"] textarea {
-  font-family: 'UD Digi Kyokasho NK', 'UD Digi Kyokasho NK-R',
-    'UD デジタル 教科書体 NK-R', 'BIZ UDPGothic', 'BIZ UDPゴシック',
-    'Noto Sans JP', 'Noto Sans CJK JP', 'Meiryo', sans-serif !important;
+  font-family: 'BIZ UDPGothic', 'Noto Sans JP', 'Meiryo', sans-serif !important;
 }
 
 html[lang="zh"],
@@ -77,12 +96,10 @@ html[lang="zh"] button,
 html[lang="zh"] input,
 html[lang="zh"] select,
 html[lang="zh"] textarea {
-  font-family: 'PingFang SC', 'Helvetica Neue',
-    'Microsoft YaHei', '微软雅黑',
-    'Noto Sans SC', 'Noto Sans CJK SC', sans-serif !important;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif !important;
 }
 
-/* ── Reset ───────────────────────────────────────────────────────── */
+/* ── Reset ──────────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -95,7 +112,11 @@ html, body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.2s, color 0.2s;
 }
 
 #root {
@@ -108,10 +129,7 @@ a {
   color: var(--primary);
   text-decoration: none;
 }
-a:hover {
-  color: var(--primary-hover);
-  text-decoration: underline;
-}
+a:hover { text-decoration: underline; }
 
 button {
   cursor: pointer;
@@ -127,14 +145,15 @@ input, textarea, select {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 input:focus, textarea:focus, select:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.2);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
 }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--bg-input); border-radius: 3px; }
+::-webkit-scrollbar         { width: 6px; height: 6px; }
+::-webkit-scrollbar-track   { background: var(--bg); }
+::-webkit-scrollbar-thumb   { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
