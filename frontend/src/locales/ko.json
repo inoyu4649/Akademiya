@@ -187,6 +187,15 @@
       "classOwner": "신청자",
       "classApproveSuccess": "반이 승인되었습니다.",
       "classRejectSuccess": "반 신청이 거절되었습니다."
+    },
+    "leave": {
+      "btn": "조직 탈퇴",
+      "title": "조직 탈퇴",
+      "warning": "{{name}} 조직에서 탈퇴합니다. 다시 가입하려면 승인이 필요합니다.",
+      "confirm": "탈퇴 확인",
+      "success": "조직에서 탈퇴했습니다.",
+      "lastAdmin": "유일한 관리자는 탈퇴할 수 없습니다. 다른 멤버에게 관리자 권한을 부여하세요.",
+      "serverError": "오류가 발생했습니다. 잠시 후 다시 시도해주세요."
     }
   },
   "class": {
@@ -246,6 +255,15 @@
       "approveSuccess": "승인되었습니다.",
       "rejectSuccess": "거절되었습니다.",
       "permissionSaved": "역할이 변경되었습니다."
+    },
+    "leave": {
+      "btn": "반 탈퇴",
+      "title": "반 탈퇴",
+      "warning": "{{name}} 반에서 탈퇴합니다. 다시 가입하려면 반장 승인이 필요합니다.",
+      "confirm": "탈퇴 확인",
+      "success": "반에서 탈퇴했습니다.",
+      "lastLeader": "유일한 반장은 탈퇴할 수 없습니다. 다른 멤버를 반장으로 지정하세요.",
+      "serverError": "오류가 발생했습니다. 잠시 후 다시 시도해주세요."
     }
   },
   "report": {

@@ -73,6 +73,9 @@ export const classApi = {
   updatePermission: (classId: number, userId: number, permission: number) =>
     client.patch(`/classes/${classId}/members/${userId}/permission`, { permission }),
 
+  leave: (classId: number) =>
+    client.delete(`/classes/${classId}/leave`),
+
   // Org admin: class creation requests
   orgClassRequests: (orgId: number) =>
     client.get<{ requests: ClassRequest[] }>(`/orgs/${orgId}/class-requests`),

@@ -304,6 +304,37 @@ router.patch("/:id/members/:targetId/permission", requireAuth, async (req, res) 
   res.json({ message: "updated" });
 });
 
+// ── DELETE /api/orgs/:id/leave ────────────────────────────────────────────────
+// 조직 탈퇴 (마지막 관리자는 탈퇴 불가)
+router.delete("/:id/leave", requireAuth, async (req, res) => {
+  const orgId  = Number(req.params.id);
+  const userId = req.user!.id;
+
+  const perm = await getOrgPermission(userId, orgId);
+  if (perm === null) {
+    res.status(400).json({ error: "org.leave.notMember" });
+    return;
+  }
+
+  // 유일한 관리자(permission 3)인 경우 탈퇴 불가
+  if (perm >= 3) {
+    const [rows] = await pool.execute(
+      "SELECT COUNT(*) AS cnt FROM org_members WHERE org_id = ? AND permission >= 3",
+      [orgId]
+    ) as any[];
+    if ((rows[0] as any).cnt <= 1) {
+      res.status(400).json({ error: "org.leave.lastAdmin" });
+      return;
+    }
+  }
+
+  await pool.execute(
+    "DELETE FROM org_members WHERE org_id = ? AND user_id = ?",
+    [orgId, userId]
+  );
+  res.json({ ok: true });
+});
+
 // ── GET /api/orgs/:id/class-requests ─────────────────────────────────────────
 // 조직 관리자(permission 3+): 반 생성 신청 목록
 router.get("/:id/class-requests", requireAuth, async (req, res) => {

@@ -32,6 +32,8 @@ export default function ClassDetailPage() {
   const [permEdits, setPermEdits] = useState<Record<number, number>>({});
   const [reportTarget, setReportTarget] = useState<{ id: number; name: string } | null>(null);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [leaveConfirm, setLeaveConfirm] = useState(false);
+  const [leaveLoading, setLeaveLoading] = useState(false);
   const [bcTitle, setBcTitle]   = useState("");
   const [bcBody, setBcBody]     = useState("");
   const [bcLink, setBcLink]     = useState("");
@@ -84,6 +86,21 @@ export default function ClassDetailPage() {
     showToast(t("class.detail.permissionSaved"));
   }
 
+  async function handleLeave() {
+    setLeaveLoading(true);
+    try {
+      await classApi.leave(classId);
+      navigate("/classes");
+    } catch (err: unknown) {
+      setLeaveConfirm(false);
+      const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "";
+      if (code === "class.leave.lastLeader") showToast(t("class.leave.lastLeader"));
+      else showToast(t("class.leave.serverError"));
+    } finally {
+      setLeaveLoading(false);
+    }
+  }
+
   async function handleBroadcast() {
     if (!bcTitle.trim()) { showToast(t("notification.broadcast.missingFields")); return; }
     setBcLoading(true);
@@ -105,6 +122,26 @@ export default function ClassDetailPage() {
   return (
     <div className={styles.page}>
       {toast && <div className={styles.toast}>{toast}</div>}
+
+      {/* 반 탈퇴 확인 모달 */}
+      {leaveConfirm && (
+        <div className={styles.modalOverlay} onClick={() => setLeaveConfirm(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>⚠ {t("class.leave.title")}</h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 18, lineHeight: 1.6 }}>
+              {t("class.leave.warning", { name: cls?.name })}
+            </p>
+            <div className={styles.modalActions}>
+              <button className={styles.btnCancel} onClick={() => setLeaveConfirm(false)}>
+                {t("common.cancel")}
+              </button>
+              <button className={styles.btnDanger} onClick={handleLeave} disabled={leaveLoading}>
+                {leaveLoading ? t("common.loading") : t("class.leave.confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Broadcast modal */}
       {broadcastOpen && (
@@ -192,6 +229,9 @@ export default function ClassDetailPage() {
             </button>
           )}
           <RoleBadge perm={myPerm} />
+          <button className={styles.btnLeave} onClick={() => setLeaveConfirm(true)}>
+            {t("class.leave.btn")}
+          </button>
         </div>
       </div>
 

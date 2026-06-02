@@ -297,6 +297,37 @@ router.post("/:id/join-requests/:reqId/reject", requireAuth, async (req, res) =>
   res.json({ message: "rejected" });
 });
 
+// ── DELETE /api/classes/:id/leave ─────────────────────────────────────────────
+// 반 탈퇴 (마지막 반장은 탈퇴 불가)
+router.delete("/:id/leave", requireAuth, async (req, res) => {
+  const classId = Number(req.params.id);
+  const userId  = req.user!.id;
+
+  const perm = await getClassPermission(userId, classId);
+  if (perm === null) {
+    res.status(400).json({ error: "class.leave.notMember" });
+    return;
+  }
+
+  // 유일한 반장(permission 1)인 경우 탈퇴 불가
+  if (perm >= 1) {
+    const [rows] = await pool.execute(
+      "SELECT COUNT(*) AS cnt FROM class_members WHERE class_id = ? AND permission >= 1",
+      [classId]
+    ) as any[];
+    if ((rows[0] as any).cnt <= 1) {
+      res.status(400).json({ error: "class.leave.lastLeader" });
+      return;
+    }
+  }
+
+  await pool.execute(
+    "DELETE FROM class_members WHERE class_id = ? AND user_id = ?",
+    [classId, userId]
+  );
+  res.json({ ok: true });
+});
+
 // ── PATCH /api/classes/:id/members/:targetId/permission ───────────────────────
 // 반장 지정(1) / 해제(0) — 반장만 가능
 router.patch("/:id/members/:targetId/permission", requireAuth, async (req, res) => {

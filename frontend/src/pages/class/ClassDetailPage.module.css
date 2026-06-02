@@ -341,6 +341,39 @@
 .btnConfirm:hover { background: var(--accent-hover); }
 .btnConfirm:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* 탈퇴 확인용 danger 버튼 */
+.btnDanger {
+  padding: 7px 16px;
+  background: rgba(244, 67, 54, 0.85);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.btnDanger:hover:not(:disabled) { background: rgba(244, 67, 54, 1); }
+.btnDanger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Leave button ── */
+.btnLeave {
+  padding: 6px 14px;
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid rgba(244, 67, 54, 0.4);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btnLeave:hover {
+  background: rgba(244, 67, 54, 0.08);
+  border-color: rgba(244, 67, 54, 0.7);
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .page    { padding: 16px; }

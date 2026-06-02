@@ -32,6 +32,8 @@ export default function OrgDetailPage() {
 
   // permission edit state: { userId → pending permission value }
   const [permEdits, setPermEdits] = useState<Record<number, number>>({});
+  const [leaveConfirm, setLeaveConfirm] = useState(false);
+  const [leaveLoading, setLeaveLoading] = useState(false);
 
   useEffect(() => {
     if (!orgId) { navigate("/"); return; }
@@ -87,6 +89,21 @@ export default function OrgDetailPage() {
     showToast(t("org.detail.classRejectSuccess"));
   }
 
+  async function handleLeave() {
+    setLeaveLoading(true);
+    try {
+      await orgApi.leave(orgId);
+      navigate("/");
+    } catch (err: unknown) {
+      setLeaveConfirm(false);
+      const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "";
+      if (code === "org.leave.lastAdmin") showToast(t("org.leave.lastAdmin"));
+      else showToast(t("org.leave.serverError"));
+    } finally {
+      setLeaveLoading(false);
+    }
+  }
+
   async function handleSavePerm(userId: number) {
     const newPerm = permEdits[userId];
     if (newPerm === undefined) return;
@@ -110,6 +127,26 @@ export default function OrgDetailPage() {
   return (
     <div className={styles.page}>
       {toast && <div className={styles.toast}>{toast}</div>}
+
+      {/* 조직 탈퇴 확인 모달 */}
+      {leaveConfirm && (
+        <div className={styles.modalOverlay} onClick={() => setLeaveConfirm(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>⚠ {t("org.leave.title")}</h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 18, lineHeight: 1.6 }}>
+              {t("org.leave.warning", { name: org.name })}
+            </p>
+            <div className={styles.modalActions}>
+              <button className={styles.btnModalCancel} onClick={() => setLeaveConfirm(false)}>
+                {t("common.cancel")}
+              </button>
+              <button className={styles.btnModalDanger} onClick={handleLeave} disabled={leaveLoading}>
+                {leaveLoading ? t("common.loading") : t("org.leave.confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Org header */}
       <div className={styles.orgHeader}>
@@ -136,6 +173,9 @@ export default function OrgDetailPage() {
               📊 {t("stats.orgTitle")}
             </button>
           )}
+          <button className={styles.btnLeave} onClick={() => setLeaveConfirm(true)}>
+            {t("org.leave.btn")}
+          </button>
         </div>
       </div>
 

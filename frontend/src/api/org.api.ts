@@ -49,4 +49,7 @@ export const orgApi = {
 
   updatePermission: (orgId: number, userId: number, permission: number) =>
     client.patch(`/orgs/${orgId}/members/${userId}/permission`, { permission }),
+
+  leave: (orgId: number) =>
+    client.delete(`/orgs/${orgId}/leave`),
 };

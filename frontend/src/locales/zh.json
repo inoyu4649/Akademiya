@@ -187,6 +187,15 @@
       "classOwner": "申请人",
       "classApproveSuccess": "班级已通过审核。",
       "classRejectSuccess": "班级申请已被拒绝。"
+    },
+    "leave": {
+      "btn": "退出组织",
+      "title": "退出组织",
+      "warning": "您即将退出 {{name}}。重新加入需要管理员审批。",
+      "confirm": "确认退出",
+      "success": "已退出该组织。",
+      "lastAdmin": "您是唯一的管理员，无法退出。请先将管理员权限授予其他成员。",
+      "serverError": "操作失败，请稍后再试。"
     }
   },
   "class": {
@@ -246,6 +255,15 @@
       "approveSuccess": "已通过。",
       "rejectSuccess": "已拒绝。",
       "permissionSaved": "角色已更新。"
+    },
+    "leave": {
+      "btn": "退出班级",
+      "title": "退出班级",
+      "warning": "您即将退出 {{name}}。重新加入需要班长审批。",
+      "confirm": "确认退出",
+      "success": "已退出该班级。",
+      "lastLeader": "您是唯一的班长，无法退出。请先指定其他成员为班长。",
+      "serverError": "操作失败，请稍后再试。"
     }
   },
   "report": {

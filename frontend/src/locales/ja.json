@@ -187,6 +187,15 @@
       "classOwner": "申請者",
       "classApproveSuccess": "班を承認しました。",
       "classRejectSuccess": "班申請を却下しました。"
+    },
+    "leave": {
+      "btn": "組織を退会",
+      "title": "組織退会",
+      "warning": "{{name}} から退会します。再加入するには管理者の承認が必要です。",
+      "confirm": "退会を確認",
+      "success": "組織を退会しました。",
+      "lastAdmin": "唯一の管理者は退会できません。他のメンバーに管理者権限を付与してください。",
+      "serverError": "エラーが発生しました。しばらくしてからもう一度お試しください。"
     }
   },
   "class": {
@@ -246,6 +255,15 @@
       "approveSuccess": "承認しました。",
       "rejectSuccess": "却下しました。",
       "permissionSaved": "役割を更新しました。"
+    },
+    "leave": {
+      "btn": "班を退会",
+      "title": "班退会",
+      "warning": "{{name}} から退会します。再加入するには班長の承認が必要です。",
+      "confirm": "退会を確認",
+      "success": "班を退会しました。",
+      "lastLeader": "唯一の班長は退会できません。他のメンバーを班長に指定してください。",
+      "serverError": "エラーが発生しました。しばらくしてからもう一度お試しください。"
     }
   },
   "report": {

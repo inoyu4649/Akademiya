@@ -187,6 +187,15 @@
       "classOwner": "Applicant",
       "classApproveSuccess": "Class approved.",
       "classRejectSuccess": "Class application rejected."
+    },
+    "leave": {
+      "btn": "Leave Organization",
+      "title": "Leave Organization",
+      "warning": "You are about to leave {{name}}. You will need admin approval to rejoin.",
+      "confirm": "Confirm Leave",
+      "success": "You have left the organization.",
+      "lastAdmin": "You are the only admin and cannot leave. Assign another admin first.",
+      "serverError": "An error occurred. Please try again."
     }
   },
   "class": {
@@ -246,6 +255,15 @@
       "approveSuccess": "Approved successfully.",
       "rejectSuccess": "Rejected successfully.",
       "permissionSaved": "Role updated successfully."
+    },
+    "leave": {
+      "btn": "Leave Class",
+      "title": "Leave Class",
+      "warning": "You are about to leave {{name}}. You will need class leader approval to rejoin.",
+      "confirm": "Confirm Leave",
+      "success": "You have left the class.",
+      "lastLeader": "You are the only leader and cannot leave. Assign another leader first.",
+      "serverError": "An error occurred. Please try again."
     }
   },
   "report": {
