@@ -97,6 +97,17 @@
       "countryLabel": "居住国",
       "phoneLabel": "電話番号",
       "submitButton": "完了"
+    },
+    "deleteAccount": {
+      "openBtn": "退会する",
+      "title": "アカウント削除",
+      "warning": "退会すると、すべてのデータ（課題・提出物・コメントなど）が完全に削除され、復元できません。",
+      "passwordLabel": "パスワード確認",
+      "passwordPlaceholder": "現在のパスワードを入力してください",
+      "googleHint": "Googleアカウントで登録した場合、パスワードなしで退会できます。",
+      "confirmBtn": "退会を確認",
+      "wrongPassword": "パスワードが正しくありません。",
+      "passwordRequired": "パスワードを入力してください。"
     }
   },
   "nav": {

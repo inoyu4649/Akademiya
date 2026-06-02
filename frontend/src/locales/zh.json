@@ -97,6 +97,17 @@
       "countryLabel": "居住国家",
       "phoneLabel": "手机号码",
       "submitButton": "完成"
+    },
+    "deleteAccount": {
+      "openBtn": "注销账号",
+      "title": "注销账号",
+      "warning": "注销后，您的所有数据（作业、提交、评论等）将被永久删除且无法恢复。",
+      "passwordLabel": "确认密码",
+      "passwordPlaceholder": "请输入当前密码",
+      "googleHint": "如果您使用Google账号注册，可以不输入密码直接注销。",
+      "confirmBtn": "确认注销",
+      "wrongPassword": "密码不正确。",
+      "passwordRequired": "请输入密码。"
     }
   },
   "nav": {

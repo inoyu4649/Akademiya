@@ -37,6 +37,9 @@ export const authApi = {
     newPassword?: string;
   }) => client.patch<AuthUser>("/auth/profile", data),
 
+  deleteAccount: (password?: string) =>
+    client.delete("/auth/account", { data: { password } }),
+
   oauthExchange: (code: string) =>
     axios.post<AuthResponse>("/api/auth/oauth-exchange", { code }, { withCredentials: true }),
 

@@ -97,6 +97,17 @@
       "countryLabel": "Country of Residence",
       "phoneLabel": "Phone Number",
       "submitButton": "Complete Setup"
+    },
+    "deleteAccount": {
+      "openBtn": "Delete Account",
+      "title": "Delete Account",
+      "warning": "This action is permanent. All your data (assignments, submissions, comments, etc.) will be deleted and cannot be recovered.",
+      "passwordLabel": "Confirm Password",
+      "passwordPlaceholder": "Enter your current password",
+      "googleHint": "If you signed up with Google, you can delete your account without a password.",
+      "confirmBtn": "Confirm Deletion",
+      "wrongPassword": "Incorrect password.",
+      "passwordRequired": "Please enter your password."
     }
   },
   "nav": {

@@ -369,6 +369,56 @@ router.patch("/profile", requireAuth, async (req, res) => {
   }
 });
 
+// ─── DELETE /account — 회원 탈퇴 ─────────────────────────────────────────────
+router.delete("/account", requireAuth, async (req, res) => {
+  const { password } = req.body as { password?: string };
+  const userId = req.user!.id;
+
+  const conn = await pool.getConnection();
+  try {
+    const [rows] = await conn.query(
+      "SELECT password_hash FROM users WHERE id = ?",
+      [userId]
+    );
+    const users = rows as { password_hash: string | null }[];
+    if (!users.length) {
+      res.status(404).json({ error: "USER_NOT_FOUND" });
+      return;
+    }
+
+    // 비밀번호 계정: 재확인 필수
+    if (users[0].password_hash) {
+      if (!password) {
+        res.status(400).json({ error: "PASSWORD_REQUIRED" });
+        return;
+      }
+      const valid = await bcrypt.compare(password, users[0].password_hash);
+      if (!valid) {
+        res.status(401).json({ error: "WRONG_PASSWORD" });
+        return;
+      }
+    }
+
+    await conn.beginTransaction();
+    // FK RESTRICT 컬럼을 먼저 NULL로 교체 (삭제 전 제약 해소)
+    await conn.execute("UPDATE organizations       SET owner_id    = NULL WHERE owner_id    = ?", [userId]);
+    await conn.execute("UPDATE classes             SET owner_id    = NULL WHERE owner_id    = ?", [userId]);
+    await conn.execute("UPDATE assignments         SET creator_id  = NULL WHERE creator_id  = ?", [userId]);
+    await conn.execute("UPDATE report_escalations  SET escalated_by = NULL WHERE escalated_by = ?", [userId]);
+    // 사용자 삭제 — FK ON DELETE CASCADE 항목은 자동 삭제
+    await conn.execute("DELETE FROM users WHERE id = ?", [userId]);
+    await conn.commit();
+
+    res.clearCookie(REFRESH_COOKIE, { path: "/api/auth" });
+    res.json({ ok: true });
+  } catch (e) {
+    try { await conn.rollback(); } catch { /* ignore */ }
+    throw e;
+  } finally {
+    try { conn.release(); } catch { /* ignore */ }
+  }
+});
+
 // ─── Google OAuth ─────────────────────────────────────────────────────────────
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"], session: false }));
 
