@@ -5,7 +5,7 @@ WORKDIR /app
 
 # 의존성 설치 (캐시 레이어 분리)
 COPY package.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # 소스 복사 및 TypeScript 컴파일
 COPY . .
@@ -18,7 +18,7 @@ WORKDIR /app
 
 # 프로덕션 의존성만 설치
 COPY package.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev --legacy-peer-deps
 
 # 빌드 결과 복사
 COPY --from=builder /app/dist ./dist
