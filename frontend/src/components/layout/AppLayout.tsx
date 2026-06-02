@@ -322,6 +322,11 @@ export default function AppLayout() {
           )}
         </nav>
 
+        {/* ── Version badge ── */}
+        <div className={styles.versionBadge}>
+          Akademiya Web App version 1.0
+        </div>
+
         <div className={styles.sidebarBottom}>
           <NavLink
             to="/profile"
