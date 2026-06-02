@@ -5,7 +5,7 @@ WORKDIR /app
 
 RUN npm install -g pnpm@11.5.0
 
-COPY package.json ./
+COPY package.json pnpm-workspace.yaml ./
 RUN pnpm install --no-frozen-lockfile
 
 COPY . .
