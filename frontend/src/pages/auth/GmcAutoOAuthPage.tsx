@@ -10,13 +10,11 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/auth.store";
 import { authApi } from "../../api/auth.api";
 import client from "../../api/client";
 
 export default function GmcAutoOAuthPage() {
-  const { t }                 = useTranslation();
   const navigate              = useNavigate();
   const [searchParams]        = useSearchParams();
   const { user, initialized, setAuth, setInitialized } = useAuthStore();
