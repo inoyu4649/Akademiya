@@ -144,6 +144,7 @@
       "description": "Enter the 4-letter organization code.",
       "submitBtn": "Request to Join",
       "success": "Join request submitted. You can access the organization after admin approval.",
+      "autoApproved": "School email verified — you have been joined automatically!",
       "notFound": "Organization not found.",
       "alreadyMember": "You are already a member of this organization.",
       "alreadyPending": "You already have a pending join request for this organization.",

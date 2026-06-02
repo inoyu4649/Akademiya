@@ -77,6 +77,22 @@ router.post("/register", async (req, res) => {
     );
     const userId = (result as { insertId: number }).insertId;
 
+    // ── 학교 이메일 도메인 자동 조직 가입 ────────────────────────────
+    // 승인된 조직 중 google_domain이 사용자 이메일 도메인과 일치하면 즉시 멤버 추가
+    const emailDomain = email.toLowerCase().split("@")[1];
+    if (emailDomain) {
+      const [matchingOrgs] = await pool.query(
+        "SELECT id FROM organizations WHERE google_domain = ? AND status = 'approved'",
+        [emailDomain]
+      );
+      for (const org of (matchingOrgs as { id: number }[])) {
+        await pool.query(
+          "INSERT IGNORE INTO org_members (org_id, user_id, permission) VALUES (?, ?, 0)",
+          [org.id, userId]
+        );
+      }
+    }
+
     const accessToken = generateAccessToken({ id: userId, email: email.toLowerCase(), role: "user" });
     const refreshToken = generateRefreshToken();
     await pool.query(

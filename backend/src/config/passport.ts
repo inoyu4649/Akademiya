@@ -35,8 +35,25 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             "INSERT INTO users (email, display_name, google_id, role) VALUES (?, ?, ?, 'user')",
             [email, displayName, profile.id]
           );
+          const newUserId = (result as { insertId: number }).insertId;
+
+          // ── 학교 이메일 도메인 자동 조직 가입 ──────────────────────
+          const emailDomain = email.toLowerCase().split("@")[1];
+          if (emailDomain) {
+            const [matchingOrgs] = await pool.query(
+              "SELECT id FROM organizations WHERE google_domain = ? AND status = 'approved'",
+              [emailDomain]
+            );
+            for (const org of (matchingOrgs as { id: number }[])) {
+              await pool.query(
+                "INSERT IGNORE INTO org_members (org_id, user_id, permission) VALUES (?, ?, 0)",
+                [org.id, newUserId]
+              );
+            }
+          }
+
           const newUser = {
-            id: (result as { insertId: number }).insertId,
+            id: newUserId,
             email,
             display_name: displayName,
             google_id: profile.id,

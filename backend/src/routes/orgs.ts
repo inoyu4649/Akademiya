@@ -99,7 +99,7 @@ router.post("/join", requireAuth, async (req, res) => {
   }
 
   const [orgs] = await pool.execute(
-    "SELECT id, name FROM organizations WHERE code = ? AND status = 'approved'",
+    "SELECT id, name, google_domain FROM organizations WHERE code = ? AND status = 'approved'",
     [cleanCode]
   ) as any[];
   if (!(orgs as any[]).length) {
@@ -117,6 +117,21 @@ router.post("/join", requireAuth, async (req, res) => {
     return;
   }
 
+  // ── Google 학교 이메일 도메인 자동 가입 ─────────────────────────
+  // 조직에 google_domain이 설정되어 있고 사용자 이메일 도메인과 일치하면
+  // join_request 없이 org_members에 즉시 추가 (승인 불필요)
+  const orgDomain   = (org.google_domain as string | null)?.toLowerCase();
+  const userDomain  = req.user!.email.split("@")[1]?.toLowerCase() ?? "";
+  if (orgDomain && userDomain === orgDomain) {
+    await pool.execute(
+      "INSERT IGNORE INTO org_members (org_id, user_id, permission) VALUES (?, ?, 0)",
+      [org.id, userId]
+    );
+    res.status(201).json({ message: "org.join.autoApproved", orgName: org.name });
+    return;
+  }
+
+  // ── 일반 가입 신청 (관리자 승인 필요) ───────────────────────────
   const [existingReq] = await pool.execute(
     "SELECT id, status FROM org_join_requests WHERE org_id = ? AND user_id = ?",
     [org.id, userId]

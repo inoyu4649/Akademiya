@@ -22,9 +22,13 @@ export default function OrgJoinPage() {
 
     try {
       const res = await orgApi.join(code);
-      setSuccess(t("org.join.success"));
-      setTimeout(() => navigate("/"), 2000);
-      void res;
+      // 학교 이메일 도메인 일치 → 즉시 가입 / 아니면 관리자 승인 대기
+      if (res.data?.message === "org.join.autoApproved") {
+        setSuccess(t("org.join.autoApproved"));
+      } else {
+        setSuccess(t("org.join.success"));
+      }
+      setTimeout(() => navigate("/"), 2500);
     } catch (err: any) {
       const errCode = err?.response?.data?.error ?? "";
       if (errCode === "org.join.notFound") setError(t("org.join.notFound"));

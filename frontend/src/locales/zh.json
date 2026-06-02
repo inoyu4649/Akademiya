@@ -144,6 +144,7 @@
       "description": "请输入4位英文字母组织代码。",
       "submitBtn": "申请加入",
       "success": "申请已提交，管理员审核通过后即可加入。",
+      "autoApproved": "学校邮箱已验证，您已自动加入！",
       "notFound": "未找到该组织代码对应的组织。",
       "alreadyMember": "您已是该组织的成员。",
       "alreadyPending": "您已有该组织的待审核加入申请。",
