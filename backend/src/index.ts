@@ -41,6 +41,9 @@ const app: Express = express();
 const PORT = process.env.PORT ?? 3000;
 const isProd = process.env.NODE_ENV === "production";
 
+// nginx 리버스 프록시 뒤에서 X-Forwarded-For 신뢰 (rate-limit IP 식별)
+app.set("trust proxy", 1);
+
 // ── 보안 헤더 (Helmet) ─────────────────────────────────────────────────────
 app.use(
   helmet({
