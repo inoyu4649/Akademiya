@@ -3,6 +3,8 @@ FROM node:20-alpine AS builder
 WORKDIR /build
 
 COPY package.json ./
+# better-sqlite3 네이티브 빌드에 필요한 도구 설치
+RUN apk add --no-cache python3 make g++
 RUN npm install --legacy-peer-deps
 
 COPY . .
