@@ -3,13 +3,11 @@ FROM node:24.16.0-alpine AS builder
 
 WORKDIR /app
 
-RUN npm install -g pnpm@11.5.0
-
-COPY package.json pnpm-workspace.yaml ./
-RUN pnpm install --no-frozen-lockfile
+COPY package.json ./
+RUN npm install
 
 COPY . .
-RUN pnpm build
+RUN npm run build
 
 # ── Stage 2: Nginx Serve ─────────────────────────────────────────────────────
 FROM nginx:1.27-alpine AS production
