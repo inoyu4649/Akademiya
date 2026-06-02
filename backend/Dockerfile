@@ -4,7 +4,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # pnpm 설치
-RUN npm install -g pnpm
+RUN npm install -g pnpm@11.5.0
 
 # 의존성 설치 (캐시 레이어 분리)
 # pnpm-lock.yaml은 워크스페이스 루트에 있어 빌드 컨텍스트(./backend)에 없음 → no-frozen-lockfile
@@ -20,7 +20,7 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@11.5.0
 
 # 프로덕션 의존성만 설치
 COPY package.json ./

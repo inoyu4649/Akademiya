@@ -7,8 +7,9 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint"
   },
+  "packageManager": "pnpm@11.5.0",
   "engines": {
-    "node": ">=24.0.0",
-    "pnpm": ">=11.0.0"
+    "node": ">=20.0.0",
+    "pnpm": ">=11.5.0"
   }
 }
