@@ -14,7 +14,17 @@ RUN npm run build
 FROM node:24.16.0-alpine AS production
 WORKDIR /app
 
-# 프로덕션 의존성만 설치 (chromium은 런타임 필요)
+# Chromium 및 필수 라이브러리 설치 (Playwright용)
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    font-noto
+
+# 프로덕션 의존성만 설치
 COPY package.json ./
 RUN npm install --omit=dev --legacy-peer-deps
 
@@ -34,6 +44,10 @@ USER gmcauto
 EXPOSE 3001
 
 ENV PORT=3001 \
-    NODE_ENV=production
+    NODE_ENV=production \
+    CHROME_PATH=/usr/bin/chromium-browser \
+    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser \
+    # Chromium sandbox 비활성화 (컨테이너 비루트 환경)
+    CHROMIUM_FLAGS="--no-sandbox --disable-dev-shm-usage"
 
 CMD ["node", "server/index.js"]
