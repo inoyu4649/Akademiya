@@ -520,7 +520,8 @@
     "userNotFound": "No user found with that email.",
     "noViewers": "No additional viewers added.",
     "removeViewer": "Remove",
-    "activeSurveys": "Active Surveys"
+    "activeSurveys": "Active Surveys",
+    "notFound": "This survey was not found or has ended."
   },
   "stats": {
     "classTitle": "Class Stats",

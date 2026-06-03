@@ -519,7 +519,8 @@
     "userNotFound": "このメールアドレスのユーザーが見つかりません。",
     "noViewers": "追加された閲覧者はいません。",
     "removeViewer": "削除",
-    "activeSurveys": "実施中のアンケート"
+    "activeSurveys": "実施中のアンケート",
+    "notFound": "このアンケートは見つからないか、終了しています。"
   },
   "stats": {
     "classTitle": "クラス統計",

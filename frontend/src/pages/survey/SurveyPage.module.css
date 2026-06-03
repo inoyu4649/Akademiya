@@ -749,7 +749,77 @@
   margin-top: 28px;
 }
 
+/* ── 공개 설문 페이지 (비로그인) ── */
+.publicWrapper {
+  min-height: 100vh;
+  background: var(--bg-primary, #f5f5f5);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 16px 80px;
+}
+
+.publicCard {
+  background: var(--bg-card, #fff);
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,.08);
+  width: 100%;
+  max-width: 680px;
+  overflow: hidden;
+}
+
+.publicBrand {
+  background: var(--color-primary, #4f46e5);
+  padding: 18px 32px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.publicBrandLogo {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.publicBrandSub {
+  color: rgba(255,255,255,.75);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.publicCard .surveyHeader {
+  padding: 28px 32px 0;
+}
+
+.publicCard .respondForm {
+  padding: 0 32px 24px;
+}
+
+.publicCard .respondedBox {
+  margin: 24px 32px;
+}
+
+.publicCard .submitBtn {
+  margin-top: 24px;
+  width: 100%;
+}
+
+.publicFooter {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-tertiary, #aaa);
+  padding: 16px 32px 24px;
+  border-top: 1px solid var(--border-subtle, #eee);
+}
+
 @media (max-width: 768px) {
   .page { padding: 16px; }
   .ratingRow { flex-wrap: wrap; }
+  .publicWrapper { padding: 0 0 60px; }
+  .publicCard { border-radius: 0; min-height: 100vh; }
+  .publicCard .surveyHeader,
+  .publicCard .respondForm { padding-left: 20px; padding-right: 20px; }
+  .publicCard .respondedBox { margin-left: 20px; margin-right: 20px; }
 }

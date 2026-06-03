@@ -86,9 +86,13 @@ export const surveyApi = {
   publicDetail: (id: number) =>
     client.get<{ survey: Survey; questions: SurveyQuestion[] }>(`/surveys/public/${id}`).then((r) => r.data),
 
-  // 응답 제출
+  // 응답 제출 (로그인)
   respond: (id: number, answers: SurveyAnswer[]) =>
     client.post(`/surveys/${id}/respond`, { answers }),
+
+  // 공개 설문 응답 제출 (비로그인)
+  publicRespond: (id: number, answers: SurveyAnswer[]) =>
+    client.post(`/surveys/public/${id}/respond`, { answers }),
 
   // 통계
   stats: (id: number) =>

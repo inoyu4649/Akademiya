@@ -519,7 +519,8 @@
     "userNotFound": "未找到该邮箱对应的用户。",
     "noViewers": "暂无已添加的查看者。",
     "removeViewer": "删除",
-    "activeSurveys": "进行中的问卷"
+    "activeSurveys": "进行中的问卷",
+    "notFound": "该问卷不存在或已结束。"
   },
   "stats": {
     "classTitle": "班级统计",

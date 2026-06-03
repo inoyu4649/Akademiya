@@ -306,6 +306,66 @@ router.get("/public/:id", async (req, res) => {
   res.json({ survey: (rows as any[])[0], questions });
 });
 
+// ── POST /api/surveys/public/:id/respond — 공개 설문 응답 (비로그인 가능) ─────
+// NOTE: /:id/respond 보다 먼저 등록
+router.post("/public/:id/respond", async (req, res) => {
+  const surveyId = Number(req.params.id);
+  const { answers } = req.body as {
+    answers: Array<{ question_id: number; option_ids?: number[]; text_answer?: string }>;
+  };
+
+  const [rows] = await pool.execute(
+    "SELECT * FROM surveys WHERE id = ? AND scope_type = 'public' AND is_active = 1",
+    [surveyId]
+  ) as any[];
+  if (!(rows as any[]).length) {
+    res.status(404).json({ error: "notFound" });
+    return;
+  }
+  const survey = (rows as any[])[0];
+
+  if (survey.expires_at && new Date(survey.expires_at) < new Date()) {
+    res.status(400).json({ error: "survey.expired" });
+    return;
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // 비로그인 응답 → user_id = NULL (allow_anonymous 무관)
+    const [respIns] = await conn.execute(
+      "INSERT INTO survey_responses (survey_id, user_id) VALUES (?, NULL)",
+      [surveyId]
+    ) as any[];
+    const responseId = (respIns as any).insertId;
+
+    for (const ans of answers ?? []) {
+      if (ans.option_ids?.length) {
+        for (const optId of ans.option_ids) {
+          await conn.execute(
+            "INSERT INTO survey_response_items (response_id, question_id, option_id) VALUES (?, ?, ?)",
+            [responseId, ans.question_id, optId]
+          );
+        }
+      } else {
+        await conn.execute(
+          "INSERT INTO survey_response_items (response_id, question_id, text_answer) VALUES (?, ?, ?)",
+          [responseId, ans.question_id, ans.text_answer ?? null]
+        );
+      }
+    }
+
+    await conn.commit();
+    res.status(201).json({ message: "responded" });
+  } catch (e) {
+    try { await conn.rollback(); } catch { /* ignore */ }
+    throw e;
+  } finally {
+    try { conn.release(); } catch { /* ignore */ }
+  }
+});
+
 // ── GET /api/surveys/:id — 설문 상세 (로그인 필요) ───────────────────────────
 router.get("/:id", requireAuth, async (req, res) => {
   const userId   = req.user!.id;

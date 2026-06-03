@@ -33,6 +33,7 @@ import SurveyListPage from "./pages/survey/SurveyListPage";
 import SurveyCreatePage from "./pages/survey/SurveyCreatePage";
 import SurveyDetailPage from "./pages/survey/SurveyDetailPage";
 import SurveyStatsPage from "./pages/survey/SurveyStatsPage";
+import SurveyPublicPage from "./pages/survey/SurveyPublicPage";
 import "./App.css";
 
 const router = createBrowserRouter([
@@ -47,6 +48,9 @@ const router = createBrowserRouter([
     path: "/auth/complete-profile",
     element: <ProtectedRoute><CompleteProfilePage /></ProtectedRoute>,
   },
+
+  // ── 공개 설문 (비로그인 접근 가능) ──────────────────────────────
+  { path: "/surveys/public/:id", element: <SurveyPublicPage /> },
 
   // ── 앱 페이지 (사이드바 있음) ─────────────────────────────────
   {
