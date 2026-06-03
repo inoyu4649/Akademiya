@@ -44,7 +44,7 @@ export default function SurveyDetailPage() {
   function setAnswer(qId: number, patch: Partial<SurveyAnswer>) {
     setAnswers((prev) => ({
       ...prev,
-      [qId]: { question_id: qId, ...prev[qId], ...patch },
+      [qId]: { ...prev[qId], ...patch, question_id: qId },
     }));
   }
 
