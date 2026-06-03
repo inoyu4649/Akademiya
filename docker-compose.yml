@@ -64,6 +64,7 @@ services:
     environment:
       PORT: "3001"
       NODE_ENV: production
+      TZ: Asia/Seoul          # new Date().getHours() 등이 KST 기준으로 동작
       # Akademiya OAuth 연동 설정
       AKADEMIYA_API_URL: "http://backend:3000/api"
     extra_hosts:

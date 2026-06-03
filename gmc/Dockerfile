@@ -14,7 +14,9 @@ FROM node:24.16.0-alpine AS production
 WORKDIR /app
 
 # Chromium 및 필수 라이브러리 설치 (Playwright reCAPTCHA용)
+# tzdata: Alpine에서 TZ 환경변수(KST) 적용에 필요
 RUN apk add --no-cache \
+    tzdata \
     chromium \
     nss \
     freetype \
@@ -44,6 +46,7 @@ EXPOSE 3001
 
 ENV PORT=3001 \
     NODE_ENV=production \
+    TZ=Asia/Seoul \
     CHROME_PATH=/usr/bin/chromium-browser \
     PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser \
     CHROMIUM_FLAGS="--no-sandbox --disable-dev-shm-usage"
