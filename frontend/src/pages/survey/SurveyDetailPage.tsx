@@ -255,6 +255,9 @@ export default function SurveyDetailPage() {
                 {q.title}
                 {q.required === 1 && <span className={styles.requiredMark}>*</span>}
               </div>
+              {q.description && (
+                <p className={styles.questionDesc}>{q.description}</p>
+              )}
 
               {q.type === "single" && q.options?.map((opt) => (
                 <label key={opt.id} className={styles.optLabel}>

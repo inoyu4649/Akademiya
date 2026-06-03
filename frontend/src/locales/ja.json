@@ -477,6 +477,7 @@
     "type_rating": "評点",
     "required": "必須",
     "questionTitlePlaceholder": "設問の内容を入力してください",
+    "questionDescPlaceholder": "設問の説明を入力してください（任意）",
     "option": "選択肢",
     "addOption": "選択肢を追加",
     "ratingHint": "1〜5から選択（回答時）",

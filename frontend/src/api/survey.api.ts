@@ -1,12 +1,13 @@
 import client from "./client";
 
 export interface SurveyQuestion {
-  id:       number;
-  order_num: number;
-  type:     "single" | "multiple" | "text" | "rating";
-  title:    string;
-  required: number;
-  options?: SurveyOption[];
+  id:          number;
+  order_num:   number;
+  type:        "single" | "multiple" | "text" | "rating";
+  title:       string;
+  description: string | null;
+  required:    number;
+  options?:    SurveyOption[];
 }
 
 export interface SurveyOption {
@@ -61,6 +62,7 @@ export const surveyApi = {
     questions: Array<{
       type: string;
       title: string;
+      description?: string;
       required?: boolean;
       options?: string[];
     }>;

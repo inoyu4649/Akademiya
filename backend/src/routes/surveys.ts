@@ -39,7 +39,7 @@ async function canViewStats(
 /** 문항 + 선택지 로드 헬퍼 */
 async function loadQuestions(surveyId: number): Promise<any[]> {
   const [questions] = await pool.execute(
-    "SELECT q.id, q.order_num, q.type, q.title, q.required FROM survey_questions q WHERE q.survey_id = ? ORDER BY q.order_num",
+    "SELECT q.id, q.order_num, q.type, q.title, q.description, q.required FROM survey_questions q WHERE q.survey_id = ? ORDER BY q.order_num",
     [surveyId]
   ) as any[];
   for (const q of questions as any[]) {
@@ -126,8 +126,8 @@ router.post("/", requireAuth, async (req, res) => {
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
       const [qIns] = await conn.execute(
-        "INSERT INTO survey_questions (survey_id, order_num, type, title, required) VALUES (?, ?, ?, ?, ?)",
-        [surveyId, i, q.type, q.title?.trim(), q.required ? 1 : 0]
+        "INSERT INTO survey_questions (survey_id, order_num, type, title, description, required) VALUES (?, ?, ?, ?, ?, ?)",
+        [surveyId, i, q.type, q.title?.trim(), q.description?.trim() || null, q.required ? 1 : 0]
       ) as any[];
       const qId = (qIns as any).insertId;
 

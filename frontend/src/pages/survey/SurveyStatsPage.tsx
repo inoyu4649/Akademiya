@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import { surveyApi, type Survey } from "../../api/survey.api";
 import styles from "./SurveyPage.module.css";
+import sStyles from "../stats/StatsPage.module.css";
 
 type ViewMode = "chart" | "table";
 
@@ -112,32 +113,34 @@ export default function SurveyStatsPage() {
     URL.revokeObjectURL(url);
   }
 
-  if (loading) return <div className={styles.page}><p className={styles.empty}>{t("common.loading")}</p></div>;
+  if (loading) return <div className={sStyles.loading}><p>{t("common.loading")}</p></div>;
   if (!survey) return null;
 
   return (
-    <div className={styles.page}>
+    <div className={sStyles.page}>
       {toast && <div className={styles.toast}>{toast}</div>}
 
-      <button className={styles.backBtn} onClick={() => navigate(`/surveys/${surveyId}`)}>
+      <button className={sStyles.backBtn} onClick={() => navigate(`/surveys/${surveyId}`)}>
         ← {t("common.back")}
       </button>
 
       {/* 헤더 */}
-      <div className={styles.statsHeader}>
+      <div className={sStyles.header}>
         <div>
-          <h1 className={styles.pageTitle}>{t("survey.statsTitle")}</h1>
-          <p className={styles.surveyDesc}>{survey.title}</p>
-          <p className={styles.totalCount}>{t("survey.totalResponses", { count: total })}</p>
+          <h1 className={sStyles.pageTitle}>{t("survey.statsTitle")}</h1>
+          <p className={styles.surveyDesc} style={{ marginBottom: 4 }}>{survey.title}</p>
+          <p className={styles.totalCount} style={{ marginBottom: 0 }}>
+            {t("survey.totalResponses", { count: total })}
+          </p>
         </div>
-        <div className={styles.statsActions}>
+        <div className={sStyles.headerRight}>
           <button
             className={styles.viewToggleBtn}
             onClick={() => setViewMode((m) => m === "chart" ? "table" : "chart")}
           >
             {viewMode === "chart" ? t("survey.viewTable") : t("survey.viewChart")}
           </button>
-          <button className={styles.downloadCsvBtn} onClick={downloadCSV}>
+          <button className={sStyles.downloadBtn} onClick={downloadCSV}>
             ⬇ {t("survey.downloadCsv")}
           </button>
         </div>
@@ -146,12 +149,15 @@ export default function SurveyStatsPage() {
       {/* 문항별 통계 */}
       <div className={styles.statsList}>
         {questions.map((q: any, qi: number) => (
-          <div key={q.id} className={styles.statCard}>
+          <div key={q.id} className={sStyles.chartCard}>
             <div className={styles.statQLabel}>
               <span className={styles.questionNum}>{qi + 1}.</span>
               {q.title}
               <span className={styles.typeTag}>{t(`survey.type_${q.type}`)}</span>
             </div>
+            {q.description && (
+              <p className={styles.questionDesc} style={{ marginBottom: 12 }}>{q.description}</p>
+            )}
 
             {/* 단일/복수 선택 */}
             {(q.type === "single" || q.type === "multiple") && (
@@ -174,6 +180,12 @@ export default function SurveyStatsPage() {
                         formatter={(v: any, _: any, props: any) =>
                           [`${v}명 (${props.payload.pct}%)`, t("stats.submitted")]
                         }
+                        contentStyle={{
+                          background: "var(--bg-panel)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "var(--radius-sm)",
+                          fontSize: 12,
+                        }}
                       />
                       <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                         {(q.options ?? []).map((_: any, i: number) => (
@@ -213,7 +225,7 @@ export default function SurveyStatsPage() {
             {q.type === "text" && (
               <div className={styles.textAnswers}>
                 {(q.text_answers ?? []).length === 0 ? (
-                  <p className={styles.empty}>{t("survey.noTextAnswers")}</p>
+                  <p className={sStyles.empty}>{t("survey.noTextAnswers")}</p>
                 ) : (
                   (q.text_answers as string[]).map((ans, i) => (
                     <div key={i} className={styles.textAnswer}>{ans}</div>
@@ -231,7 +243,6 @@ export default function SurveyStatsPage() {
                   </span>
                   <span className={styles.ratingCount}>({q.rating_stats.count}명)</span>
                 </div>
-                {/* 분포 차트 */}
                 {viewMode === "chart" && q.rating_distribution?.length > 0 && (
                   <div className={styles.chartWrap}>
                     <ResponsiveContainer width="100%" height={160}>
@@ -244,8 +255,16 @@ export default function SurveyStatsPage() {
                       >
                         <XAxis dataKey="name" tick={{ fontSize: 13 }} />
                         <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                        <Tooltip formatter={(v: any) => [`${v}명`, t("stats.submitted")]} />
-                        <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                        <Tooltip
+                          formatter={(v: any) => [`${v}명`, t("stats.submitted")]}
+                          contentStyle={{
+                            background: "var(--bg-panel)",
+                            border: "1px solid var(--border)",
+                            borderRadius: "var(--radius-sm)",
+                            fontSize: 12,
+                          }}
+                        />
+                        <Bar dataKey="count" fill="var(--accent)" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -258,8 +277,8 @@ export default function SurveyStatsPage() {
 
       {/* 통계 조회 권한 관리 */}
       {isCreator && (
-        <div className={styles.viewerSection}>
-          <h2 className={styles.sectionTitle}>{t("survey.statViewers")}</h2>
+        <div className={sStyles.tableCard}>
+          <h2 className={sStyles.sectionTitle}>{t("survey.statViewers")}</h2>
           <div className={styles.addViewerRow}>
             <input
               className={styles.input}
@@ -273,7 +292,7 @@ export default function SurveyStatsPage() {
             </button>
           </div>
           {viewers.length === 0 ? (
-            <p className={styles.empty}>{t("survey.noViewers")}</p>
+            <p className={sStyles.empty}>{t("survey.noViewers")}</p>
           ) : (
             <div className={styles.viewerList}>
               {viewers.map((v) => (

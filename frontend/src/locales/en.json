@@ -477,6 +477,7 @@
     "type_rating": "Rating",
     "required": "Required",
     "questionTitlePlaceholder": "Enter question",
+    "questionDescPlaceholder": "Enter question description (optional)",
     "option": "Option",
     "addOption": "Add Option",
     "ratingHint": "Respondents choose 1–5",

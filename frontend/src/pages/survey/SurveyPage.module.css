@@ -281,6 +281,15 @@
   margin-left: 2px;
 }
 
+.questionDesc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-top: -6px;
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+}
+
 .optLabel {
   display: flex;
   align-items: center;
@@ -881,24 +890,26 @@
 }
 
 .publicBrand {
-  background: var(--color-primary, #4f46e5);
-  padding: 18px 32px;
+  background: var(--accent);
+  padding: 14px 32px;
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
 }
 
-.publicBrandLogo {
-  color: #fff;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+.publicBrandImg {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+  /* 어두운 accent 배경 위에서 밝게 보이도록 */
+  filter: brightness(0) invert(1);
 }
 
 .publicBrandSub {
-  color: rgba(255,255,255,.75);
-  font-size: 13px;
-  font-weight: 400;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .publicCard .surveyHeader {

@@ -120,7 +120,7 @@ export default function SurveyPublicPage() {
       <div className={styles.publicCard}>
         {/* 브랜드 헤더 */}
         <div className={styles.publicBrand}>
-          <span className={styles.publicBrandLogo}>Akademiya</span>
+          <img src="/logo.png" alt="Akademiya" className={styles.publicBrandImg} />
           <span className={styles.publicBrandSub}>Survey</span>
         </div>
 
@@ -179,6 +179,9 @@ export default function SurveyPublicPage() {
                     <span className={styles.requiredMark}>*</span>
                   )}
                 </div>
+                {q.description && (
+                  <p className={styles.questionDesc}>{q.description}</p>
+                )}
 
                 {/* 단일 선택 */}
                 {q.type === "single" &&

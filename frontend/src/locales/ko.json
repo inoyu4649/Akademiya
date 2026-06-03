@@ -477,6 +477,7 @@
     "type_rating": "평점",
     "required": "필수",
     "questionTitlePlaceholder": "문항 내용을 입력하세요",
+    "questionDescPlaceholder": "문항 설명을 입력하세요 (선택)",
     "option": "선택지",
     "addOption": "선택지 추가",
     "ratingHint": "1~5 중 선택 (응답 시)",

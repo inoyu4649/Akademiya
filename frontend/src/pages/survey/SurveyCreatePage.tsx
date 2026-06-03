@@ -11,6 +11,7 @@ type QType = "single" | "multiple" | "text" | "rating";
 interface QuestionDraft {
   type: QType;
   title: string;
+  description: string;
   required: boolean;
   options: string[];
 }
@@ -18,6 +19,7 @@ interface QuestionDraft {
 const defaultQuestion = (): QuestionDraft => ({
   type: "single",
   title: "",
+  description: "",
   required: false,
   options: ["", ""],
 });
@@ -122,6 +124,7 @@ export default function SurveyCreatePage() {
         questions: questions.map((q) => ({
           type: q.type,
           title: q.title.trim(),
+          description: q.description.trim() || undefined,
           required: q.required,
           options: ["single", "multiple"].includes(q.type)
             ? q.options.filter((o) => o.trim())
@@ -291,6 +294,13 @@ export default function SurveyCreatePage() {
                 onChange={(e) => updateQuestion(qi, { title: e.target.value })}
                 placeholder={t("survey.questionTitlePlaceholder")}
                 maxLength={500}
+              />
+              <textarea
+                className={styles.textarea}
+                rows={2}
+                value={q.description}
+                onChange={(e) => updateQuestion(qi, { description: e.target.value })}
+                placeholder={t("survey.questionDescPlaceholder")}
               />
 
               {["single", "multiple"].includes(q.type) && (
