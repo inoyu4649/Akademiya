@@ -54,6 +54,17 @@ function loadEnv(envPath) {
 const envFile = resolve(__dirname, '../.env');
 loadEnv(envFile);
 
+// ── host.docker.internal → localhost 자동 변환 ────────────────────────────
+// 이 스크립트는 호스트에서 직접 실행. 컨테이너 내부 주소는 해석 불가.
+if (
+  process.env.GMC_DB_HOST === 'host.docker.internal' ||
+  process.env.GMC_DB_HOST === undefined
+) {
+  process.env.GMC_DB_HOST = '127.0.0.1';
+  console.warn('⚠️  GMC_DB_HOST=host.docker.internal → 127.0.0.1 으로 자동 변환 (호스트 실행 모드)');
+  console.warn('   다른 호스트를 사용하려면: GMC_DB_HOST=<IP> node scripts/migrate-sqlite-to-mysql.js\n');
+}
+
 // ── 인수 파싱 ─────────────────────────────────────────────────────────────
 const sqlitePath = process.argv[2] ? resolve(process.argv[2]) : resolve(__dirname, '../data/gmcauto.db');
 
@@ -89,12 +100,32 @@ const pool = mysql.createPool({
   timezone:         '+09:00',
 });
 
-// ── 헬퍼: UNIX timestamp(ms 또는 s) → MySQL DATETIME 문자열 ───────────────
+// ── 헬퍼: SQLite 타임스탬프 → MySQL DATETIME 문자열 ──────────────────────
+// SQLite는 세 가지 형식 혼용:
+//   1. 정수 ms  (e.g. 1716796800000)
+//   2. 정수 s   (e.g. 1716796800)
+//   3. 텍스트   (e.g. "2026-05-27 09:00:00", "2026-05-27T09:00:00.000Z")
 function tsToDatetime(ts) {
-  if (!ts) return null;
-  // SQLite는 ms 또는 s 단위 혼용 가능 — 1e12 이상이면 ms
+  if (ts === null || ts === undefined || ts === '') return null;
+
+  // 문자열 형식 처리
+  if (typeof ts === 'string') {
+    // 이미 MySQL DATETIME 형식 "YYYY-MM-DD HH:MM:SS"
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(ts)) return ts;
+    // ISO 8601 등 파싱 가능한 형식
+    const d = new Date(ts);
+    if (!isNaN(d.getTime())) return d.toISOString().slice(0, 19).replace('T', ' ');
+    // 숫자 문자열 (정수 timestamp)
+    const n = Number(ts);
+    if (!isNaN(n)) return tsToDatetime(n);
+    return null;
+  }
+
+  // 숫자: 1e12(=2001-09-09) 이상이면 ms, 미만이면 s
   const ms = ts > 1e12 ? ts : ts * 1000;
-  return new Date(ms).toISOString().slice(0, 19).replace('T', ' ');
+  const d = new Date(ms);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 19).replace('T', ' ');
 }
 
 // ── 헬퍼: 학번으로 학년/반/번호 파싱 ─────────────────────────────────────
