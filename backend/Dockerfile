@@ -35,4 +35,5 @@ USER akademiya
 
 EXPOSE 3000
 
-CMD ["node", "dist/index.js"]
+# 마이그레이션 실행 후 서버 시작 (MySQL 준비 안 된 경우 최대 5회 재시도)
+CMD ["sh", "-c", "until node dist/db/migrate.js; do echo '[migrate] retry in 5s...'; sleep 5; done && node dist/index.js"]
