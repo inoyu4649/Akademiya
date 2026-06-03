@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, LabelList, Cell,
 } from "recharts";
-import { surveyApi, type Survey, type SurveyQuestion } from "../../api/survey.api";
+import { surveyApi, type Survey } from "../../api/survey.api";
 import styles from "./SurveyPage.module.css";
 
 type ViewMode = "chart" | "table";
@@ -171,7 +171,7 @@ export default function SurveyStatsPage() {
                       <YAxis type="category" dataKey="name" width={160}
                         tick={{ fontSize: 13, fill: "var(--text-primary)" }} />
                       <Tooltip
-                        formatter={(v: number, _: any, props: any) =>
+                        formatter={(v: any, _: any, props: any) =>
                           [`${v}명 (${props.payload.pct}%)`, t("stats.submitted")]
                         }
                       />
@@ -182,7 +182,7 @@ export default function SurveyStatsPage() {
                         <LabelList
                           dataKey="pct"
                           position="right"
-                          formatter={(v: number) => `${v}%`}
+                          formatter={(v: any) => `${v}%`}
                           style={{ fontSize: 12, fill: "var(--text-secondary)" }}
                         />
                       </Bar>
@@ -244,7 +244,7 @@ export default function SurveyStatsPage() {
                       >
                         <XAxis dataKey="name" tick={{ fontSize: 13 }} />
                         <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                        <Tooltip formatter={(v: number) => [`${v}명`, t("stats.submitted")]} />
+                        <Tooltip formatter={(v: any) => [`${v}명`, t("stats.submitted")]} />
                         <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
