@@ -44,13 +44,12 @@
 
 .header .version {
   font-size: 11px;
-  color: var(--text-secondary);
   background: var(--primary-light);
   color: var(--primary);
   padding: 2px 8px;
   border-radius: 10px;
   font-weight: 600;
-  border: 1px solid rgba(79, 195, 247, 0.3);
+  border: 1px solid var(--primary-light);
 }
 
 .header-right {
@@ -194,7 +193,7 @@
 
 .btn-primary {
   background: var(--primary);
-  color: #0a1929;
+  color: var(--btn-primary-text, #ffffff);
 }
 
 .btn-primary:hover:not(:disabled) {

@@ -125,7 +125,11 @@ function App() {
       {/* 푸터 */}
       <footer className="footer">
         <a href="https://akademiya.kr" target="_blank" rel="noopener noreferrer" className="powered-by-link">
-          <img src="/poweredBy_dark.png" alt="Powered by Akademiya" className="powered-by-img" />
+          <img
+            src={theme === 'light' ? '/poweredBy_light.png' : '/poweredBy_dark.png'}
+            alt="Powered by Akademiya"
+            className="powered-by-img"
+          />
         </a>
         {t('app.unofficial')}<br />
         <strong style={{ color: 'var(--warning)' }}>{t('app.securityWarning')}</strong>

@@ -154,13 +154,14 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
       <div className="card login-card">
         {/* 로고 */}
         <div className="login-logo">
-          <img
-            src="/logo_gmc.png"
-            alt="GMCAuto"
-            style={{ height: '48px', objectFit: 'contain' }}
-            onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block' }}
-          />
-          <h1 style={{ display: 'none' }}>{t('app.title')}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '6px' }}>
+            <img
+              src="/logo_gmc.png"
+              alt="GMCAuto"
+              style={{ height: '48px', objectFit: 'contain' }}
+            />
+            <h1>GMCAuto 2</h1>
+          </div>
           <p>{t('app.subtitle')}</p>
         </div>
 

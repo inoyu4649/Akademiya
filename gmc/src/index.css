@@ -36,6 +36,9 @@
   --radius:         8px;
   --radius-sm:      4px;
 
+  /* 라이트 모드에서는 버튼 텍스트 흰색 */
+  --btn-primary-text: #ffffff;
+
   color-scheme: light;
 }
 
@@ -67,6 +70,9 @@
 
   --shadow:         0 1px 3px rgba(0,0,0,0.40);
   --shadow-lg:      0 10px 15px -3px rgba(0,0,0,0.40);
+
+  /* 다크 모드에서는 밝은 primary(#60a5fa) 위에 어두운 텍스트 */
+  --btn-primary-text: #0a1929;
 
   color-scheme: dark;
 }

@@ -154,9 +154,9 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
             src="/logo_gmc.png"
             alt="GMCAuto"
             style={{ height: '30px', objectFit: 'contain' }}
-            onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block' }}
           />
-          <h1 style={{ display: 'none' }}>{t('app.title')}</h1>
+          <h1>GMCAuto 2</h1>
+          <span className="version">v2.6</span>
         </div>
         <div className="header-right">
           <button
