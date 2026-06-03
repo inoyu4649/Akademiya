@@ -19,6 +19,14 @@ export const pool = mysql.createPool({
   ssl:              process.env.GMC_DB_SSL === 'true' ? {} : undefined,
 });
 
+// 모든 새 커넥션에 KST 세션 타임존 설정
+// → MySQL NOW(), CURRENT_TIMESTAMP 등이 UTC+9(KST) 기준으로 동작
+pool.on('connection', (connection) => {
+  connection.query("SET time_zone = '+09:00'", (err) => {
+    if (err) console.warn('[DB] time_zone 설정 실패:', err.message);
+  });
+});
+
 // ========== 테이블 초기화 ==========
 export async function initDb() {
   // 사용자 테이블 (Going HAFS 계정 + Akademiya 연동)
