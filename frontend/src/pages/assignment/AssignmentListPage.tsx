@@ -20,6 +20,11 @@ function isPast(due_at: string | null): boolean {
   return new Date(due_at) < new Date();
 }
 
+/** UTC due_at 을 조직 타임존으로 포맷 */
+function formatDue(due_at: string, timezone: string): string {
+  return new Date(due_at).toLocaleString(undefined, { timeZone: timezone });
+}
+
 export default function AssignmentListPage() {
   const { t } = useTranslation();
   const { classId } = useParams<{ classId: string }>();
@@ -28,6 +33,7 @@ export default function AssignmentListPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [myPerm, setMyPerm]   = useState(0);
   const [className, setClassName] = useState("");
+  const [timezone, setTimezone] = useState("UTC");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,6 +44,7 @@ export default function AssignmentListPage() {
       .then(([asgRes, clsRes]) => {
         setAssignments(asgRes.data.assignments);
         setMyPerm(asgRes.data.myPermission);
+        setTimezone(asgRes.data.timezone ?? "UTC");
         setClassName(clsRes.data.class.name);
       })
       .catch(() => navigate("/classes"))
@@ -76,7 +83,7 @@ export default function AssignmentListPage() {
               <div className={styles.itemMeta}>
                 {a.due_at ? (
                   <span className={`${styles.due} ${isPast(a.due_at) ? styles.duePast : ""}`}>
-                    {t("assignment.list.dueAt")}: {new Date(a.due_at).toLocaleString()}
+                    {t("assignment.list.dueAt")}: {formatDue(a.due_at, timezone)}
                   </span>
                 ) : (
                   <span className={styles.noDue}>{t("assignment.detail.noDue")}</span>

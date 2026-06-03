@@ -20,6 +20,55 @@ async function getClassPermission(userId: number, classId: number): Promise<numb
   return (rows as any[])[0].permission as number;
 }
 
+/** 반(classId)의 조직 타임존 조회 */
+async function getClassTimezone(classId: number): Promise<string> {
+  const [rows] = await pool.execute(
+    "SELECT o.timezone FROM classes c JOIN organizations o ON o.id = c.org_id WHERE c.id = ?",
+    [classId]
+  ) as any[];
+  return (rows as any[])[0]?.timezone ?? "UTC";
+}
+
+/**
+ * 조직 타임존 기준 나이브 datetime 문자열("YYYY-MM-DDTHH:mm" 또는 공백 구분)을
+ * UTC ISO 문자열로 변환. MySQL DATETIME 저장에 사용.
+ * (외부 라이브러리 없이 Node.js 내장 Intl API 사용)
+ */
+function orgLocalToUtc(localStr: string, timezone: string): string | null {
+  if (!localStr?.trim()) return null;
+  const cleaned = localStr.trim().replace(" ", "T");
+  const m = cleaned.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (!m) return null;
+  const [, yr, mo, da, hr, mi, sc = "00"] = m;
+
+  // 입력값을 UTC로 취급하는 임시 Date
+  const fakeUtc = new Date(`${yr}-${mo}-${da}T${hr}:${mi}:${sc}Z`);
+
+  // fakeUtc 시각을 조직 타임존으로 표현했을 때의 각 파트 구하기
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric", month: "numeric", day: "numeric",
+    hour: "numeric", minute: "numeric", second: "numeric",
+    hour12: false,
+  });
+  const parts: Record<string, number> = {};
+  for (const { type, value } of fmt.formatToParts(fakeUtc)) {
+    if (type !== "literal") parts[type] = parseInt(value);
+  }
+  // hour12:false에서 자정이 24로 나오는 경우 대응
+  const tzMoment = Date.UTC(
+    parts.year, parts.month - 1, parts.day,
+    (parts.hour ?? 0) % 24, parts.minute, parts.second
+  );
+
+  // offsetMs = fakeUtc - tzMoment  →  -(UTC+9의 경우 +9h) = -9h
+  const offsetMs = fakeUtc.getTime() - tzMoment;
+
+  // 실제 UTC = fakeUtc + offsetMs  (= 입력 로컬 - 타임존 오프셋)
+  const actualUtc = new Date(fakeUtc.getTime() + offsetMs);
+  return actualUtc.toISOString().slice(0, 19);
+}
+
 // ── POST /api/assignments — 과제 생성 (반장 전용) ────────────────────────────
 router.post("/", requireAuth, async (req, res) => {
   const { class_id, title, description, due_at } = req.body as Record<string, string | number>;
@@ -41,9 +90,13 @@ router.post("/", requireAuth, async (req, res) => {
     return;
   }
 
+  // 마감일을 조직 타임존 → UTC 로 변환
+  const timezone   = await getClassTimezone(classId);
+  const dueAtUtc   = due_at ? orgLocalToUtc(due_at.toString(), timezone) : null;
+
   const [insertResult] = await pool.execute(
     "INSERT INTO assignments (class_id, creator_id, title, description, due_at) VALUES (?, ?, ?, ?, ?)",
-    [classId, userId, title.toString().trim(), description?.toString().trim() || null, due_at || null]
+    [classId, userId, title.toString().trim(), description?.toString().trim() || null, dueAtUtc]
   ) as any[];
   const assignmentId = (insertResult as any).insertId as number;
 
@@ -92,7 +145,10 @@ router.get("/class/:classId", requireAuth, async (req, res) => {
     [userId, classId]
   ) as any[];
 
-  res.json({ assignments: rows, myPermission: perm });
+  // 조직 타임존을 목록 응답에 포함 (프론트 표시에 사용)
+  const timezone = await getClassTimezone(classId);
+
+  res.json({ assignments: rows, myPermission: perm, timezone });
 });
 
 // ── GET /api/assignments/:id — 과제 상세 ─────────────────────────────────────
@@ -151,14 +207,22 @@ router.patch("/:id", requireAuth, async (req, res) => {
   ) as any[];
   if (!(rows as any[]).length) { res.status(404).json({ error: "notFound" }); return; }
 
-  const perm = await getClassPermission(userId, (rows as any[])[0].class_id);
+  const classId = (rows as any[])[0].class_id as number;
+  const perm = await getClassPermission(userId, classId);
   if (perm === null || perm < 1) { res.status(403).json({ error: "forbidden" }); return; }
+
+  // 마감일을 조직 타임존 → UTC 로 변환
+  const timezone = await getClassTimezone(classId);
 
   const updates: string[] = [];
   const params: (string | number | null)[] = [];
-  if (title?.trim())       { updates.push("title = ?");       params.push(title.trim()); }
-  if (description !== undefined) { updates.push("description = ?"); params.push(description?.trim() || null); }
-  if (due_at !== undefined)      { updates.push("due_at = ?");      params.push(due_at || null); }
+  if (title?.trim())            { updates.push("title = ?");       params.push(title.trim()); }
+  if (description !== undefined){ updates.push("description = ?"); params.push(description?.trim() || null); }
+  if (due_at !== undefined) {
+    const dueAtUtc = due_at ? orgLocalToUtc(due_at, timezone) : null;
+    updates.push("due_at = ?");
+    params.push(dueAtUtc);
+  }
 
   if (updates.length === 0) { res.json({ message: "nothing" }); return; }
 

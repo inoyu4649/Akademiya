@@ -56,7 +56,7 @@ export const assignmentApi = {
     client.post("/assignments", data),
 
   listByClass: (classId: number) =>
-    client.get<{ assignments: Assignment[]; myPermission: number }>(`/assignments/class/${classId}`),
+    client.get<{ assignments: Assignment[]; myPermission: number; timezone: string }>(`/assignments/class/${classId}`),
 
   detail: (id: number) =>
     client.get<{ assignment: Assignment; myPermission: number; mySubmission: Submission | null }>(

@@ -561,16 +561,27 @@ export default function AssignmentDetailPage() {
     setTimeout(() => setToast(""), 3000);
   }
 
+  /** UTC due_at 문자열을 조직 타임존 기준 datetime-local 입력값("YYYY-MM-DDTHH:mm")으로 변환 */
+  function utcToOrgLocal(utcStr: string, timezone: string): string {
+    const d = new Date(utcStr);
+    const fmt = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit",
+      hour12: false,
+    });
+    const parts: Record<string, string> = {};
+    for (const { type, value } of fmt.formatToParts(d)) parts[type] = value;
+    const hour = parts.hour === "24" ? "00" : parts.hour;
+    return `${parts.year}-${parts.month}-${parts.day}T${hour}:${parts.minute}`;
+  }
+
   function startEdit() {
     if (!assignment) return;
     setEditTitle(assignment.title);
     setEditDesc(assignment.description ?? "");
-    if (assignment.due_at) {
-      const d = new Date(assignment.due_at);
-      const pad = (n: number) => String(n).padStart(2, "0");
-      setEditDue(
-        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-      );
+    if (assignment.due_at && assignment.timezone) {
+      setEditDue(utcToOrgLocal(assignment.due_at, assignment.timezone));
     } else {
       setEditDue("");
     }
@@ -672,7 +683,10 @@ export default function AssignmentDetailPage() {
               <span>
                 {assignment.due_at ? (
                   <span className={pastDue ? styles.pastDue : styles.dueDate}>
-                    📅 {new Date(assignment.due_at).toLocaleString()}
+                    📅 {new Date(assignment.due_at).toLocaleString(
+                      undefined,
+                      assignment.timezone ? { timeZone: assignment.timezone } : undefined
+                    )}
                     {pastDue && ` (${t("assignment.detail.pastDueLabel")})`}
                   </span>
                 ) : (
