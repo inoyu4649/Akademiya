@@ -520,7 +520,22 @@
     "noViewers": "暂无已添加的查看者。",
     "removeViewer": "删除",
     "activeSurveys": "进行中的问卷",
-    "notFound": "该问卷不存在或已结束。"
+    "notFound": "该问卷不存在或已结束。",
+    "allowEdit": "允许修改回答",
+    "allowMultiple": "允许多次回答",
+    "publicAnonymousNote": "公开问卷始终以匿名方式回答。",
+    "editResponse": "修改回答",
+    "editingResponse": "正在修改回答。",
+    "updateResponse": "更新回答",
+    "editSuccess": "回答已更新。",
+    "editNotAllowed": "该问卷不允许修改回答。",
+    "noResponse": "未找到可修改的回答。",
+    "multipleAllowed": "该问卷允许多次回答。",
+    "badgeEdit": "可修改",
+    "badgeMultiple": "多次回答",
+    "downloadCsv": "下载CSV",
+    "viewChart": "图表显示",
+    "viewTable": "表格显示"
   },
   "stats": {
     "classTitle": "班级统计",

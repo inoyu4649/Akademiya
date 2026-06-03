@@ -521,7 +521,22 @@
     "noViewers": "No additional viewers added.",
     "removeViewer": "Remove",
     "activeSurveys": "Active Surveys",
-    "notFound": "This survey was not found or has ended."
+    "notFound": "This survey was not found or has ended.",
+    "allowEdit": "Allow response editing",
+    "allowMultiple": "Allow multiple responses",
+    "publicAnonymousNote": "Public surveys are always anonymous.",
+    "editResponse": "Edit Response",
+    "editingResponse": "You are editing your response.",
+    "updateResponse": "Update Response",
+    "editSuccess": "Your response has been updated.",
+    "editNotAllowed": "This survey does not allow response editing.",
+    "noResponse": "No response found to edit.",
+    "multipleAllowed": "This survey allows multiple responses.",
+    "badgeEdit": "Editable",
+    "badgeMultiple": "Multi-response",
+    "downloadCsv": "Download CSV",
+    "viewChart": "View Chart",
+    "viewTable": "View Table"
   },
   "stats": {
     "classTitle": "Class Stats",

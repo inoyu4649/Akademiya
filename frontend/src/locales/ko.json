@@ -521,7 +521,22 @@
     "noViewers": "추가된 조회자가 없습니다.",
     "removeViewer": "제거",
     "activeSurveys": "진행 중인 설문",
-    "notFound": "설문을 찾을 수 없거나 종료된 설문입니다."
+    "notFound": "설문을 찾을 수 없거나 종료된 설문입니다.",
+    "allowEdit": "응답 수정 허용",
+    "allowMultiple": "복수 응답 허용",
+    "publicAnonymousNote": "공개 설문은 항상 익명으로 응답됩니다.",
+    "editResponse": "응답 수정",
+    "editingResponse": "응답을 수정하는 중입니다.",
+    "updateResponse": "응답 업데이트",
+    "editSuccess": "응답이 수정되었습니다.",
+    "editNotAllowed": "이 설문은 응답 수정이 허용되지 않습니다.",
+    "noResponse": "제출한 응답이 없습니다.",
+    "multipleAllowed": "이 설문은 복수 응답이 허용됩니다.",
+    "badgeEdit": "수정 가능",
+    "badgeMultiple": "복수 응답",
+    "downloadCsv": "CSV 다운로드",
+    "viewChart": "그래프 보기",
+    "viewTable": "표 보기"
   },
   "stats": {
     "classTitle": "반 통계",

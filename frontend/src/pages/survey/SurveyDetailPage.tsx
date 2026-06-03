@@ -1,8 +1,26 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { surveyApi, type Survey, type SurveyQuestion, type SurveyAnswer } from "../../api/survey.api";
+import {
+  surveyApi,
+  type Survey, type SurveyQuestion, type SurveyAnswer, type MyAnswerItem,
+} from "../../api/survey.api";
 import styles from "./SurveyPage.module.css";
+
+/** myAnswers 배열 → answers 상태 변환 */
+function buildAnswerState(items: MyAnswerItem[]): Record<number, SurveyAnswer> {
+  const state: Record<number, SurveyAnswer> = {};
+  for (const item of items) {
+    const qId = item.question_id;
+    if (!state[qId]) state[qId] = { question_id: qId };
+    if (item.option_id != null) {
+      state[qId].option_ids = [...(state[qId].option_ids ?? []), item.option_id];
+    } else if (item.text_answer != null) {
+      state[qId].text_answer = item.text_answer;
+    }
+  }
+  return state;
+}
 
 export default function SurveyDetailPage() {
   const { t } = useTranslation();
@@ -13,24 +31,28 @@ export default function SurveyDetailPage() {
   const [survey,    setSurvey]    = useState<Survey | null>(null);
   const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
   const [alreadyResponded, setAlreadyResponded] = useState(false);
-  const [canStats, setCanStats]   = useState(false);
+  const [canStats,  setCanStats]  = useState(false);
   const [isCreator, setIsCreator] = useState(false);
-  const [loading,  setLoading]    = useState(true);
+  const [loading,   setLoading]   = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [toast, setToast]         = useState("");
-
-  // 응답 상태 (question_id → 선택지 or 텍스트)
-  const [answers, setAnswers] = useState<Record<number, SurveyAnswer>>({});
+  const [submitted,  setSubmitted]  = useState(false);
+  const [editMode,   setEditMode]   = useState(false);   // 응답 수정 모드
+  const [toast,      setToast]      = useState("");
+  const [answers,    setAnswers]    = useState<Record<number, SurveyAnswer>>({});
 
   useEffect(() => {
     surveyApi.detail(surveyId)
-      .then(({ survey: s, questions: qs, alreadyResponded: ar, canViewStats: cs, isCreator: ic }) => {
+      .then(({ survey: s, questions: qs, alreadyResponded: ar,
+               myAnswers, canViewStats: cs, isCreator: ic }) => {
         setSurvey(s);
         setQuestions(qs);
         setAlreadyResponded(ar);
         setCanStats(cs);
         setIsCreator(ic);
+        // 수정 허용이면 기존 답변 프리필
+        if (ar && s.allow_edit && myAnswers?.length) {
+          setAnswers(buildAnswerState(myAnswers));
+        }
       })
       .catch(() => navigate("/surveys"))
       .finally(() => setLoading(false));
@@ -50,20 +72,16 @@ export default function SurveyDetailPage() {
 
   function toggleOption(qId: number, optId: number, multi: boolean) {
     setAnswers((prev) => {
-      const cur = prev[qId]?.option_ids ?? [];
-      let next: number[];
-      if (multi) {
-        next = cur.includes(optId) ? cur.filter((x) => x !== optId) : [...cur, optId];
-      } else {
-        next = [optId];
-      }
+      const cur  = prev[qId]?.option_ids ?? [];
+      const next = multi
+        ? cur.includes(optId) ? cur.filter((x) => x !== optId) : [...cur, optId]
+        : [optId];
       return { ...prev, [qId]: { question_id: qId, option_ids: next } };
     });
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // 필수 문항 확인
     for (const q of questions) {
       if (!q.required) continue;
       const ans = answers[q.id];
@@ -72,24 +90,29 @@ export default function SurveyDetailPage() {
           showToast(t("survey.requiredFieldMissing", { title: q.title }));
           return;
         }
-      } else {
-        if (!ans?.option_ids?.length) {
-          showToast(t("survey.requiredFieldMissing", { title: q.title }));
-          return;
-        }
+      } else if (!ans?.option_ids?.length) {
+        showToast(t("survey.requiredFieldMissing", { title: q.title }));
+        return;
       }
     }
 
     setSubmitting(true);
     try {
-      await surveyApi.respond(surveyId, Object.values(answers));
-      setSubmitted(true);
-      setAlreadyResponded(true);
-      showToast(t("survey.submitSuccess"));
+      if (editMode) {
+        await surveyApi.editResponse(surveyId, Object.values(answers));
+        setEditMode(false);
+        showToast(t("survey.editSuccess"));
+      } else {
+        await surveyApi.respond(surveyId, Object.values(answers));
+        setSubmitted(true);
+        setAlreadyResponded(true);
+        showToast(t("survey.submitSuccess"));
+      }
     } catch (err: any) {
       const code = err?.response?.data?.error ?? "";
       if (code === "survey.alreadyResponded") showToast(t("survey.alreadyRespondedErr"));
       else if (code === "survey.expired")     showToast(t("survey.expiredErr"));
+      else if (code === "survey.editNotAllowed") showToast(t("survey.editNotAllowed"));
       else showToast(t("common.error"));
     } finally {
       setSubmitting(false);
@@ -102,9 +125,7 @@ export default function SurveyDetailPage() {
       await surveyApi.update(surveyId, { is_active: !survey.is_active });
       setSurvey((prev) => prev ? { ...prev, is_active: prev.is_active ? 0 : 1 } : prev);
       showToast(t("survey.updated"));
-    } catch {
-      showToast(t("common.error"));
-    }
+    } catch { showToast(t("common.error")); }
   }
 
   async function handleDelete() {
@@ -112,16 +133,20 @@ export default function SurveyDetailPage() {
     try {
       await surveyApi.delete(surveyId);
       navigate("/surveys");
-    } catch {
-      showToast(t("common.error"));
-    }
+    } catch { showToast(t("common.error")); }
   }
 
   if (loading) return <div className={styles.page}><p className={styles.empty}>{t("common.loading")}</p></div>;
   if (!survey) return null;
 
-  const isExpired = survey.expires_at && new Date(survey.expires_at) < new Date();
-  const canRespond = !alreadyResponded && survey.is_active && !isExpired && !submitted;
+  const isExpired  = !!survey.expires_at && new Date(survey.expires_at) < new Date();
+  // 복수 응답: 이미 응답해도 계속 제출 가능
+  // 수정 모드: 이미 응답 + allow_edit + editMode
+  const canRespond =
+    (!alreadyResponded || !!survey.allow_multiple || editMode) &&
+    !!survey.is_active &&
+    !isExpired &&
+    !submitted;
 
   return (
     <div className={styles.page}>
@@ -137,8 +162,12 @@ export default function SurveyDetailPage() {
             {t(`survey.scope_${survey.scope_type}`)}
           </span>
           {!survey.is_active && <span className={styles.inactiveBadge}>{t("survey.inactive")}</span>}
-          {isExpired     && <span className={styles.expiredBadge}>{t("survey.expired")}</span>}
-          {(alreadyResponded || submitted) && <span className={styles.respondedBadge}>{t("survey.responded")}</span>}
+          {isExpired           && <span className={styles.expiredBadge}>{t("survey.expired")}</span>}
+          {!!survey.allow_edit     && <span className={styles.featureBadge}>{t("survey.badgeEdit")}</span>}
+          {!!survey.allow_multiple && <span className={styles.featureBadge}>{t("survey.badgeMultiple")}</span>}
+          {(alreadyResponded || submitted) && !survey.allow_multiple && (
+            <span className={styles.respondedBadge}>{t("survey.responded")}</span>
+          )}
         </div>
         <h1 className={styles.pageTitle}>{survey.title}</h1>
         {survey.description && <p className={styles.surveyDesc}>{survey.description}</p>}
@@ -155,16 +184,12 @@ export default function SurveyDetailPage() {
             <button className={styles.statsBtn} onClick={() => navigate(`/surveys/${surveyId}/stats`)}>
               📊 {t("survey.viewStats")}
             </button>
-            <button
-              className={styles.toggleBtn}
-              onClick={handleToggleActive}
-            >
+            <button className={styles.toggleBtn} onClick={handleToggleActive}>
               {survey.is_active ? t("survey.deactivate") : t("survey.activate")}
             </button>
             <button className={styles.deleteBtn} onClick={handleDelete}>
               {t("survey.delete")}
             </button>
-            {/* 공개 URL 복사 */}
             {survey.scope_type === "public" && (
               <button
                 className={styles.copyUrlBtn}
@@ -179,7 +204,6 @@ export default function SurveyDetailPage() {
           </div>
         )}
 
-        {/* 통계 조회 권한 있는 경우 */}
         {!isCreator && canStats && (
           <button className={styles.statsBtn} onClick={() => navigate(`/surveys/${surveyId}/stats`)}>
             📊 {t("survey.viewStats")}
@@ -187,23 +211,43 @@ export default function SurveyDetailPage() {
         )}
       </div>
 
-      {/* 이미 응답했거나 비활성화된 경우 */}
-      {(alreadyResponded || submitted) && (
+      {/* 이미 응답 + 수정/재응답 버튼 */}
+      {(alreadyResponded || submitted) && !editMode && !survey.allow_multiple && (
         <div className={styles.respondedBox}>
           <span>✓</span>
           <p>{t("survey.alreadyRespondedMsg")}</p>
+          {!!survey.allow_edit && survey.is_active && !isExpired && (
+            <button className={styles.editResponseBtn} onClick={() => setEditMode(true)}>
+              ✏️ {t("survey.editResponse")}
+            </button>
+          )}
         </div>
       )}
 
-      {!canRespond && !alreadyResponded && !submitted && (
+      {/* 복수 응답 안내 */}
+      {!!survey.allow_multiple && survey.is_active && !isExpired && (
+        <p className={styles.multipleNote}>{t("survey.multipleAllowed")}</p>
+      )}
+
+      {/* 비활성/만료 */}
+      {!canRespond && !alreadyResponded && !submitted && !editMode && (
         <div className={styles.respondedBox}>
           <p>{isExpired ? t("survey.expiredErr") : t("survey.notActiveErr")}</p>
         </div>
       )}
 
       {/* 응답 폼 */}
-      {canRespond && (
+      {(canRespond || editMode) && (
         <form onSubmit={handleSubmit} className={styles.respondForm}>
+          {editMode && (
+            <div className={styles.editModeBanner}>
+              ✏️ {t("survey.editingResponse")}
+              <button type="button" className={styles.cancelEditBtn} onClick={() => setEditMode(false)}>
+                {t("common.cancel")}
+              </button>
+            </div>
+          )}
+
           {questions.map((q, qi) => (
             <div key={q.id} className={styles.questionBlock}>
               <div className={styles.questionLabel}>
@@ -212,12 +256,10 @@ export default function SurveyDetailPage() {
                 {q.required === 1 && <span className={styles.requiredMark}>*</span>}
               </div>
 
-              {/* 단일 선택 */}
               {q.type === "single" && q.options?.map((opt) => (
                 <label key={opt.id} className={styles.optLabel}>
                   <input
-                    type="radio"
-                    name={`q${q.id}`}
+                    type="radio" name={`q${q.id}`}
                     checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
                     onChange={() => toggleOption(q.id, opt.id, false)}
                   />
@@ -225,7 +267,6 @@ export default function SurveyDetailPage() {
                 </label>
               ))}
 
-              {/* 복수 선택 */}
               {q.type === "multiple" && q.options?.map((opt) => (
                 <label key={opt.id} className={styles.optLabel}>
                   <input
@@ -237,24 +278,20 @@ export default function SurveyDetailPage() {
                 </label>
               ))}
 
-              {/* 단답형 텍스트 */}
               {q.type === "text" && (
                 <textarea
-                  className={styles.textarea}
-                  rows={3}
+                  className={styles.textarea} rows={3}
                   value={answers[q.id]?.text_answer ?? ""}
                   onChange={(e) => setAnswer(q.id, { text_answer: e.target.value })}
                   placeholder={t("survey.textAnswerPlaceholder")}
                 />
               )}
 
-              {/* 평점 */}
               {q.type === "rating" && (
                 <div className={styles.ratingRow}>
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button
-                      key={n}
-                      type="button"
+                      key={n} type="button"
                       className={`${styles.ratingBtn} ${answers[q.id]?.text_answer === String(n) ? styles.ratingBtnActive : ""}`}
                       onClick={() => setAnswer(q.id, { text_answer: String(n) })}
                     >
@@ -267,7 +304,9 @@ export default function SurveyDetailPage() {
           ))}
 
           <button type="submit" className={styles.submitBtn} disabled={submitting}>
-            {submitting ? t("common.loading") : t("survey.submit")}
+            {submitting
+              ? t("common.loading")
+              : editMode ? t("survey.updateResponse") : t("survey.submit")}
           </button>
         </form>
       )}

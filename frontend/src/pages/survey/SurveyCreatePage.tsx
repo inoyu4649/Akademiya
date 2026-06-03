@@ -30,8 +30,10 @@ export default function SurveyCreatePage() {
   const [description, setDescription] = useState("");
   const [scopeType, setScopeType]     = useState<"class" | "org" | "public">("class");
   const [scopeId, setScopeId]         = useState<number | null>(null);
-  const [allowAnon, setAllowAnon]     = useState(false);
-  const [expiresAt, setExpiresAt]     = useState("");
+  const [allowAnon,     setAllowAnon]     = useState(false);
+  const [allowEdit,     setAllowEdit]     = useState(false);
+  const [allowMultiple, setAllowMultiple] = useState(false);
+  const [expiresAt,     setExpiresAt]     = useState("");
   const [questions, setQuestions]     = useState<QuestionDraft[]>([defaultQuestion()]);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
@@ -113,7 +115,9 @@ export default function SurveyCreatePage() {
         description: description.trim() || undefined,
         scope_type: scopeType,
         scope_id: scopeId,
-        allow_anonymous: allowAnon,
+        allow_anonymous: scopeType === "public" ? true : allowAnon,
+        allow_edit: allowEdit,
+        allow_multiple: allowMultiple,
         expires_at: expiresAt || null,
         questions: questions.map((q) => ({
           type: q.type,
@@ -203,14 +207,35 @@ export default function SurveyCreatePage() {
           )}
 
           {/* 옵션 */}
-          <div className={styles.optionRow}>
+          <div className={styles.optionGroup}>
+            {/* 공개 설문: 항상 익명, 안내 표시 */}
+            {scopeType === "public" ? (
+              <p className={styles.infoText}>🔒 {t("survey.publicAnonymousNote")}</p>
+            ) : (
+              <label className={styles.checkLabel}>
+                <input
+                  type="checkbox"
+                  checked={allowAnon}
+                  onChange={(e) => setAllowAnon(e.target.checked)}
+                />
+                {t("survey.allowAnonymous")}
+              </label>
+            )}
             <label className={styles.checkLabel}>
               <input
                 type="checkbox"
-                checked={allowAnon}
-                onChange={(e) => setAllowAnon(e.target.checked)}
+                checked={allowEdit}
+                onChange={(e) => setAllowEdit(e.target.checked)}
               />
-              {t("survey.allowAnonymous")}
+              {t("survey.allowEdit")}
+            </label>
+            <label className={styles.checkLabel}>
+              <input
+                type="checkbox"
+                checked={allowMultiple}
+                onChange={(e) => setAllowMultiple(e.target.checked)}
+              />
+              {t("survey.allowMultiple")}
             </label>
           </div>
 

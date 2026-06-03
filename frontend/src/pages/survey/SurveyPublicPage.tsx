@@ -18,9 +18,10 @@ export default function SurveyPublicPage() {
   const [toast,      setToast]      = useState("");
   const [answers,    setAnswers]    = useState<Record<number, SurveyAnswer>>({});
 
-  // localStorage로 중복 제출 방지 (같은 브라우저에서)
-  const storageKey        = `akademiya_survey_${surveyId}_responded`;
-  const alreadyResponded  = localStorage.getItem(storageKey) === "1";
+  // localStorage로 중복 제출 방지 (allow_multiple=1이면 무시)
+  const storageKey = `akademiya_survey_${surveyId}_responded`;
+  const alreadyResponded =
+    !survey?.allow_multiple && localStorage.getItem(storageKey) === "1";
 
   useEffect(() => {
     surveyApi
@@ -75,8 +76,10 @@ export default function SurveyPublicPage() {
     setSubmitting(true);
     try {
       await surveyApi.publicRespond(surveyId, Object.values(answers));
-      localStorage.setItem(storageKey, "1");
+      // allow_multiple이면 localStorage 저장 안 함 (계속 응답 가능)
+      if (!survey?.allow_multiple) localStorage.setItem(storageKey, "1");
       setSubmitted(true);
+      setAnswers({});   // 복수 응답 시 폼 초기화
       showToast(t("survey.submitSuccess"));
     } catch (err: any) {
       const code = err?.response?.data?.error ?? "";
@@ -106,7 +109,9 @@ export default function SurveyPublicPage() {
   }
 
   const isExpired  = !!survey.expires_at && new Date(survey.expires_at) < new Date();
-  const canRespond = !alreadyResponded && !submitted && !isExpired;
+  // allow_multiple이면 제출 후에도 폼 다시 표시
+  const canRespond = !alreadyResponded && !isExpired &&
+    (!submitted || !!survey.allow_multiple);
 
   return (
     <div className={styles.publicWrapper}>

@@ -25,12 +25,20 @@ export interface Survey {
   scope_id:        number | null;
   is_active:       number;
   allow_anonymous: number;
+  allow_edit:      number;  // 응답 수정 허용
+  allow_multiple:  number;  // 복수 응답 허용
   expires_at:      string | null;
   created_at:      string;
   // extra fields in feed/list
   scope_name?:     string;
   response_count?: number;
   already_responded?: number;
+}
+
+export interface MyAnswerItem {
+  question_id: number;
+  option_id:   number | null;
+  text_answer: string | null;
 }
 
 export interface SurveyAnswer {
@@ -47,6 +55,8 @@ export const surveyApi = {
     scope_type: string;
     scope_id?: number | null;
     allow_anonymous?: boolean;
+    allow_edit?: boolean;
+    allow_multiple?: boolean;
     expires_at?: string | null;
     questions: Array<{
       type: string;
@@ -78,6 +88,7 @@ export const surveyApi = {
       survey: Survey;
       questions: SurveyQuestion[];
       alreadyResponded: boolean;
+      myAnswers: MyAnswerItem[];
       canViewStats: boolean;
       isCreator: boolean;
     }>(`/surveys/${id}`).then((r) => r.data),
@@ -93,6 +104,10 @@ export const surveyApi = {
   // 공개 설문 응답 제출 (비로그인)
   publicRespond: (id: number, answers: SurveyAnswer[]) =>
     client.post(`/surveys/public/${id}/respond`, { answers }),
+
+  // 응답 수정 (allow_edit)
+  editResponse: (id: number, answers: SurveyAnswer[]) =>
+    client.put(`/surveys/${id}/respond`, { answers }),
 
   // 통계
   stats: (id: number) =>
