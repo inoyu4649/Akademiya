@@ -116,6 +116,7 @@ function SubmitSection({
       else if (msg === "submission.pastDue")        setError(t("assignment.detail.pastDue"));
       else if (msg === "submission.alreadyApproved") setError(t("assignment.detail.alreadyApproved"));
       else if (msg === "submission.noContent")      setError(t("assignment.detail.fileRequired"));
+      else if (err?.response?.status === 413)       setError(t("assignment.detail.fileTooLarge"));
       else setError(t("common.error"));
     } finally {
       setLoading(false);
