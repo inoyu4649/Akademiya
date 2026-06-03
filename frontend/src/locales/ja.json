@@ -372,7 +372,11 @@
       "reqReason": "申請理由（任意）",
       "reqReasonPlaceholder": "上限拡張が必要な理由を入力してください",
       "submitRequest": "拡張申請",
-      "limitRequested": "上限拡張申請を受け付けました。"
+      "limitRequested": "上限拡張申請を受け付けました。",
+      "editBtn": "編集",
+      "deleteBtn": "削除",
+      "deleteConfirm": "この課題を削除しますか？すべての提出ファイルが永久に削除されます。",
+      "editSuccess": "課題が更新されました。"
     },
     "status": {
       "submitted": "提出済み",

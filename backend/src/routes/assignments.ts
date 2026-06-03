@@ -1,6 +1,13 @@
 import { Router, type IRouter } from "express";
 import { pool } from "../db/pool.js";
 import { requireAuth } from "../middleware/auth.js";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
+const uploadDir  = path.resolve(__dirname, "../../uploads");
 
 const router: IRouter = Router();
 
@@ -176,6 +183,20 @@ router.delete("/:id", requireAuth, async (req, res) => {
   const perm = await getClassPermission(userId, (rows as any[])[0].class_id);
   if (perm === null || perm < 1) { res.status(403).json({ error: "forbidden" }); return; }
 
+  // 이 과제에 대한 모든 제출 파일 경로 조회 후 물리 파일 삭제
+  const [fileRows] = await pool.execute(
+    `SELECT sf.file_url
+     FROM submission_files sf
+     INNER JOIN submissions s ON s.id = sf.submission_id
+     WHERE s.assignment_id = ?`,
+    [assignmentId]
+  ) as any[];
+  for (const row of fileRows as any[]) {
+    const filePath = path.join(uploadDir, path.basename(row.file_url as string));
+    try { fs.unlinkSync(filePath); } catch { /* 파일이 없어도 무시 */ }
+  }
+
+  // DB 삭제 (submissions, submission_files 는 CASCADE)
   await pool.execute("DELETE FROM assignments WHERE id = ?", [assignmentId]);
   res.json({ message: "deleted" });
 });

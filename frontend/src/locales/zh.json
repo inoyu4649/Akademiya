@@ -372,7 +372,11 @@
       "reqReason": "申请原因（可选）",
       "reqReasonPlaceholder": "请说明需要扩大限制的原因",
       "submitRequest": "提交申请",
-      "limitRequested": "限制扩大申请已提交。"
+      "limitRequested": "限制扩大申请已提交。",
+      "editBtn": "编辑",
+      "deleteBtn": "删除",
+      "deleteConfirm": "确定删除此作业吗？所有提交文件将被永久删除。",
+      "editSuccess": "作业已更新。"
     },
     "status": {
       "submitted": "已提交",

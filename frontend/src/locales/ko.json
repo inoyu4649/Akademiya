@@ -372,7 +372,11 @@
       "reqReason": "요청 사유 (선택)",
       "reqReasonPlaceholder": "한도 확장이 필요한 이유를 입력하세요",
       "submitRequest": "확장 요청",
-      "limitRequested": "한도 확장 요청이 접수되었습니다."
+      "limitRequested": "한도 확장 요청이 접수되었습니다.",
+      "editBtn": "수정",
+      "deleteBtn": "삭제",
+      "deleteConfirm": "이 과제를 삭제하시겠습니까? 관련 제출 파일이 모두 영구 삭제됩니다.",
+      "editSuccess": "과제가 수정되었습니다."
     },
     "status": {
       "submitted": "제출됨",

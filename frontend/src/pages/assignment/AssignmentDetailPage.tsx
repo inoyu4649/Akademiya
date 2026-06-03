@@ -534,6 +534,12 @@ export default function AssignmentDetailPage() {
   const [loading, setLoading]       = useState(true);
   const [toast, setToast]           = useState("");
 
+  // 수정 모드
+  const [editMode,  setEditMode]  = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc,  setEditDesc]  = useState("");
+  const [editDue,   setEditDue]   = useState("");
+
   const assignmentId = Number(id);
 
   function loadDetail() {
@@ -555,6 +561,49 @@ export default function AssignmentDetailPage() {
     setTimeout(() => setToast(""), 3000);
   }
 
+  function startEdit() {
+    if (!assignment) return;
+    setEditTitle(assignment.title);
+    setEditDesc(assignment.description ?? "");
+    if (assignment.due_at) {
+      const d = new Date(assignment.due_at);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      setEditDue(
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+      );
+    } else {
+      setEditDue("");
+    }
+    setEditMode(true);
+  }
+
+  async function handleEdit() {
+    if (!editTitle.trim()) { showToast(t("assignment.create.titleRequired")); return; }
+    try {
+      await assignmentApi.update(assignmentId, {
+        title:       editTitle.trim(),
+        description: editDesc.trim() || undefined,
+        due_at:      editDue || undefined,
+      });
+      setEditMode(false);
+      loadDetail();
+      showToast(t("assignment.detail.editSuccess"));
+    } catch {
+      showToast(t("common.error"));
+    }
+  }
+
+  async function handleDelete() {
+    if (!assignment) return;
+    if (!confirm(t("assignment.detail.deleteConfirm"))) return;
+    try {
+      await assignmentApi.delete(assignmentId);
+      navigate(`/classes/${assignment.class_id}/assignments`);
+    } catch {
+      showToast(t("common.error"));
+    }
+  }
+
   const pastDue = assignment?.due_at ? new Date(assignment.due_at) < new Date() : false;
 
   if (loading) return <div className={styles.loading}>{t("common.loading")}</div>;
@@ -572,30 +621,86 @@ export default function AssignmentDetailPage() {
         >
           ← {t("common.back")}
         </button>
-        <div className={styles.meta}>
-          <span className={styles.className}>{assignment.class_name}</span>
-        </div>
-        <h1 className={styles.title}>{assignment.title}</h1>
-        <div className={styles.info}>
-          <span>
-            {assignment.due_at ? (
-              <span className={pastDue ? styles.pastDue : styles.dueDate}>
-                📅 {new Date(assignment.due_at).toLocaleString()}
-                {pastDue && ` (${t("assignment.detail.pastDueLabel")})`}
+
+        {editMode ? (
+          /* ── 수정 폼 ── */
+          <div className={styles.editForm}>
+            <div className={styles.editFormField}>
+              <label className={styles.label}>{t("assignment.create.titleLabel")}</label>
+              <input
+                className={styles.linkInput}
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                maxLength={300}
+              />
+            </div>
+            <div className={styles.editFormField}>
+              <label className={styles.label}>{t("assignment.create.descLabel")}</label>
+              <textarea
+                className={styles.textarea}
+                rows={3}
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+              />
+            </div>
+            <div className={styles.editFormField}>
+              <label className={styles.label}>{t("assignment.create.dueLabel")}</label>
+              <input
+                className={styles.linkInput}
+                type="datetime-local"
+                value={editDue}
+                onChange={(e) => setEditDue(e.target.value)}
+              />
+            </div>
+            <div className={styles.editActions}>
+              <button className={styles.btnCancel} onClick={() => setEditMode(false)}>
+                {t("common.cancel")}
+              </button>
+              <button className={styles.btnPrimary} onClick={handleEdit}>
+                {t("common.save")}
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* ── 일반 표시 ── */
+          <>
+            <div className={styles.meta}>
+              <span className={styles.className}>{assignment.class_name}</span>
+            </div>
+            <h1 className={styles.title}>{assignment.title}</h1>
+            <div className={styles.info}>
+              <span>
+                {assignment.due_at ? (
+                  <span className={pastDue ? styles.pastDue : styles.dueDate}>
+                    📅 {new Date(assignment.due_at).toLocaleString()}
+                    {pastDue && ` (${t("assignment.detail.pastDueLabel")})`}
+                  </span>
+                ) : (
+                  <span className={styles.noDue}>{t("assignment.detail.noDue")}</span>
+                )}
               </span>
-            ) : (
-              <span className={styles.noDue}>{t("assignment.detail.noDue")}</span>
+              <span className={styles.creator}>by {assignment.creator_name}</span>
+            </div>
+            {assignment.description && (
+              <div className={styles.description}>{assignment.description}</div>
             )}
-          </span>
-          <span className={styles.creator}>by {assignment.creator_name}</span>
-        </div>
-        {assignment.description && (
-          <div className={styles.description}>{assignment.description}</div>
+            {/* 반장 전용: 수정 / 삭제 버튼 */}
+            {myPerm >= 1 && (
+              <div className={styles.leaderActions}>
+                <button className={styles.btnSecondary} onClick={startEdit}>
+                  ✏️ {t("assignment.detail.editBtn")}
+                </button>
+                <button className={styles.btnDanger} onClick={handleDelete}>
+                  🗑 {t("assignment.detail.deleteBtn")}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* Submit section (학생) */}
-      {myPerm === 0 && assignment && (
+      {/* Submit section (모든 반원 — 반장 포함) */}
+      {assignment && (
         <SubmitSection
           assignmentId={assignmentId}
           assignment={assignment}

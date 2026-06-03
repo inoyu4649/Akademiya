@@ -88,6 +88,37 @@
   margin-top: 4px;
 }
 
+/* ── Leader header actions ── */
+.leaderActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+/* ── Inline edit form ── */
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.editFormField {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.editActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
 /* ── Shared ── */
 .sectionTitle {
   font-size: 13px;
