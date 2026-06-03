@@ -395,3 +395,17 @@
     gap: 8px;
   }
 }
+
+/* ── Limit request note input ── */
+.noteInput {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 6px 10px;
+  outline: none;
+  min-width: 180px;
+}
+.noteInput:focus { border-color: var(--accent); }

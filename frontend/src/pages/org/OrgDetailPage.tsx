@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { orgApi, type Org, type OrgMember, type OrgJoinRequest } from "../../api/org.api";
 import { classApi, type ClassRequest } from "../../api/class.api";
+import { surveyApi, type Survey } from "../../api/survey.api";
 import styles from "./OrgDetailPage.module.css";
 
 function PermissionBadge({ perm }: { perm: number }) {
@@ -34,6 +35,7 @@ export default function OrgDetailPage() {
   const [permEdits, setPermEdits] = useState<Record<number, number>>({});
   const [leaveConfirm, setLeaveConfirm] = useState(false);
   const [leaveLoading, setLeaveLoading] = useState(false);
+  const [orgSurveys, setOrgSurveys] = useState<Survey[]>([]);
 
   useEffect(() => {
     if (!orgId) { navigate("/"); return; }
@@ -56,6 +58,7 @@ export default function OrgDetailPage() {
       })
       .catch(() => navigate("/"))
       .finally(() => setLoading(false));
+    surveyApi.byOrg(orgId).then((d) => setOrgSurveys(d.surveys)).catch(() => {});
   }, [orgId]);
 
   function showToast(msg: string) {
@@ -228,6 +231,37 @@ export default function OrgDetailPage() {
           ))}
         </div>
       </section>
+
+      {/* 진행 중인 설문 */}
+      {orgSurveys.length > 0 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>{t("survey.activeSurveys")}</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {orgSurveys.map((s) => (
+              <div
+                key={s.id}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  background: "var(--bg-card)", border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-sm)", padding: "10px 14px", cursor: "pointer",
+                }}
+                onClick={() => navigate(`/surveys/${s.id}`)}
+              >
+                <span style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 500 }}>{s.title}</span>
+                {s.already_responded ? (
+                  <span style={{ fontSize: 12, background: "rgba(19,229,106,0.12)", color: "#13e56a", padding: "2px 8px", borderRadius: 10 }}>
+                    {t("survey.responded")}
+                  </span>
+                ) : (
+                  <span style={{ fontSize: 12, background: "rgba(245,158,11,0.12)", color: "#f59e0b", padding: "2px 8px", borderRadius: 10 }}>
+                    {t("survey.notResponded")}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Join requests (admin only) */}
       {myPerm >= 3 && (

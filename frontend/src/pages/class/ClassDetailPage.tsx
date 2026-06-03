@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/auth.store";
 import { classApi, type ClassDetail, type ClassMember, type ClassJoinRequest } from "../../api/class.api";
 import { notificationApi } from "../../api/notification.api";
+import { surveyApi, type Survey } from "../../api/survey.api";
 import ReportModal from "../report/ReportModal";
 import styles from "./ClassDetailPage.module.css";
 
@@ -32,6 +33,7 @@ export default function ClassDetailPage() {
   const [permEdits, setPermEdits] = useState<Record<number, number>>({});
   const [reportTarget, setReportTarget] = useState<{ id: number; name: string } | null>(null);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [surveys, setSurveys] = useState<Survey[]>([]);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [bcTitle, setBcTitle]   = useState("");
@@ -54,6 +56,8 @@ export default function ClassDetailPage() {
       })
       .catch(() => navigate("/classes"))
       .finally(() => setLoading(false));
+    // 반 설문 로드
+    surveyApi.byClass(classId).then((d) => setSurveys(d.surveys)).catch(() => {});
   }, [classId]);
 
   function showToast(msg: string) {
@@ -293,6 +297,29 @@ export default function ClassDetailPage() {
           ))}
         </div>
       </section>
+
+      {/* 진행 중인 설문 */}
+      {surveys.length > 0 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>{t("survey.activeSurveys")}</h2>
+          <div className={styles.surveyList}>
+            {surveys.map((s) => (
+              <div
+                key={s.id}
+                className={styles.surveyItem}
+                onClick={() => navigate(`/surveys/${s.id}`)}
+              >
+                <span className={styles.surveyTitle}>{s.title}</span>
+                {s.already_responded ? (
+                  <span className={styles.surveyResponded}>{t("survey.responded")}</span>
+                ) : (
+                  <span className={styles.surveyPending}>{t("survey.notResponded")}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Join requests (leader only) */}
       {myPerm >= 1 && (

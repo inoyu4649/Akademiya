@@ -41,51 +41,81 @@ function ReturnModal({
   );
 }
 
-// ── Submit section (학생용) ──────────────────────────────────────────────────
+// ── Submit section (학생용 — 다중 파일 지원) ─────────────────────────────────
 function SubmitSection({
   assignmentId,
+  assignment,
   submission,
   pastDue,
   onSuccess,
 }: {
   assignmentId: number;
+  assignment: Assignment;
   submission: Submission | null;
   pastDue: boolean;
   onSuccess: () => void;
 }) {
   const { t } = useTranslation();
   const [tab, setTab]         = useState<"file" | "link">("file");
-  const [file, setFile]       = useState<File | null>(null);
+  const [files, setFiles]     = useState<File[]>([]);
   const [linkUrl, setLinkUrl] = useState("");
   const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const maxFiles  = (assignment as any).max_files  ?? 20;
+  const maxSizeMb = (assignment as any).max_size_mb ?? 5;
+
+  function handleFilesChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(e.target.files ?? []);
+    if (selected.length > maxFiles) {
+      setError(t("assignment.detail.tooManyFiles", { max: maxFiles }));
+      return;
+    }
+    const totalBytes = selected.reduce((s, f) => s + f.size, 0);
+    if (totalBytes > maxSizeMb * 1024 * 1024) {
+      setError(t("assignment.detail.totalTooLarge", { mb: maxSizeMb }));
+      return;
+    }
+    setError("");
+    setFiles(selected);
+  }
+
+  function removeFile(idx: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== idx));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
-    if (tab === "file" && !file) { setError(t("assignment.detail.fileRequired")); return; }
-    if (tab === "link" && !linkUrl.trim()) { setError(t("assignment.detail.linkRequired")); return; }
+    if (tab === "file" && files.length === 0) { setError(t("assignment.detail.fileRequired")); return; }
+    if (tab === "link" && !linkUrl.trim())    { setError(t("assignment.detail.linkRequired")); return; }
 
     const fd = new FormData();
     fd.append("assignment_id", String(assignmentId));
-    if (tab === "file" && file) fd.append("file", file);
-    else fd.append("link_url", linkUrl.trim());
+    if (tab === "file") {
+      for (const f of files) fd.append("files", f);
+    } else {
+      fd.append("link_url", linkUrl.trim());
+    }
 
     setLoading(true);
     try {
       await assignmentApi.submit(fd);
-      setFile(null);
+      setFiles([]);
       setLinkUrl("");
       if (fileRef.current) fileRef.current.value = "";
       onSuccess();
     } catch (err: any) {
-      const msg = err?.response?.data?.error ?? "";
-      if (msg === "submission.fileTooLarge")    setError(t("assignment.detail.fileTooLarge"));
-      else if (msg === "submission.pastDue")    setError(t("assignment.detail.pastDue"));
+      const msg  = err?.response?.data?.error ?? "";
+      const data = err?.response?.data ?? {};
+      if (msg === "submission.tooManyFiles")    setError(t("assignment.detail.tooManyFiles", { max: data.maxFiles ?? maxFiles }));
+      else if (msg === "submission.totalTooLarge") setError(t("assignment.detail.totalTooLarge", { mb: data.maxSizeMb ?? maxSizeMb }));
+      else if (msg === "submission.fileTooLarge")  setError(t("assignment.detail.fileTooLarge"));
+      else if (msg === "submission.pastDue")        setError(t("assignment.detail.pastDue"));
       else if (msg === "submission.alreadyApproved") setError(t("assignment.detail.alreadyApproved"));
-      else if (msg === "submission.noContent")  setError(t("assignment.detail.fileRequired"));
+      else if (msg === "submission.noContent")      setError(t("assignment.detail.fileRequired"));
       else setError(t("common.error"));
     } finally {
       setLoading(false);
@@ -109,10 +139,24 @@ function SubmitSection({
               {new Date(submission.submitted_at).toLocaleString()}
             </span>
           </div>
-          {submission.file_url && (
-            <a className={styles.fileLink} href={submission.file_url} target="_blank" rel="noreferrer">
-              📎 {t("assignment.detail.downloadFile")}
-            </a>
+          {/* 다중 파일 목록 */}
+          {(submission as any).files?.length > 0 && (
+            <div className={styles.fileList}>
+              {((submission as any).files as Array<{ id: number; file_url: string; original_name: string; file_size: number }>).map((f) => (
+                <a
+                  key={f.id}
+                  className={styles.fileLink}
+                  href={f.file_url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  📎 {f.original_name ?? t("assignment.detail.downloadFile")}
+                  <span className={styles.fileSize}>
+                    ({Math.round(f.file_size / 1024)}KB)
+                  </span>
+                </a>
+              ))}
+            </div>
           )}
           {submission.link_url && (
             <a className={styles.fileLink} href={submission.link_url} target="_blank" rel="noreferrer">
@@ -131,20 +175,11 @@ function SubmitSection({
       {/* 제출 폼 */}
       {canSubmit && (
         <form onSubmit={handleSubmit} className={styles.submitForm}>
-          {/* 탭 */}
           <div className={styles.tabs}>
-            <button
-              type="button"
-              className={`${styles.tab} ${tab === "file" ? styles.tabActive : ""}`}
-              onClick={() => setTab("file")}
-            >
+            <button type="button" className={`${styles.tab} ${tab === "file" ? styles.tabActive : ""}`} onClick={() => setTab("file")}>
               {t("assignment.detail.tabFile")}
             </button>
-            <button
-              type="button"
-              className={`${styles.tab} ${tab === "link" ? styles.tabActive : ""}`}
-              onClick={() => setTab("link")}
-            >
+            <button type="button" className={`${styles.tab} ${tab === "link" ? styles.tabActive : ""}`} onClick={() => setTab("link")}>
               {t("assignment.detail.tabLink")}
             </button>
           </div>
@@ -154,11 +189,24 @@ function SubmitSection({
               <input
                 ref={fileRef}
                 type="file"
+                multiple
                 className={styles.fileInput}
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                onChange={handleFilesChange}
                 disabled={loading}
               />
-              <span className={styles.hint}>{t("assignment.detail.fileHint")}</span>
+              <span className={styles.hint}>
+                {t("assignment.detail.fileHintMulti", { count: maxFiles, mb: maxSizeMb })}
+              </span>
+              {files.length > 0 && (
+                <div className={styles.selectedFiles}>
+                  {files.map((f, i) => (
+                    <div key={i} className={styles.selectedFile}>
+                      <span>📎 {f.name} ({Math.round(f.size / 1024)}KB)</span>
+                      <button type="button" className={styles.removeFileBtn} onClick={() => removeFile(i)}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <input
@@ -173,16 +221,8 @@ function SubmitSection({
 
           {error && <p className={styles.error}>{error}</p>}
 
-          <button
-            type="submit"
-            className={styles.btnPrimary}
-            disabled={loading}
-          >
-            {loading
-              ? t("common.loading")
-              : submission
-              ? t("assignment.detail.resubmitBtn")
-              : t("assignment.detail.submitBtn")}
+          <button type="submit" className={styles.btnPrimary} disabled={loading}>
+            {loading ? t("common.loading") : submission ? t("assignment.detail.resubmitBtn") : t("assignment.detail.submitBtn")}
           </button>
         </form>
       )}
@@ -274,11 +314,16 @@ function SubmissionManagement({
               )}
               {s.submission_id && (
                 <span className={styles.subLinks}>
-                  {s.file_url && (
-                    <a href={s.file_url} target="_blank" rel="noreferrer" className={styles.fileLink}>
-                      📎
-                    </a>
-                  )}
+                  {/* 다중 파일 */}
+                  {(s as any).files?.length > 0
+                    ? (s as any).files.map((f: any) => (
+                        <a key={f.id} href={f.file_url} target="_blank" rel="noreferrer" className={styles.fileLink} title={f.original_name}>
+                          📎
+                        </a>
+                      ))
+                    : s.file_url && (
+                        <a href={s.file_url} target="_blank" rel="noreferrer" className={styles.fileLink}>📎</a>
+                      )}
                   {s.link_url && (
                     <a href={s.link_url} target="_blank" rel="noreferrer" className={styles.fileLink}>
                       🔗
@@ -290,6 +335,95 @@ function SubmissionManagement({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ── File Limit Request (반장용) ───────────────────────────────────────────────
+function LimitRequestSection({
+  assignment,
+  onToast,
+}: {
+  assignment: Assignment;
+  onToast: (msg: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen]         = useState(false);
+  const [reqFiles, setReqFiles] = useState(20);
+  const [reqMb, setReqMb]       = useState(5);
+  const [reason, setReason]     = useState("");
+  const [loading, setLoading]   = useState(false);
+
+  const maxFiles  = (assignment as any).max_files  ?? 20;
+  const maxSizeMb = (assignment as any).max_size_mb ?? 5;
+
+  async function handleRequest() {
+    setLoading(true);
+    try {
+      await import("../../api/client").then((m) =>
+        m.default.post("/submissions/limit-request", {
+          assignment_id: assignment.id,
+          requested_max_files: reqFiles,
+          requested_max_size_mb: reqMb,
+          reason: reason.trim() || null,
+        })
+      );
+      onToast(t("assignment.detail.limitRequested"));
+      setOpen(false);
+      setReason("");
+    } catch {
+      onToast(t("common.error"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className={styles.limitSection}>
+      <div className={styles.limitInfo}>
+        <span className={styles.hint}>
+          {t("assignment.detail.currentLimits", { files: maxFiles, mb: maxSizeMb })}
+        </span>
+        <button className={styles.btnSecondary} onClick={() => setOpen(!open)}>
+          {t("assignment.detail.requestLimitExpand")}
+        </button>
+      </div>
+      {open && (
+        <div className={styles.limitForm}>
+          <div className={styles.limitRow}>
+            <label className={styles.limitLabel}>{t("assignment.detail.reqMaxFiles")}</label>
+            <input
+              className={styles.limitInput}
+              type="number"
+              min={maxFiles}
+              value={reqFiles}
+              onChange={(e) => setReqFiles(Number(e.target.value))}
+            />
+          </div>
+          <div className={styles.limitRow}>
+            <label className={styles.limitLabel}>{t("assignment.detail.reqMaxSizeMb")}</label>
+            <input
+              className={styles.limitInput}
+              type="number"
+              min={maxSizeMb}
+              value={reqMb}
+              onChange={(e) => setReqMb(Number(e.target.value))}
+            />
+          </div>
+          <div className={styles.limitRow}>
+            <label className={styles.limitLabel}>{t("assignment.detail.reqReason")}</label>
+            <input
+              className={styles.linkInput}
+              placeholder={t("assignment.detail.reqReasonPlaceholder")}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+          </div>
+          <button className={styles.btnPrimary} onClick={handleRequest} disabled={loading}>
+            {loading ? t("common.loading") : t("assignment.detail.submitRequest")}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -461,9 +595,10 @@ export default function AssignmentDetailPage() {
       </div>
 
       {/* Submit section (학생) */}
-      {myPerm === 0 && (
+      {myPerm === 0 && assignment && (
         <SubmitSection
           assignmentId={assignmentId}
+          assignment={assignment}
           submission={mySubmission}
           pastDue={pastDue}
           onSuccess={() => {
@@ -476,6 +611,14 @@ export default function AssignmentDetailPage() {
       {/* Submission management (반장) */}
       {myPerm >= 1 && (
         <SubmissionManagement assignmentId={assignmentId} onToast={showToast} />
+      )}
+
+      {/* 파일 한도 확장 요청 (반장) */}
+      {myPerm >= 1 && assignment && (
+        <LimitRequestSection
+          assignment={assignment}
+          onToast={showToast}
+        />
       )}
 
       {/* Comments */}

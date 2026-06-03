@@ -17,6 +17,13 @@ export interface Assignment {
   timezone?: string;
 }
 
+export interface SubmissionFile {
+  id: number;
+  file_url: string;
+  original_name: string;
+  file_size: number;
+}
+
 export interface Submission {
   // leader list view fields
   user_id?: number;
@@ -25,8 +32,9 @@ export interface Submission {
   email?: string;
   // common fields
   id?: number;
-  file_url: string | null;
+  file_url: string | null;  // legacy (kept for backward compat)
   link_url: string | null;
+  files?: SubmissionFile[]; // multi-file
   status: "submitted" | "approved" | "returned";
   feedback: string | null;
   submitted_at: string;

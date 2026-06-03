@@ -20,7 +20,9 @@ import calendarRouter from "./routes/calendar.js";
 import statsRouter from "./routes/stats.js";
 import bugReportsRouter from "./routes/bugReports.js";
 import oauthRouter from "./routes/oauth.js";
+import surveysRouter from "./routes/surveys.js";
 import { startDeadlineScheduler } from "./scheduler/deadlines.js";
+import { preloadHolidays } from "./utils/holidays.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -133,6 +135,7 @@ app.use("/api/calendar",     calendarRouter);
 app.use("/api/stats",        statsRouter);
 app.use("/api/bug-reports",  bugReportsRouter);
 app.use("/api/oauth",        oauthRouter);        // GMCAuto ↔ Akademiya OAuth
+app.use("/api/surveys",      surveysRouter);
 
 // ── 헬스체크 ─────────────────────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {
@@ -155,6 +158,7 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 app.listen(PORT, () => {
   console.log(`Akademiya backend running on port ${PORT} [${isProd ? "production" : "development"}]`);
   startDeadlineScheduler();
+  preloadHolidays().catch((e) => console.warn("[공휴일 초기화 실패]", e.message));
 });
 
 export default app;

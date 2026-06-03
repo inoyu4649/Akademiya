@@ -374,6 +374,50 @@
   border-color: rgba(244, 67, 54, 0.7);
 }
 
+/* ── Survey list in class detail ── */
+.surveyList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.surveyItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+.surveyItem:hover { border-color: var(--accent); }
+
+.surveyTitle {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.surveyResponded {
+  font-size: 12px;
+  background: rgba(19,229,106,0.12);
+  color: #13e56a;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.surveyPending {
+  font-size: 12px;
+  background: rgba(245,158,11,0.12);
+  color: #f59e0b;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .page    { padding: 16px; }

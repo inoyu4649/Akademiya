@@ -95,6 +95,7 @@ router.get("/:id", requireAuth, async (req, res) => {
 
   const [rows] = await pool.execute(
     `SELECT a.id, a.class_id, a.title, a.description, a.due_at, a.created_at,
+            a.max_files, a.max_size_mb,
             u.display_name AS creator_name,
             c.name AS class_name, c.org_id,
             o.timezone

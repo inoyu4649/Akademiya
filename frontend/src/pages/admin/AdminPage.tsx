@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/auth.store";
-import { adminApi, type PendingOrg } from "../../api/admin.api";
+import { adminApi, type PendingOrg, type LimitRequest } from "../../api/admin.api";
 import { bugReportApi, type BugReport } from "../../api/bugReport.api";
 import styles from "./AdminPage.module.css";
 
-type Tab = "orgs" | "bugReports";
+type Tab = "orgs" | "bugReports" | "limitRequests";
 
 const STATUS_OPTS = ["open", "in_progress", "closed"] as const;
 const STATUS_LABEL: Record<string, string> = {
@@ -40,6 +40,10 @@ export default function AdminPage() {
   const [editStatus,    setEditStatus]    = useState<Record<number, string>>({});
   const [savingId,      setSavingId]      = useState<number | null>(null);
 
+  // ── Limit requests tab ──
+  const [limitReqs,     setLimitReqs]     = useState<LimitRequest[]>([]);
+  const [limitNotes,    setLimitNotes]    = useState<Record<number, string>>({});
+
   const [toast, setToast] = useState("");
 
   useEffect(() => {
@@ -54,6 +58,13 @@ export default function AdminPage() {
     if (tab !== "bugReports") return;
     loadBugReports();
   }, [tab, bugFilter]);
+
+  useEffect(() => {
+    if (tab !== "limitRequests") return;
+    adminApi.getLimitRequests("pending")
+      .then((r) => setLimitReqs(r.data.requests))
+      .catch(() => {});
+  }, [tab]);
 
   function loadBugReports() {
     setLoadingBugs(true);
@@ -123,6 +134,12 @@ export default function AdminPage() {
           onClick={() => setTab("bugReports")}
         >
           {t("admin.bugReports.title")}
+        </button>
+        <button
+          className={`${styles.tab} ${tab === "limitRequests" ? styles.tabActive : ""}`}
+          onClick={() => setTab("limitRequests")}
+        >
+          {t("admin.limitRequests.title")}
         </button>
       </div>
 
@@ -271,6 +288,79 @@ export default function AdminPage() {
                   </div>
                 );
               })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ── Limit requests tab ── */}
+      {tab === "limitRequests" && (
+        <section className={styles.section}>
+          {limitReqs.length === 0 ? (
+            <p className={styles.empty}>{t("admin.limitRequests.noRequests")}</p>
+          ) : (
+            <div className={styles.list}>
+              {limitReqs.map((r) => (
+                <div key={r.id} className={styles.card}>
+                  <div className={styles.cardMain}>
+                    <div className={styles.orgName}>{r.assignment_title}</div>
+                    <div className={styles.orgMeta}>
+                      <span>
+                        <span className={styles.metaLabel}>{t("admin.limitRequests.class")}:</span>
+                        {" "}{r.class_name}
+                      </span>
+                      <span>
+                        <span className={styles.metaLabel}>{t("admin.limitRequests.requester")}:</span>
+                        {" "}{r.requester_name} ({r.requester_email})
+                      </span>
+                      <span>
+                        <span className={styles.metaLabel}>{t("admin.limitRequests.current")}:</span>
+                        {" "}{r.current_max_files}개 / {r.current_max_size_mb}MB
+                      </span>
+                      <span>
+                        <span className={styles.metaLabel}>{t("admin.limitRequests.requested")}:</span>
+                        {" "}{r.requested_max_files}개 / {r.requested_max_size_mb}MB
+                      </span>
+                      {r.reason && (
+                        <span>
+                          <span className={styles.metaLabel}>{t("admin.limitRequests.reason")}:</span>
+                          {" "}{r.reason}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
+                      <input
+                        className={styles.noteInput}
+                        placeholder={t("admin.limitRequests.notePlaceholder")}
+                        value={limitNotes[r.id] ?? ""}
+                        onChange={(e) => setLimitNotes((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className={styles.cardActions}>
+                    <button
+                      className={styles.btnApprove}
+                      onClick={async () => {
+                        await adminApi.approveLimitRequest(r.id, limitNotes[r.id]);
+                        setLimitReqs((prev) => prev.filter((x) => x.id !== r.id));
+                        showToast(t("admin.limitRequests.approveSuccess"));
+                      }}
+                    >
+                      {t("admin.limitRequests.approve")}
+                    </button>
+                    <button
+                      className={styles.btnReject}
+                      onClick={async () => {
+                        await adminApi.rejectLimitRequest(r.id, limitNotes[r.id]);
+                        setLimitReqs((prev) => prev.filter((x) => x.id !== r.id));
+                        showToast(t("admin.limitRequests.rejectSuccess"));
+                      }}
+                    >
+                      {t("admin.limitRequests.reject")}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </section>

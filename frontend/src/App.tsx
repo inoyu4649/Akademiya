@@ -29,6 +29,10 @@ import CalendarPage from "./pages/calendar/CalendarPage";
 import ClassStatsPage from "./pages/stats/ClassStatsPage";
 import OrgStatsPage from "./pages/stats/OrgStatsPage";
 import BugReportPage from "./pages/bugReport/BugReportPage";
+import SurveyListPage from "./pages/survey/SurveyListPage";
+import SurveyCreatePage from "./pages/survey/SurveyCreatePage";
+import SurveyDetailPage from "./pages/survey/SurveyDetailPage";
+import SurveyStatsPage from "./pages/survey/SurveyStatsPage";
 import "./App.css";
 
 const router = createBrowserRouter([
@@ -66,6 +70,10 @@ const router = createBrowserRouter([
       { path: "classes/:classId/stats", element: <ClassStatsPage /> },
       { path: "org/:id/stats",          element: <OrgStatsPage /> },
       { path: "bug-report",             element: <BugReportPage /> },
+      { path: "surveys",                element: <SurveyListPage /> },
+      { path: "surveys/create",         element: <SurveyCreatePage /> },
+      { path: "surveys/:id",            element: <SurveyDetailPage /> },
+      { path: "surveys/:id/stats",      element: <SurveyStatsPage /> },
     ],
   },
 

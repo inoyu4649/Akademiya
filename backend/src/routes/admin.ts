@@ -177,4 +177,117 @@ router.patch("/bug-reports/:id", requireAuth, requireAdmin, async (req, res) => 
   res.json({ message: "updated" });
 });
 
+// ── GET /api/admin/limit-requests — 파일 한도 확장 요청 목록 ─────────────────
+router.get("/limit-requests", requireAuth, requireAdmin, async (req, res) => {
+  const status = (req.query.status as string) || "pending";
+  const [rows] = await pool.execute(
+    `SELECT slr.id, slr.assignment_id, slr.requested_max_files, slr.requested_max_size_mb,
+            slr.reason, slr.status, slr.admin_note, slr.created_at,
+            a.title AS assignment_title, a.max_files AS current_max_files, a.max_size_mb AS current_max_size_mb,
+            c.name AS class_name,
+            u.display_name AS requester_name, u.email AS requester_email
+     FROM submission_limit_requests slr
+     JOIN assignments a ON a.id = slr.assignment_id
+     JOIN classes c ON c.id = a.class_id
+     LEFT JOIN users u ON u.id = slr.requester_id
+     WHERE slr.status = ?
+     ORDER BY slr.created_at DESC`,
+    [status]
+  ) as any[];
+  res.json({ requests: rows });
+});
+
+// ── POST /api/admin/limit-requests/:id/approve ───────────────────────────────
+router.post("/limit-requests/:id/approve", requireAuth, requireAdmin, async (req, res) => {
+  const reqId = Number(req.params.id);
+  const adminId = req.user!.id;
+  const { admin_note } = req.body as { admin_note?: string };
+
+  const [rows] = await pool.execute(
+    "SELECT * FROM submission_limit_requests WHERE id = ? AND status = 'pending'",
+    [reqId]
+  ) as any[];
+  if (!(rows as any[]).length) {
+    res.status(404).json({ error: "notFound" });
+    return;
+  }
+  const r = (rows as any[])[0];
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    // 과제 한도 업데이트
+    await conn.execute(
+      "UPDATE assignments SET max_files = ?, max_size_mb = ? WHERE id = ?",
+      [r.requested_max_files, r.requested_max_size_mb, r.assignment_id]
+    );
+    // 요청 상태 업데이트
+    await conn.execute(
+      `UPDATE submission_limit_requests
+       SET status = 'approved', admin_note = ?, reviewed_by = ?, updated_at = NOW()
+       WHERE id = ?`,
+      [admin_note?.trim() || null, adminId, reqId]
+    );
+    // 요청자 알림
+    if (r.requester_id) {
+      await conn.execute(
+        `INSERT INTO notifications (user_id, type, title, body, link)
+         VALUES (?, 'broadcast', ?, ?, ?)`,
+        [
+          r.requester_id,
+          "파일 한도 확장 요청이 승인되었습니다",
+          `최대 ${r.requested_max_files}개, ${r.requested_max_size_mb}MB로 확장되었습니다.`,
+          `/assignments/${r.assignment_id}`,
+        ]
+      );
+    }
+    await conn.commit();
+    res.json({ message: "approved" });
+  } catch (e) {
+    try { await conn.rollback(); } catch { /* ignore */ }
+    throw e;
+  } finally {
+    try { conn.release(); } catch { /* ignore */ }
+  }
+});
+
+// ── POST /api/admin/limit-requests/:id/reject ────────────────────────────────
+router.post("/limit-requests/:id/reject", requireAuth, requireAdmin, async (req, res) => {
+  const reqId   = Number(req.params.id);
+  const adminId = req.user!.id;
+  const { admin_note } = req.body as { admin_note?: string };
+
+  const [rows] = await pool.execute(
+    "SELECT requester_id, assignment_id FROM submission_limit_requests WHERE id = ? AND status = 'pending'",
+    [reqId]
+  ) as any[];
+  if (!(rows as any[]).length) {
+    res.status(404).json({ error: "notFound" });
+    return;
+  }
+  const r = (rows as any[])[0];
+
+  await pool.execute(
+    `UPDATE submission_limit_requests
+     SET status = 'rejected', admin_note = ?, reviewed_by = ?, updated_at = NOW()
+     WHERE id = ?`,
+    [admin_note?.trim() || null, adminId, reqId]
+  );
+
+  if (r.requester_id) {
+    await pool.execute(
+      `INSERT INTO notifications (user_id, type, title, body, link)
+       VALUES (?, 'broadcast', ?, ?, ?)`,
+      [
+        r.requester_id,
+        "파일 한도 확장 요청이 거절되었습니다",
+        admin_note?.trim() || "Akademiya 관리자가 파일 한도 확장 요청을 거절했습니다.",
+        `/assignments/${r.assignment_id}`,
+      ]
+    );
+  }
+
+  res.json({ message: "rejected" });
+});
+
 export default router;
