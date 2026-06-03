@@ -361,7 +361,18 @@
       "commentPlaceholder": "Write a comment...",
       "commentSubmit": "Post",
       "commentFiltered": "(profanity filtered)",
-      "deleteComment": "Delete"
+      "deleteComment": "Delete",
+      "fileHintMulti": "Up to {{count}} files, combined ≤{{mb}}MB",
+      "tooManyFiles": "You can attach up to {{max}} files.",
+      "totalTooLarge": "Total file size cannot exceed {{mb}}MB.",
+      "currentLimits": "Current limits: max {{files}} files, {{mb}}MB",
+      "requestLimitExpand": "Request Limit Increase",
+      "reqMaxFiles": "Max files",
+      "reqMaxSizeMb": "Max size (MB)",
+      "reqReason": "Reason (optional)",
+      "reqReasonPlaceholder": "Explain why you need a higher limit",
+      "submitRequest": "Submit Request",
+      "limitRequested": "Limit increase request submitted."
     },
     "status": {
       "submitted": "Submitted",
@@ -382,7 +393,8 @@
       "deadline_10m":   "Due in 10m",
       "broadcast":      "Announcement",
       "org_rejected":   "Org Rejected",
-      "class_rejected": "Class Rejected"
+      "class_rejected": "Class Rejected",
+      "new_survey":     "New Survey"
     },
     "broadcast": {
       "title": "Send Announcement",
