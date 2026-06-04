@@ -39,66 +39,92 @@ function QuestionStats({
       )}
 
       {/* 단일/복수 선택 */}
-      {(q.type === "single" || q.type === "multiple") && (
-        viewMode === "chart" ? (
-          <div className={styles.chartWrap}>
-            <ResponsiveContainer width="100%" height={Math.max(160, (q.options ?? []).length * 46)}>
-              <BarChart
-                data={(q.options ?? []).map((opt: any) => ({
-                  name: opt.label,
-                  count: Number(opt.count),
-                  pct: total > 0 ? Math.round((opt.count / total) * 100) : 0,
-                }))}
-                layout="vertical"
-                margin={{ left: 8, right: 48, top: 4, bottom: 4 }}
-              >
-                <XAxis type="number" domain={[0, total || 1]} hide />
-                <YAxis type="category" dataKey="name" width={160}
-                  tick={{ fontSize: 13, fill: "var(--text-primary)" }} />
-                <Tooltip
-                  formatter={(v: any, _: any, props: any) =>
-                    [`${v}명 (${props.payload.pct}%)`, t("stats.submitted")]
-                  }
-                  contentStyle={{
-                    background: "var(--bg-panel)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius-sm)",
-                    fontSize: 12,
-                  }}
-                />
-                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                  {(q.options ?? []).map((_: any, i: number) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+      {(q.type === "single" || q.type === "multiple") && (() => {
+        const chartData = [
+          ...(q.options ?? []).map((opt: any) => ({
+            name: opt.label,
+            count: Number(opt.count),
+            pct: total > 0 ? Math.round((Number(opt.count) / total) * 100) : 0,
+            isOther: false,
+          })),
+          ...(q.has_other ? [{
+            name: t("survey.otherOption"),
+            count: Number(q.other_count ?? 0),
+            pct: total > 0 ? Math.round((Number(q.other_count ?? 0) / total) * 100) : 0,
+            isOther: true,
+          }] : []),
+        ];
+        return (
+          <>
+            {viewMode === "chart" ? (
+              <div className={styles.chartWrap}>
+                <ResponsiveContainer width="100%" height={Math.max(160, chartData.length * 46)}>
+                  <BarChart
+                    data={chartData}
+                    layout="vertical"
+                    margin={{ left: 8, right: 48, top: 4, bottom: 4 }}
+                  >
+                    <XAxis type="number" domain={[0, total || 1]} hide />
+                    <YAxis type="category" dataKey="name" width={160}
+                      tick={{ fontSize: 13, fill: "var(--text-primary)" }} />
+                    <Tooltip
+                      formatter={(v: any, _: any, props: any) =>
+                        [`${v}명 (${props.payload.pct}%)`, t("stats.submitted")]
+                      }
+                      contentStyle={{
+                        background: "var(--bg-panel)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "var(--radius-sm)",
+                        fontSize: 12,
+                      }}
+                    />
+                    <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                      {chartData.map((d: any, i: number) => (
+                        <Cell key={i} fill={d.isOther ? "#9ca3af" : COLORS[i % COLORS.length]} />
+                      ))}
+                      <LabelList
+                        dataKey="pct"
+                        position="right"
+                        formatter={(v: any) => `${v}%`}
+                        style={{ fontSize: 12, fill: "var(--text-secondary)" }}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className={styles.optionStats}>
+                {chartData.map((opt: any, i: number) => (
+                  <div key={opt.isOther ? "other" : i} className={styles.optionStat}>
+                    <div className={styles.optionStatHeader}>
+                      <span className={styles.optionLabel}>{opt.name}</span>
+                      <span className={styles.optionCount}>{opt.count}명 ({opt.pct}%)</span>
+                    </div>
+                    <div className={styles.barTrack}>
+                      <div
+                        className={styles.barFill}
+                        style={{ width: `${opt.pct}%`, background: opt.isOther ? "#9ca3af" : undefined }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {q.has_other && (q.other_answers ?? []).length > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>
+                  {t("survey.otherOption")}:
+                </p>
+                <div className={styles.textAnswers}>
+                  {(q.other_answers as string[]).map((ans: string, i: number) => (
+                    <div key={i} className={styles.textAnswer}>{ans}</div>
                   ))}
-                  <LabelList
-                    dataKey="pct"
-                    position="right"
-                    formatter={(v: any) => `${v}%`}
-                    style={{ fontSize: 12, fill: "var(--text-secondary)" }}
-                  />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div className={styles.optionStats}>
-            {(q.options ?? []).map((opt: any) => {
-              const pct = total > 0 ? Math.round((opt.count / total) * 100) : 0;
-              return (
-                <div key={opt.id} className={styles.optionStat}>
-                  <div className={styles.optionStatHeader}>
-                    <span className={styles.optionLabel}>{opt.label}</span>
-                    <span className={styles.optionCount}>{opt.count}명 ({pct}%)</span>
-                  </div>
-                  <div className={styles.barTrack}>
-                    <div className={styles.barFill} style={{ width: `${pct}%` }} />
-                  </div>
                 </div>
-              );
-            })}
-          </div>
-        )
-      )}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* 텍스트 */}
       {q.type === "text" && (
@@ -226,6 +252,12 @@ export default function SurveyStatsPage() {
         for (const opt of q.options ?? []) {
           const pct = total > 0 ? ((opt.count / total) * 100).toFixed(1) : "0.0";
           lines.push([esc(opt.label), opt.count, `${pct}%`].join(","));
+        }
+        if (q.has_other) {
+          const otherCount = Number(q.other_count ?? 0);
+          const pct = total > 0 ? ((otherCount / total) * 100).toFixed(1) : "0.0";
+          lines.push([esc(t("survey.otherOption")), otherCount, `${pct}%`].join(","));
+          for (const ans of q.other_answers ?? []) lines.push(esc(`  ${ans}`));
         }
       } else if (q.type === "text") {
         lines.push(esc(t("survey.textAnswerPlaceholder")));

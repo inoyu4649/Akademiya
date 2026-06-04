@@ -51,7 +51,26 @@ export default function SurveyPublicPage() {
       const next = multi
         ? cur.includes(optId) ? cur.filter((x) => x !== optId) : [...cur, optId]
         : [optId];
-      return { ...prev, [qId]: { question_id: qId, option_ids: next } };
+      if (!multi) {
+        const { other_text, ...rest } = prev[qId] ?? { question_id: qId };
+        return { ...prev, [qId]: { ...rest, question_id: qId, option_ids: next } };
+      }
+      return { ...prev, [qId]: { ...prev[qId], question_id: qId, option_ids: next } };
+    });
+  }
+
+  function toggleOther(qId: number, isSingle: boolean) {
+    setAnswers((prev) => {
+      const cur = prev[qId];
+      if (cur?.other_text !== undefined) {
+        const { other_text, ...rest } = cur;
+        return { ...prev, [qId]: rest };
+      }
+      if (isSingle) {
+        const { option_ids, ...rest } = cur ?? { question_id: qId };
+        return { ...prev, [qId]: { ...rest, question_id: qId, option_ids: [], other_text: "" } };
+      }
+      return { ...prev, [qId]: { ...cur, question_id: qId, other_text: "" } };
     });
   }
 
@@ -76,6 +95,15 @@ export default function SurveyPublicPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const visible = getVisibleQuestions();
+    // "기타" 텍스트 검증
+    for (const { q } of visible) {
+      if (q.type !== "single" && q.type !== "multiple") continue;
+      if (!q.has_other) continue;
+      const ans = answers[q.id];
+      if (ans?.other_text !== undefined && !ans.other_text.trim()) {
+        showToast(t("survey.otherTextRequired")); return;
+      }
+    }
     for (const { q } of visible) {
       if (!q.required) continue;
       const ans = answers[q.id];
@@ -84,9 +112,13 @@ export default function SurveyPublicPage() {
           showToast(t("survey.requiredFieldMissing", { title: q.title }));
           return;
         }
-      } else if (!ans?.option_ids?.length) {
-        showToast(t("survey.requiredFieldMissing", { title: q.title }));
-        return;
+      } else {
+        const hasOption = (ans?.option_ids?.length ?? 0) > 0;
+        const otherFilled = !!q.has_other && !!ans?.other_text?.trim();
+        if (!hasOption && !otherFilled) {
+          showToast(t("survey.requiredFieldMissing", { title: q.title }));
+          return;
+        }
       }
     }
 
@@ -183,27 +215,77 @@ export default function SurveyPublicPage() {
                 </div>
                 {q.description && <p className={styles.questionDesc}>{q.description}</p>}
 
-                {q.type === "single" && q.options?.map((opt) => (
-                  <label key={opt.id} className={styles.optLabel}>
-                    <input
-                      type="radio" name={`q${q.id}`}
-                      checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
-                      onChange={() => toggleOption(q.id, opt.id, false)}
-                    />
-                    {opt.label}
-                  </label>
-                ))}
+                {q.type === "single" && (
+                  <>
+                    {q.options?.map((opt) => (
+                      <label key={opt.id} className={styles.optLabel}>
+                        <input
+                          type="radio" name={`q${q.id}`}
+                          checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
+                          onChange={() => toggleOption(q.id, opt.id, false)}
+                        />
+                        {opt.label}
+                      </label>
+                    ))}
+                    {!!q.has_other && (
+                      <>
+                        <label className={styles.optLabel}>
+                          <input
+                            type="radio" name={`q${q.id}`}
+                            checked={answers[q.id]?.other_text !== undefined}
+                            onChange={() => toggleOther(q.id, true)}
+                          />
+                          {t("survey.otherOption")}
+                        </label>
+                        {answers[q.id]?.other_text !== undefined && (
+                          <input
+                            className={`${styles.input} ${styles.otherInput}`}
+                            value={answers[q.id]?.other_text ?? ""}
+                            onChange={(e) => setAnswer(q.id, { other_text: e.target.value })}
+                            placeholder={t("survey.otherInputPlaceholder")}
+                            maxLength={500}
+                          />
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
 
-                {q.type === "multiple" && q.options?.map((opt) => (
-                  <label key={opt.id} className={styles.optLabel}>
-                    <input
-                      type="checkbox"
-                      checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
-                      onChange={() => toggleOption(q.id, opt.id, true)}
-                    />
-                    {opt.label}
-                  </label>
-                ))}
+                {q.type === "multiple" && (
+                  <>
+                    {q.options?.map((opt) => (
+                      <label key={opt.id} className={styles.optLabel}>
+                        <input
+                          type="checkbox"
+                          checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
+                          onChange={() => toggleOption(q.id, opt.id, true)}
+                        />
+                        {opt.label}
+                      </label>
+                    ))}
+                    {!!q.has_other && (
+                      <>
+                        <label className={styles.optLabel}>
+                          <input
+                            type="checkbox"
+                            checked={answers[q.id]?.other_text !== undefined}
+                            onChange={() => toggleOther(q.id, false)}
+                          />
+                          {t("survey.otherOption")}
+                        </label>
+                        {answers[q.id]?.other_text !== undefined && (
+                          <input
+                            className={`${styles.input} ${styles.otherInput}`}
+                            value={answers[q.id]?.other_text ?? ""}
+                            onChange={(e) => setAnswer(q.id, { other_text: e.target.value })}
+                            placeholder={t("survey.otherInputPlaceholder")}
+                            maxLength={500}
+                          />
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
 
                 {q.type === "text" && (
                   <textarea

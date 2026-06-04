@@ -10,6 +10,7 @@ interface SubQuestionDraft {
   title: string;
   description: string;
   required: boolean;
+  has_other: boolean;
   options: string[];
   triggerOptionIdx: number | null;
 }
@@ -20,6 +21,7 @@ interface QuestionDraft {
   title: string;
   description: string;
   required: boolean;
+  has_other: boolean;
   options: string[];
   children: SubQuestionDraft[];
 }
@@ -29,7 +31,7 @@ const nextKey = () => String(++_keyCounter);
 
 const defaultSubQuestion = (): SubQuestionDraft => ({
   _key: nextKey(), type: "text", title: "", description: "", required: false,
-  options: ["", ""], triggerOptionIdx: null,
+  has_other: false, options: ["", ""], triggerOptionIdx: null,
 });
 
 /** 서버에서 받은 SurveyQuestion 트리를 편집용 draft 형식으로 변환 */
@@ -42,6 +44,7 @@ function questionsToDrafts(serverQuestions: SurveyQuestion[]): QuestionDraft[] {
       title: q.title,
       description: q.description ?? "",
       required: !!q.required,
+      has_other: !!q.has_other,
       options: parentOptions.length >= 2 ? parentOptions : ["", ""],
       children: (q.children ?? []).map((sq) => {
         const triggerIdx =
@@ -54,6 +57,7 @@ function questionsToDrafts(serverQuestions: SurveyQuestion[]): QuestionDraft[] {
           title: sq.title,
           description: sq.description ?? "",
           required: !!sq.required,
+          has_other: !!sq.has_other,
           options:
             sq.options && sq.options.length >= 2
               ? sq.options.map((o) => o.label)
@@ -107,7 +111,7 @@ export default function SurveyEditPage() {
   function addQuestion() {
     setQuestions((prev) => [...prev, {
       _key: nextKey(), type: "single", title: "", description: "",
-      required: false, options: ["", ""], children: [],
+      required: false, has_other: false, options: ["", ""], children: [],
     }]);
   }
 
@@ -227,12 +231,14 @@ export default function SurveyEditPage() {
           title: q.title.trim(),
           description: q.description.trim() || undefined,
           required: q.required,
+          has_other: ["single", "multiple"].includes(q.type) ? q.has_other : false,
           options: ["single", "multiple"].includes(q.type) ? q.options.filter((o) => o.trim()) : undefined,
           sub_questions: q.children.map((sq) => ({
             type: sq.type,
             title: sq.title.trim(),
             description: sq.description.trim() || undefined,
             required: sq.required,
+            has_other: ["single", "multiple"].includes(sq.type) ? sq.has_other : false,
             options: ["single", "multiple"].includes(sq.type) ? sq.options.filter((o) => o.trim()) : undefined,
             trigger_option_idx: sq.triggerOptionIdx,
           })),
@@ -382,6 +388,14 @@ export default function SurveyEditPage() {
                   <button type="button" className={styles.addOptBtn} onClick={() => addOption(q._key)}>
                     + {t("survey.addOption")}
                   </button>
+                  <label className={styles.checkLabelSmall} style={{ marginTop: 6 }}>
+                    <input
+                      type="checkbox"
+                      checked={q.has_other}
+                      onChange={(e) => updateQuestion(q._key, { has_other: e.target.checked })}
+                    />
+                    {t("survey.addOtherOption")}
+                  </label>
                 </div>
               )}
               {q.type === "rating" && <p className={styles.ratingHint}>{t("survey.ratingHint")}</p>}
@@ -466,6 +480,14 @@ export default function SurveyEditPage() {
                           <button type="button" className={styles.addOptBtn} onClick={() => addSubOption(q._key, sq._key)}>
                             + {t("survey.addOption")}
                           </button>
+                          <label className={styles.checkLabelSmall} style={{ marginTop: 6 }}>
+                            <input
+                              type="checkbox"
+                              checked={sq.has_other}
+                              onChange={(e) => updateSubQuestion(q._key, sq._key, { has_other: e.target.checked })}
+                            />
+                            {t("survey.addOtherOption")}
+                          </label>
                         </div>
                       )}
                       {sq.type === "rating" && <p className={styles.ratingHint}>{t("survey.ratingHint")}</p>}

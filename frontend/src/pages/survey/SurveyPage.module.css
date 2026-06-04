@@ -850,6 +850,13 @@
   margin-bottom: 20px;
 }
 
+/* ── 기타(직접 입력) ── */
+.otherInput {
+  margin-top: 6px;
+  margin-left: 24px;
+  width: calc(100% - 24px);
+}
+
 /* ── Chart ── */
 .chartWrap {
   margin-top: 12px;

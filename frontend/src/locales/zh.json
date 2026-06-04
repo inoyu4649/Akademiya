@@ -551,7 +551,11 @@
     "triggerWhen": "选择「{{option}}」时显示",
     "subTriggerLabel": "显示条件",
     "moveUp": "向上移动",
-    "moveDown": "向下移动"
+    "moveDown": "向下移动",
+    "addOtherOption": "添加其他（自填）",
+    "otherOption": "其他（自填）",
+    "otherInputPlaceholder": "请输入内容",
+    "otherTextRequired": "请填写「其他」项内容。"
   },
   "stats": {
     "classTitle": "班级统计",

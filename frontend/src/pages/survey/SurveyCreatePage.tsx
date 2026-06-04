@@ -12,6 +12,7 @@ interface SubQuestionDraft {
   title: string;
   description: string;
   required: boolean;
+  has_other: boolean;
   options: string[];
   triggerOptionIdx: number | null;
 }
@@ -22,6 +23,7 @@ interface QuestionDraft {
   title: string;
   description: string;
   required: boolean;
+  has_other: boolean;
   options: string[];
   children: SubQuestionDraft[];
 }
@@ -35,6 +37,7 @@ const defaultQuestion = (): QuestionDraft => ({
   title: "",
   description: "",
   required: false,
+  has_other: false,
   options: ["", ""],
   children: [],
 });
@@ -45,6 +48,7 @@ const defaultSubQuestion = (): SubQuestionDraft => ({
   title: "",
   description: "",
   required: false,
+  has_other: false,
   options: ["", ""],
   triggerOptionIdx: null,
 });
@@ -243,12 +247,14 @@ export default function SurveyCreatePage() {
           title: q.title.trim(),
           description: q.description.trim() || undefined,
           required: q.required,
+          has_other: ["single", "multiple"].includes(q.type) ? q.has_other : false,
           options: ["single", "multiple"].includes(q.type) ? q.options.filter((o) => o.trim()) : undefined,
           sub_questions: q.children.map((sq) => ({
             type: sq.type,
             title: sq.title.trim(),
             description: sq.description.trim() || undefined,
             required: sq.required,
+            has_other: ["single", "multiple"].includes(sq.type) ? sq.has_other : false,
             options: ["single", "multiple"].includes(sq.type) ? sq.options.filter((o) => o.trim()) : undefined,
             trigger_option_idx: sq.triggerOptionIdx,
           })),
@@ -448,6 +454,14 @@ export default function SurveyCreatePage() {
                   <button type="button" className={styles.addOptBtn} onClick={() => addOption(q._key)}>
                     + {t("survey.addOption")}
                   </button>
+                  <label className={styles.checkLabelSmall} style={{ marginTop: 6 }}>
+                    <input
+                      type="checkbox"
+                      checked={q.has_other}
+                      onChange={(e) => updateQuestion(q._key, { has_other: e.target.checked })}
+                    />
+                    {t("survey.addOtherOption")}
+                  </label>
                 </div>
               )}
 
@@ -543,6 +557,14 @@ export default function SurveyCreatePage() {
                           <button type="button" className={styles.addOptBtn} onClick={() => addSubOption(q._key, sq._key)}>
                             + {t("survey.addOption")}
                           </button>
+                          <label className={styles.checkLabelSmall} style={{ marginTop: 6 }}>
+                            <input
+                              type="checkbox"
+                              checked={sq.has_other}
+                              onChange={(e) => updateSubQuestion(q._key, sq._key, { has_other: e.target.checked })}
+                            />
+                            {t("survey.addOtherOption")}
+                          </label>
                         </div>
                       )}
                       {sq.type === "rating" && (

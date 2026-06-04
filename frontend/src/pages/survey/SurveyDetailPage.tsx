@@ -12,7 +12,9 @@ function buildAnswerState(items: MyAnswerItem[]): Record<number, SurveyAnswer> {
   for (const item of items) {
     const qId = item.question_id;
     if (!state[qId]) state[qId] = { question_id: qId };
-    if (item.option_id != null) {
+    if (item.is_other) {
+      state[qId].other_text = item.text_answer ?? "";
+    } else if (item.option_id != null) {
       state[qId].option_ids = [...(state[qId].option_ids ?? []), item.option_id];
     } else if (item.text_answer != null) {
       state[qId].text_answer = item.text_answer;
@@ -23,7 +25,7 @@ function buildAnswerState(items: MyAnswerItem[]): Record<number, SurveyAnswer> {
 
 /** 질문 블록 렌더링 (최상위 + 부속 질문 공용) */
 function QuestionBlock({
-  q, label, indent, answers, setAnswer, toggleOption,
+  q, label, indent, answers, setAnswer, toggleOption, toggleOther,
 }: {
   q: SurveyQuestion;
   label: string;
@@ -31,8 +33,10 @@ function QuestionBlock({
   answers: Record<number, SurveyAnswer>;
   setAnswer: (qId: number, patch: Partial<SurveyAnswer>) => void;
   toggleOption: (qId: number, optId: number, multi: boolean) => void;
+  toggleOther: (qId: number, isSingle: boolean) => void;
 }) {
   const { t } = useTranslation();
+  const otherSelected = !!q.has_other && answers[q.id]?.other_text !== undefined;
   return (
     <div className={`${styles.questionBlock} ${indent ? styles.questionBlockIndent : ""}`}>
       <div className={styles.questionLabel}>
@@ -42,27 +46,77 @@ function QuestionBlock({
       </div>
       {q.description && <p className={styles.questionDesc}>{q.description}</p>}
 
-      {q.type === "single" && q.options?.map((opt) => (
-        <label key={opt.id} className={styles.optLabel}>
-          <input
-            type="radio" name={`q${q.id}`}
-            checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
-            onChange={() => toggleOption(q.id, opt.id, false)}
-          />
-          {opt.label}
-        </label>
-      ))}
+      {q.type === "single" && (
+        <>
+          {q.options?.map((opt) => (
+            <label key={opt.id} className={styles.optLabel}>
+              <input
+                type="radio" name={`q${q.id}`}
+                checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
+                onChange={() => toggleOption(q.id, opt.id, false)}
+              />
+              {opt.label}
+            </label>
+          ))}
+          {!!q.has_other && (
+            <>
+              <label className={styles.optLabel}>
+                <input
+                  type="radio" name={`q${q.id}`}
+                  checked={otherSelected}
+                  onChange={() => toggleOther(q.id, true)}
+                />
+                {t("survey.otherOption")}
+              </label>
+              {otherSelected && (
+                <input
+                  className={`${styles.input} ${styles.otherInput}`}
+                  value={answers[q.id]?.other_text ?? ""}
+                  onChange={(e) => setAnswer(q.id, { other_text: e.target.value })}
+                  placeholder={t("survey.otherInputPlaceholder")}
+                  maxLength={500}
+                />
+              )}
+            </>
+          )}
+        </>
+      )}
 
-      {q.type === "multiple" && q.options?.map((opt) => (
-        <label key={opt.id} className={styles.optLabel}>
-          <input
-            type="checkbox"
-            checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
-            onChange={() => toggleOption(q.id, opt.id, true)}
-          />
-          {opt.label}
-        </label>
-      ))}
+      {q.type === "multiple" && (
+        <>
+          {q.options?.map((opt) => (
+            <label key={opt.id} className={styles.optLabel}>
+              <input
+                type="checkbox"
+                checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
+                onChange={() => toggleOption(q.id, opt.id, true)}
+              />
+              {opt.label}
+            </label>
+          ))}
+          {!!q.has_other && (
+            <>
+              <label className={styles.optLabel}>
+                <input
+                  type="checkbox"
+                  checked={otherSelected}
+                  onChange={() => toggleOther(q.id, false)}
+                />
+                {t("survey.otherOption")}
+              </label>
+              {otherSelected && (
+                <input
+                  className={`${styles.input} ${styles.otherInput}`}
+                  value={answers[q.id]?.other_text ?? ""}
+                  onChange={(e) => setAnswer(q.id, { other_text: e.target.value })}
+                  placeholder={t("survey.otherInputPlaceholder")}
+                  maxLength={500}
+                />
+              )}
+            </>
+          )}
+        </>
+      )}
 
       {q.type === "text" && (
         <textarea
@@ -143,7 +197,30 @@ export default function SurveyDetailPage() {
       const next = multi
         ? cur.includes(optId) ? cur.filter((x) => x !== optId) : [...cur, optId]
         : [optId];
-      return { ...prev, [qId]: { question_id: qId, option_ids: next } };
+      if (!multi) {
+        // 단일 선택: 실제 선택지 클릭 시 "기타" 해제
+        const { other_text, ...rest } = prev[qId] ?? { question_id: qId };
+        return { ...prev, [qId]: { ...rest, question_id: qId, option_ids: next } };
+      }
+      return { ...prev, [qId]: { ...prev[qId], question_id: qId, option_ids: next } };
+    });
+  }
+
+  function toggleOther(qId: number, isSingle: boolean) {
+    setAnswers((prev) => {
+      const cur = prev[qId];
+      if (cur?.other_text !== undefined) {
+        // 기타 해제
+        const { other_text, ...rest } = cur;
+        return { ...prev, [qId]: rest };
+      }
+      // 기타 선택
+      if (isSingle) {
+        // 단일 선택: 기존 option_ids 비움
+        const { option_ids, ...rest } = cur ?? { question_id: qId };
+        return { ...prev, [qId]: { ...rest, question_id: qId, option_ids: [], other_text: "" } };
+      }
+      return { ...prev, [qId]: { ...cur, question_id: qId, other_text: "" } };
     });
   }
 
@@ -173,8 +250,22 @@ export default function SurveyDetailPage() {
       const ans = answers[q.id];
       if (q.type === "text" || q.type === "rating") {
         if (!ans?.text_answer?.trim()) { showToast(t("survey.requiredFieldMissing", { title: q.title })); return; }
-      } else if (!ans?.option_ids?.length) {
-        showToast(t("survey.requiredFieldMissing", { title: q.title })); return;
+      } else {
+        const hasOption = (ans?.option_ids?.length ?? 0) > 0;
+        const otherFilled = !!q.has_other && !!ans?.other_text?.trim();
+        if (!hasOption && !otherFilled) {
+          showToast(t("survey.requiredFieldMissing", { title: q.title })); return;
+        }
+      }
+    }
+
+    // "기타" 텍스트 검증 (required 여부 무관)
+    for (const { q } of visible) {
+      if (q.type !== "single" && q.type !== "multiple") continue;
+      if (!q.has_other) continue;
+      const ans = answers[q.id];
+      if (ans?.other_text !== undefined && !ans.other_text.trim()) {
+        showToast(t("survey.otherTextRequired")); return;
       }
     }
 
@@ -340,6 +431,7 @@ export default function SurveyDetailPage() {
               answers={answers}
               setAnswer={setAnswer}
               toggleOption={toggleOption}
+              toggleOther={toggleOther}
             />
           ))}
 

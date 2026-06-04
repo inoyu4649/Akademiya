@@ -13,6 +13,7 @@ export interface SurveyQuestion {
   title:              string;
   description:        string | null;
   required:           number;
+  has_other:          number;
   options?:           SurveyOption[];
   parent_question_id: number | null;
   trigger_option_id:  number | null;
@@ -43,12 +44,14 @@ export interface MyAnswerItem {
   question_id: number;
   option_id:   number | null;
   text_answer: string | null;
+  is_other:    number;
 }
 
 export interface SurveyAnswer {
   question_id: number;
   option_ids?: number[];
   text_answer?: string;
+  other_text?: string;
 }
 
 export type QType = "single" | "multiple" | "text" | "rating";
@@ -58,6 +61,7 @@ export interface SubQuestionPayload {
   title:             string;
   description?:      string;
   required?:         boolean;
+  has_other?:        boolean;
   options?:          string[];
   trigger_option_idx: number | null;
 }
@@ -67,6 +71,7 @@ export interface QuestionPayload {
   title:         string;
   description?:  string;
   required?:     boolean;
+  has_other?:    boolean;
   options?:      string[];
   sub_questions?: SubQuestionPayload[];
 }

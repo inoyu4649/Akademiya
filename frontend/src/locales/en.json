@@ -552,7 +552,11 @@
     "triggerWhen": "When '{{option}}' is selected",
     "subTriggerLabel": "Show condition",
     "moveUp": "Move up",
-    "moveDown": "Move down"
+    "moveDown": "Move down",
+    "addOtherOption": "Add Other (write-in)",
+    "otherOption": "Other (write-in)",
+    "otherInputPlaceholder": "Enter your answer",
+    "otherTextRequired": "Please fill in the 'Other' field."
   },
   "stats": {
     "classTitle": "Class Stats",

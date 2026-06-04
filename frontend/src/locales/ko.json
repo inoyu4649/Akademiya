@@ -552,7 +552,11 @@
     "triggerWhen": "'{{option}}' 선택 시",
     "subTriggerLabel": "표시 조건",
     "moveUp": "위로 이동",
-    "moveDown": "아래로 이동"
+    "moveDown": "아래로 이동",
+    "addOtherOption": "기타(직접 입력) 추가",
+    "otherOption": "기타(직접 입력)",
+    "otherInputPlaceholder": "기타 내용을 입력하세요",
+    "otherTextRequired": "'기타' 항목에 내용을 입력해주세요."
   },
   "stats": {
     "classTitle": "반 통계",

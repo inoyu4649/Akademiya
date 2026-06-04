@@ -39,7 +39,7 @@ async function canViewStats(
 /** 문항 + 선택지 로드 — 계층 구조(children) 반환 */
 async function loadQuestions(surveyId: number): Promise<any[]> {
   const [questions] = await pool.execute(
-    `SELECT q.id, q.order_num, q.type, q.title, q.description, q.required,
+    `SELECT q.id, q.order_num, q.type, q.title, q.description, q.required, q.has_other,
             q.parent_question_id, q.trigger_option_id
      FROM survey_questions q
      WHERE q.survey_id = ?
@@ -78,7 +78,7 @@ async function loadQuestions(surveyId: number): Promise<any[]> {
 /** 문항 + 선택지 평탄 로드 (통계용) */
 async function loadQuestionsFlat(surveyId: number): Promise<any[]> {
   const [questions] = await pool.execute(
-    `SELECT q.id, q.order_num, q.type, q.title, q.description, q.required,
+    `SELECT q.id, q.order_num, q.type, q.title, q.description, q.required, q.has_other,
             q.parent_question_id, q.trigger_option_id
      FROM survey_questions q
      WHERE q.survey_id = ?
@@ -94,10 +94,11 @@ async function insertQuestions(conn: any, surveyId: number, questions: any[]) {
     const q = questions[i];
     const [qIns] = await conn.execute(
       `INSERT INTO survey_questions
-         (survey_id, order_num, type, title, description, required,
+         (survey_id, order_num, type, title, description, required, has_other,
           parent_question_id, trigger_option_id)
-       VALUES (?, ?, ?, ?, ?, ?, NULL, NULL)`,
-      [surveyId, i, q.type, q.title?.trim(), q.description?.trim() || null, q.required ? 1 : 0]
+       VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL)`,
+      [surveyId, i, q.type, q.title?.trim(), q.description?.trim() || null,
+       q.required ? 1 : 0, q.has_other ? 1 : 0]
     ) as any[];
     const qId = (qIns as any).insertId;
 
@@ -125,11 +126,11 @@ async function insertQuestions(conn: any, surveyId: number, questions: any[]) {
 
       const [sqIns] = await conn.execute(
         `INSERT INTO survey_questions
-           (survey_id, order_num, type, title, description, required,
+           (survey_id, order_num, type, title, description, required, has_other,
             parent_question_id, trigger_option_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [surveyId, si, sq.type, sq.title?.trim(), sq.description?.trim() || null,
-         sq.required ? 1 : 0, qId, triggerOptId]
+         sq.required ? 1 : 0, sq.has_other ? 1 : 0, qId, triggerOptId]
       ) as any[];
       const sqId = (sqIns as any).insertId;
 
@@ -453,10 +454,18 @@ async function insertAnswers(conn: any, responseId: number, answers: any[]) {
           [responseId, ans.question_id, optId]
         );
       }
-    } else {
+    } else if (!ans.other_text) {
+      // text/rating 타입: option도 other도 없는 경우
       await conn.execute(
         "INSERT INTO survey_response_items (response_id, question_id, text_answer) VALUES (?, ?, ?)",
         [responseId, ans.question_id, ans.text_answer ?? null]
+      );
+    }
+    // 기타(직접 입력) 응답
+    if (ans.other_text) {
+      await conn.execute(
+        "INSERT INTO survey_response_items (response_id, question_id, text_answer, is_other) VALUES (?, ?, ?, 1)",
+        [responseId, ans.question_id, ans.other_text]
       );
     }
   }
@@ -587,6 +596,19 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
         [q.id]
       ) as any[];
       q.options = opts;
+      // 기타(직접 입력) 통계
+      if (q.has_other) {
+        const [[otherRow]] = await pool.execute(
+          "SELECT COUNT(*) AS count FROM survey_response_items WHERE question_id = ? AND is_other = 1",
+          [q.id]
+        ) as any[];
+        q.other_count = Number((otherRow as any).count);
+        const [otherTexts] = await pool.execute(
+          "SELECT text_answer FROM survey_response_items WHERE question_id = ? AND is_other = 1 AND text_answer IS NOT NULL",
+          [q.id]
+        ) as any[];
+        q.other_answers = (otherTexts as any[]).map((r: any) => r.text_answer);
+      }
     } else if (q.type === "text") {
       const [texts] = await pool.execute(
         "SELECT sri.text_answer FROM survey_response_items sri WHERE sri.question_id = ? AND sri.text_answer IS NOT NULL",
