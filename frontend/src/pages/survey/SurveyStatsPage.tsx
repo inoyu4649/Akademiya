@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, LabelList, Cell,
 } from "recharts";
-import { surveyApi, type Survey, type SurveyQuestion } from "../../api/survey.api";
+import { surveyApi, type Survey } from "../../api/survey.api";
 import styles from "./SurveyPage.module.css";
 import sStyles from "../stats/StatsPage.module.css";
 
@@ -18,10 +18,9 @@ const COLORS = [
 
 /** 단일 문항 통계 렌더링 */
 function QuestionStats({
-  q, qi, label, total, viewMode, t, indent,
+  q, label, total, viewMode, t, indent,
 }: {
   q: any;
-  qi: number;
   label: string;
   total: number;
   viewMode: ViewMode;
@@ -297,7 +296,6 @@ export default function SurveyStatsPage() {
           <div key={q.id}>
             <QuestionStats
               q={q}
-              qi={qi}
               label={`${qi + 1}`}
               total={total}
               viewMode={viewMode}
@@ -308,7 +306,6 @@ export default function SurveyStatsPage() {
               <QuestionStats
                 key={sq.id}
                 q={sq}
-                qi={sqi}
                 label={`${qi + 1}-${sqi + 1}`}
                 total={total}
                 viewMode={viewMode}
