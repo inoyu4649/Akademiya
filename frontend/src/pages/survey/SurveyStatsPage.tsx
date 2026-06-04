@@ -1,29 +1,17 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, LabelList, Cell,
-} from "recharts";
 import { surveyApi, type Survey } from "../../api/survey.api";
 import styles from "./SurveyPage.module.css";
 import sStyles from "../stats/StatsPage.module.css";
 
-type ViewMode = "chart" | "table";
-
-const COLORS = [
-  "#4f46e5","#7c3aed","#db2777","#ea580c",
-  "#ca8a04","#16a34a","#0891b2","#6366f1",
-];
-
 /** 단일 문항 통계 렌더링 */
 function QuestionStats({
-  q, label, total, viewMode, t, indent,
+  q, label, total, t, indent,
 }: {
   q: any;
   label: string;
   total: number;
-  viewMode: ViewMode;
   t: (key: string, opts?: any) => string;
   indent?: boolean;
 }) {
@@ -40,7 +28,7 @@ function QuestionStats({
 
       {/* 단일/복수 선택 */}
       {(q.type === "single" || q.type === "multiple") && (() => {
-        const chartData = [
+        const rows = [
           ...(q.options ?? []).map((opt: any) => ({
             name: opt.label,
             count: Number(opt.count),
@@ -56,60 +44,22 @@ function QuestionStats({
         ];
         return (
           <>
-            {viewMode === "chart" ? (
-              <div className={styles.chartWrap}>
-                <ResponsiveContainer width="100%" height={Math.max(160, chartData.length * 46)}>
-                  <BarChart
-                    data={chartData}
-                    layout="vertical"
-                    margin={{ left: 8, right: 48, top: 4, bottom: 4 }}
-                  >
-                    <XAxis type="number" domain={[0, total || 1]} hide />
-                    <YAxis type="category" dataKey="name" width={160}
-                      tick={{ fontSize: 13, fill: "var(--text-primary)" }} />
-                    <Tooltip
-                      formatter={(v: any, _: any, props: any) =>
-                        [`${v}명 (${props.payload.pct}%)`, t("stats.submitted")]
-                      }
-                      contentStyle={{
-                        background: "var(--bg-panel)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "var(--radius-sm)",
-                        fontSize: 12,
-                      }}
-                    />
-                    <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                      {chartData.map((d: any, i: number) => (
-                        <Cell key={i} fill={d.isOther ? "#9ca3af" : COLORS[i % COLORS.length]} />
-                      ))}
-                      <LabelList
-                        dataKey="pct"
-                        position="right"
-                        formatter={(v: any) => `${v}%`}
-                        style={{ fontSize: 12, fill: "var(--text-secondary)" }}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className={styles.optionStats}>
-                {chartData.map((opt: any, i: number) => (
-                  <div key={opt.isOther ? "other" : i} className={styles.optionStat}>
-                    <div className={styles.optionStatHeader}>
-                      <span className={styles.optionLabel}>{opt.name}</span>
-                      <span className={styles.optionCount}>{opt.count}명 ({opt.pct}%)</span>
-                    </div>
-                    <div className={styles.barTrack}>
-                      <div
-                        className={styles.barFill}
-                        style={{ width: `${opt.pct}%`, background: opt.isOther ? "#9ca3af" : undefined }}
-                      />
-                    </div>
+            <div className={styles.optionStats}>
+              {rows.map((opt: any, i: number) => (
+                <div key={opt.isOther ? "other" : i} className={styles.optionStat}>
+                  <div className={styles.optionStatHeader}>
+                    <span className={styles.optionLabel}>{opt.name}</span>
+                    <span className={styles.optionCount}>{opt.count}명 ({opt.pct}%)</span>
                   </div>
-                ))}
-              </div>
-            )}
+                  <div className={styles.barTrack}>
+                    <div
+                      className={styles.barFill}
+                      style={{ width: `${opt.pct}%`, background: opt.isOther ? "#9ca3af" : undefined }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
             {q.has_other && (q.other_answers ?? []).length > 0 && (
               <div style={{ marginTop: 12 }}>
                 <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>
@@ -141,39 +91,11 @@ function QuestionStats({
 
       {/* 평점 */}
       {q.type === "rating" && q.rating_stats && (
-        <div>
-          <div className={styles.ratingStats}>
-            <span className={styles.avgRating}>
-              ⭐ {t("survey.avgRating")}: {Number(q.rating_stats.avg_rating ?? 0).toFixed(1)} / 5
-            </span>
-            <span className={styles.ratingCount}>({q.rating_stats.count}명)</span>
-          </div>
-          {viewMode === "chart" && q.rating_distribution?.length > 0 && (
-            <div className={styles.chartWrap}>
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart
-                  data={[1,2,3,4,5].map((r) => {
-                    const found = (q.rating_distribution as any[]).find((d: any) => d.rating === r);
-                    return { name: `${r}점`, count: found ? Number(found.count) : 0 };
-                  })}
-                  margin={{ left: 8, right: 24, top: 4, bottom: 4 }}
-                >
-                  <XAxis dataKey="name" tick={{ fontSize: 13 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                  <Tooltip
-                    formatter={(v: any) => [`${v}명`, t("stats.submitted")]}
-                    contentStyle={{
-                      background: "var(--bg-panel)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "var(--radius-sm)",
-                      fontSize: 12,
-                    }}
-                  />
-                  <Bar dataKey="count" fill="var(--accent)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+        <div className={styles.ratingStats}>
+          <span className={styles.avgRating}>
+            ⭐ {t("survey.avgRating")}: {Number(q.rating_stats.avg_rating ?? 0).toFixed(1)} / 5
+          </span>
+          <span className={styles.ratingCount}>({q.rating_stats.count}명)</span>
         </div>
       )}
     </div>
@@ -194,7 +116,6 @@ export default function SurveyStatsPage() {
   const [isCreator, setIsCreator] = useState(false);
   const [addEmail,  setAddEmail]  = useState("");
   const [toast,     setToast]     = useState("");
-  const [viewMode,  setViewMode]  = useState<ViewMode>("chart");
 
   function showToast(msg: string) {
     setToast(msg);
@@ -311,11 +232,6 @@ export default function SurveyStatsPage() {
           </p>
         </div>
         <div className={sStyles.headerRight}>
-          {/* 통일된 보조 버튼 */}
-          <button className={styles.toggleBtn} onClick={() => setViewMode((m) => m === "chart" ? "table" : "chart")}>
-            {viewMode === "chart" ? t("survey.viewTable") : t("survey.viewChart")}
-          </button>
-          {/* 통일된 주요 버튼 (accent) */}
           <button className={sStyles.downloadBtn} onClick={downloadCSV}>
             ⬇ {t("survey.downloadCsv")}
           </button>
@@ -330,7 +246,6 @@ export default function SurveyStatsPage() {
               q={q}
               label={`${qi + 1}`}
               total={total}
-              viewMode={viewMode}
               t={t}
             />
             {/* 부속 질문 통계 */}
@@ -340,7 +255,6 @@ export default function SurveyStatsPage() {
                 q={sq}
                 label={`${qi + 1}-${sqi + 1}`}
                 total={total}
-                viewMode={viewMode}
                 t={t}
                 indent
               />
@@ -361,7 +275,6 @@ export default function SurveyStatsPage() {
               onChange={(e) => setAddEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddViewer())}
             />
-            {/* 통일된 주요 버튼 */}
             <button className={styles.addViewerBtn} onClick={handleAddViewer}>
               {t("survey.addViewer")}
             </button>
@@ -373,7 +286,6 @@ export default function SurveyStatsPage() {
               {viewers.map((v) => (
                 <div key={v.id} className={styles.viewerRow}>
                   <span>{v.display_name} ({v.email})</span>
-                  {/* 통일된 위험 버튼 */}
                   <button className={styles.removeViewerBtn} onClick={() => handleRemoveViewer(v.id)}>
                     {t("survey.removeViewer")}
                   </button>
