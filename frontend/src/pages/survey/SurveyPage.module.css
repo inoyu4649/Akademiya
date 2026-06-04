@@ -707,14 +707,17 @@
 }
 
 .removeViewerBtn {
-  background: none;
-  border: none;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: var(--radius-sm);
   color: #ef4444;
   font-size: 12px;
+  padding: 4px 10px;
   cursor: pointer;
-  transition: opacity 0.1s;
+  transition: background 0.1s;
+  white-space: nowrap;
 }
-.removeViewerBtn:hover { opacity: 0.7; }
+.removeViewerBtn:hover { background: rgba(239,68,68,0.14); }
 
 /* ── Toast ── */
 .toast {
@@ -764,29 +767,88 @@
   flex-wrap: wrap;
 }
 
-.viewToggleBtn {
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.15s;
+/* ── 문항 순서 변경 ── */
+.moveButtons {
+  display: flex;
+  gap: 2px;
 }
-.viewToggleBtn:hover { background: var(--bg-hover); }
 
-.downloadCsvBtn {
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: none;
-  background: var(--color-primary, #4f46e5);
-  color: #fff;
-  font-size: 13px;
+.moveBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 5px;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: color 0.1s, background 0.1s;
 }
-.downloadCsvBtn:hover { opacity: 0.88; }
+.moveBtn:hover:not(:disabled) { color: var(--accent); background: rgba(79,195,247,0.08); }
+.moveBtn:disabled { opacity: 0.3; cursor: default; }
+
+/* ── 부속 질문 ── */
+.subQuestions {
+  margin-top: 14px;
+  padding-left: 18px;
+  border-left: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.subQuestionCard {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+
+.subQuestionNum {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.addSubQBtn {
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 5px 12px;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: border-color 0.1s, color 0.1s;
+}
+.addSubQBtn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* 응답 폼 내 부속 질문 들여쓰기 */
+.questionBlockIndent {
+  margin-left: 24px;
+  border-left: 3px solid var(--accent);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* 통계 페이지 부속 질문 들여쓰기 */
+.statCardIndent {
+  margin-left: 24px;
+  border-left: 3px solid var(--accent);
+}
+
+/* 수정 경고 배너 */
+.editWarning {
+  background: rgba(245,158,11,0.10);
+  border: 1px solid rgba(245,158,11,0.35);
+  border-radius: var(--radius-sm);
+  color: #b45309;
+  font-size: 13px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+}
 
 /* ── Chart ── */
 .chartWrap {

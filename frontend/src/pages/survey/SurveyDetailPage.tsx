@@ -7,7 +7,6 @@ import {
 } from "../../api/survey.api";
 import styles from "./SurveyPage.module.css";
 
-/** myAnswers 배열 → answers 상태 변환 */
 function buildAnswerState(items: MyAnswerItem[]): Record<number, SurveyAnswer> {
   const state: Record<number, SurveyAnswer> = {};
   for (const item of items) {
@@ -20,6 +19,75 @@ function buildAnswerState(items: MyAnswerItem[]): Record<number, SurveyAnswer> {
     }
   }
   return state;
+}
+
+/** 질문 블록 렌더링 (최상위 + 부속 질문 공용) */
+function QuestionBlock({
+  q, label, indent, answers, setAnswer, toggleOption,
+}: {
+  q: SurveyQuestion;
+  label: string;
+  indent?: boolean;
+  answers: Record<number, SurveyAnswer>;
+  setAnswer: (qId: number, patch: Partial<SurveyAnswer>) => void;
+  toggleOption: (qId: number, optId: number, multi: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className={`${styles.questionBlock} ${indent ? styles.questionBlockIndent : ""}`}>
+      <div className={styles.questionLabel}>
+        <span className={styles.questionNum}>{label}.</span>
+        {q.title}
+        {q.required === 1 && <span className={styles.requiredMark}>*</span>}
+      </div>
+      {q.description && <p className={styles.questionDesc}>{q.description}</p>}
+
+      {q.type === "single" && q.options?.map((opt) => (
+        <label key={opt.id} className={styles.optLabel}>
+          <input
+            type="radio" name={`q${q.id}`}
+            checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
+            onChange={() => toggleOption(q.id, opt.id, false)}
+          />
+          {opt.label}
+        </label>
+      ))}
+
+      {q.type === "multiple" && q.options?.map((opt) => (
+        <label key={opt.id} className={styles.optLabel}>
+          <input
+            type="checkbox"
+            checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
+            onChange={() => toggleOption(q.id, opt.id, true)}
+          />
+          {opt.label}
+        </label>
+      ))}
+
+      {q.type === "text" && (
+        <textarea
+          className={styles.textarea} rows={3}
+          value={answers[q.id]?.text_answer ?? ""}
+          onChange={(e) => setAnswer(q.id, { text_answer: e.target.value })}
+          placeholder={t("survey.textAnswerPlaceholder")}
+        />
+      )}
+
+      {q.type === "rating" && (
+        <div className={styles.ratingRow}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n} type="button"
+              className={`${styles.ratingBtn} ${answers[q.id]?.text_answer === String(n) ? styles.ratingBtnActive : ""}`}
+              onClick={() => setAnswer(q.id, { text_answer: String(n) })}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function SurveyDetailPage() {
@@ -36,7 +104,7 @@ export default function SurveyDetailPage() {
   const [loading,   setLoading]   = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted,  setSubmitted]  = useState(false);
-  const [editMode,   setEditMode]   = useState(false);   // 응답 수정 모드
+  const [editMode,   setEditMode]   = useState(false);
   const [toast,      setToast]      = useState("");
   const [answers,    setAnswers]    = useState<Record<number, SurveyAnswer>>({});
 
@@ -49,7 +117,6 @@ export default function SurveyDetailPage() {
         setAlreadyResponded(ar);
         setCanStats(cs);
         setIsCreator(ic);
-        // 수정 허용이면 기존 답변 프리필
         if (ar && s.allow_edit && myAnswers?.length) {
           setAnswers(buildAnswerState(myAnswers));
         }
@@ -80,19 +147,34 @@ export default function SurveyDetailPage() {
     });
   }
 
+  /** 현재 answers 기준으로 표시해야 할 모든 질문(부속 포함) 수집 */
+  function getVisibleQuestions(): Array<{ q: SurveyQuestion; label: string; indent: boolean }> {
+    const result: Array<{ q: SurveyQuestion; label: string; indent: boolean }> = [];
+    questions.forEach((q, qi) => {
+      result.push({ q, label: `${qi + 1}`, indent: false });
+      const selectedOptionIds = answers[q.id]?.option_ids ?? [];
+      (q.children ?? []).forEach((sq, sqi) => {
+        const show =
+          sq.trigger_option_id == null ||
+          selectedOptionIds.includes(sq.trigger_option_id);
+        if (show) {
+          result.push({ q: sq, label: `${qi + 1}-${sqi + 1}`, indent: true });
+        }
+      });
+    });
+    return result;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    for (const q of questions) {
+    const visible = getVisibleQuestions();
+    for (const { q } of visible) {
       if (!q.required) continue;
       const ans = answers[q.id];
       if (q.type === "text" || q.type === "rating") {
-        if (!ans?.text_answer?.trim()) {
-          showToast(t("survey.requiredFieldMissing", { title: q.title }));
-          return;
-        }
+        if (!ans?.text_answer?.trim()) { showToast(t("survey.requiredFieldMissing", { title: q.title })); return; }
       } else if (!ans?.option_ids?.length) {
-        showToast(t("survey.requiredFieldMissing", { title: q.title }));
-        return;
+        showToast(t("survey.requiredFieldMissing", { title: q.title })); return;
       }
     }
 
@@ -140,13 +222,13 @@ export default function SurveyDetailPage() {
   if (!survey) return null;
 
   const isExpired  = !!survey.expires_at && new Date(survey.expires_at) < new Date();
-  // 복수 응답: 이미 응답해도 계속 제출 가능
-  // 수정 모드: 이미 응답 + allow_edit + editMode
   const canRespond =
     (!alreadyResponded || !!survey.allow_multiple || editMode) &&
     !!survey.is_active &&
     !isExpired &&
     !submitted;
+
+  const visibleQuestions = getVisibleQuestions();
 
   return (
     <div className={styles.page}>
@@ -184,6 +266,9 @@ export default function SurveyDetailPage() {
             <button className={styles.statsBtn} onClick={() => navigate(`/surveys/${surveyId}/stats`)}>
               📊 {t("survey.viewStats")}
             </button>
+            <button className={styles.statsBtn} onClick={() => navigate(`/surveys/${surveyId}/edit`)}>
+              ✏️ {t("survey.editSurvey")}
+            </button>
             <button className={styles.toggleBtn} onClick={handleToggleActive}>
               {survey.is_active ? t("survey.deactivate") : t("survey.activate")}
             </button>
@@ -211,7 +296,7 @@ export default function SurveyDetailPage() {
         )}
       </div>
 
-      {/* 이미 응답 + 수정/재응답 버튼 */}
+      {/* 이미 응답 */}
       {(alreadyResponded || submitted) && !editMode && !survey.allow_multiple && (
         <div className={styles.respondedBox}>
           <span>✓</span>
@@ -224,12 +309,10 @@ export default function SurveyDetailPage() {
         </div>
       )}
 
-      {/* 복수 응답 안내 */}
       {!!survey.allow_multiple && survey.is_active && !isExpired && (
         <p className={styles.multipleNote}>{t("survey.multipleAllowed")}</p>
       )}
 
-      {/* 비활성/만료 */}
       {!canRespond && !alreadyResponded && !submitted && !editMode && (
         <div className={styles.respondedBox}>
           <p>{isExpired ? t("survey.expiredErr") : t("survey.notActiveErr")}</p>
@@ -248,62 +331,16 @@ export default function SurveyDetailPage() {
             </div>
           )}
 
-          {questions.map((q, qi) => (
-            <div key={q.id} className={styles.questionBlock}>
-              <div className={styles.questionLabel}>
-                <span className={styles.questionNum}>{qi + 1}.</span>
-                {q.title}
-                {q.required === 1 && <span className={styles.requiredMark}>*</span>}
-              </div>
-              {q.description && (
-                <p className={styles.questionDesc}>{q.description}</p>
-              )}
-
-              {q.type === "single" && q.options?.map((opt) => (
-                <label key={opt.id} className={styles.optLabel}>
-                  <input
-                    type="radio" name={`q${q.id}`}
-                    checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
-                    onChange={() => toggleOption(q.id, opt.id, false)}
-                  />
-                  {opt.label}
-                </label>
-              ))}
-
-              {q.type === "multiple" && q.options?.map((opt) => (
-                <label key={opt.id} className={styles.optLabel}>
-                  <input
-                    type="checkbox"
-                    checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
-                    onChange={() => toggleOption(q.id, opt.id, true)}
-                  />
-                  {opt.label}
-                </label>
-              ))}
-
-              {q.type === "text" && (
-                <textarea
-                  className={styles.textarea} rows={3}
-                  value={answers[q.id]?.text_answer ?? ""}
-                  onChange={(e) => setAnswer(q.id, { text_answer: e.target.value })}
-                  placeholder={t("survey.textAnswerPlaceholder")}
-                />
-              )}
-
-              {q.type === "rating" && (
-                <div className={styles.ratingRow}>
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                      key={n} type="button"
-                      className={`${styles.ratingBtn} ${answers[q.id]?.text_answer === String(n) ? styles.ratingBtnActive : ""}`}
-                      onClick={() => setAnswer(q.id, { text_answer: String(n) })}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+          {visibleQuestions.map(({ q, label, indent }) => (
+            <QuestionBlock
+              key={q.id}
+              q={q}
+              label={label}
+              indent={indent}
+              answers={answers}
+              setAnswer={setAnswer}
+              toggleOption={toggleOption}
+            />
           ))}
 
           <button type="submit" className={styles.submitBtn} disabled={submitting}>

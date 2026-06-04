@@ -1,19 +1,22 @@
 import client from "./client";
 
-export interface SurveyQuestion {
-  id:          number;
-  order_num:   number;
-  type:        "single" | "multiple" | "text" | "rating";
-  title:       string;
-  description: string | null;
-  required:    number;
-  options?:    SurveyOption[];
-}
-
 export interface SurveyOption {
   id:        number;
   order_num: number;
   label:     string;
+}
+
+export interface SurveyQuestion {
+  id:                 number;
+  order_num:          number;
+  type:               "single" | "multiple" | "text" | "rating";
+  title:              string;
+  description:        string | null;
+  required:           number;
+  options?:           SurveyOption[];
+  parent_question_id: number | null;
+  trigger_option_id:  number | null;
+  children?:          SurveyQuestion[];
 }
 
 export interface Survey {
@@ -26,8 +29,8 @@ export interface Survey {
   scope_id:        number | null;
   is_active:       number;
   allow_anonymous: number;
-  allow_edit:      number;  // 응답 수정 허용
-  allow_multiple:  number;  // 복수 응답 허용
+  allow_edit:      number;
+  allow_multiple:  number;
   expires_at:      string | null;
   created_at:      string;
   // extra fields in feed/list
@@ -48,6 +51,26 @@ export interface SurveyAnswer {
   text_answer?: string;
 }
 
+export type QType = "single" | "multiple" | "text" | "rating";
+
+export interface SubQuestionPayload {
+  type:              QType;
+  title:             string;
+  description?:      string;
+  required?:         boolean;
+  options?:          string[];
+  trigger_option_idx: number | null;
+}
+
+export interface QuestionPayload {
+  type:          QType;
+  title:         string;
+  description?:  string;
+  required?:     boolean;
+  options?:      string[];
+  sub_questions?: SubQuestionPayload[];
+}
+
 export const surveyApi = {
   // 설문 생성
   create: (data: {
@@ -59,13 +82,7 @@ export const surveyApi = {
     allow_edit?: boolean;
     allow_multiple?: boolean;
     expires_at?: string | null;
-    questions: Array<{
-      type: string;
-      title: string;
-      description?: string;
-      required?: boolean;
-      options?: string[];
-    }>;
+    questions: QuestionPayload[];
   }) => client.post<{ surveyId: number }>("/surveys", data),
 
   // 내가 만든 설문
@@ -93,6 +110,7 @@ export const surveyApi = {
       myAnswers: MyAnswerItem[];
       canViewStats: boolean;
       isCreator: boolean;
+      responseCount: number;
     }>(`/surveys/${id}`).then((r) => r.data),
 
   // 공개 설문 (비로그인)
@@ -128,9 +146,20 @@ export const surveyApi = {
   removeViewer: (id: number, userId: number) =>
     client.delete(`/surveys/${id}/viewers/${userId}`),
 
-  // 설문 수정 (활성화/비활성화, 만료일 등)
+  // 부분 수정 (활성화/비활성화 등)
   update: (id: number, data: { title?: string; description?: string; is_active?: boolean; expires_at?: string | null }) =>
     client.patch(`/surveys/${id}`, data),
+
+  // 전체 수정 (문항 포함)
+  updateFull: (id: number, data: {
+    title: string;
+    description?: string;
+    allow_anonymous?: boolean;
+    allow_edit?: boolean;
+    allow_multiple?: boolean;
+    expires_at?: string | null;
+    questions: QuestionPayload[];
+  }) => client.put(`/surveys/${id}`, data),
 
   // 설문 삭제
   delete: (id: number) => client.delete(`/surveys/${id}`),

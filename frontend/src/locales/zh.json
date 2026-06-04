@@ -540,7 +540,18 @@
     "badgeMultiple": "多次回答",
     "downloadCsv": "下载CSV",
     "viewChart": "图表显示",
-    "viewTable": "表格显示"
+    "viewTable": "表格显示",
+    "editTitle": "编辑问卷",
+    "editSurvey": "编辑问卷",
+    "saveEdit": "保存修改",
+    "editHasResponses": "该问卷已有{{count}}条回答。修改题目将删除所有现有回答。",
+    "editWillDeleteResponses": "现有{{count}}条回答将被永久删除。是否继续？",
+    "addSubQuestion": "添加子题目",
+    "triggerAlways": "始终显示",
+    "triggerWhen": "选择「{{option}}」时显示",
+    "subTriggerLabel": "显示条件",
+    "moveUp": "向上移动",
+    "moveDown": "向下移动"
   },
   "stats": {
     "classTitle": "班级统计",

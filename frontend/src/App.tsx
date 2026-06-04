@@ -31,6 +31,7 @@ import OrgStatsPage from "./pages/stats/OrgStatsPage";
 import BugReportPage from "./pages/bugReport/BugReportPage";
 import SurveyListPage from "./pages/survey/SurveyListPage";
 import SurveyCreatePage from "./pages/survey/SurveyCreatePage";
+import SurveyEditPage from "./pages/survey/SurveyEditPage";
 import SurveyDetailPage from "./pages/survey/SurveyDetailPage";
 import SurveyStatsPage from "./pages/survey/SurveyStatsPage";
 import SurveyPublicPage from "./pages/survey/SurveyPublicPage";
@@ -76,6 +77,7 @@ const router = createBrowserRouter([
       { path: "bug-report",             element: <BugReportPage /> },
       { path: "surveys",                element: <SurveyListPage /> },
       { path: "surveys/create",         element: <SurveyCreatePage /> },
+      { path: "surveys/:id/edit",       element: <SurveyEditPage /> },
       { path: "surveys/:id",            element: <SurveyDetailPage /> },
       { path: "surveys/:id/stats",      element: <SurveyStatsPage /> },
     ],

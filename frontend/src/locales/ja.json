@@ -540,7 +540,18 @@
     "badgeMultiple": "複数回答",
     "downloadCsv": "CSVダウンロード",
     "viewChart": "グラフ表示",
-    "viewTable": "表形式"
+    "viewTable": "表形式",
+    "editTitle": "アンケートを編集",
+    "editSurvey": "アンケートを編集",
+    "saveEdit": "変更を保存",
+    "editHasResponses": "このアンケートには{{count}}件の回答があります。設問を変更すると既存の回答がすべて削除されます。",
+    "editWillDeleteResponses": "既存の回答{{count}}件がすべて削除されます。続けますか？",
+    "addSubQuestion": "サブ設問を追加",
+    "triggerAlways": "常に表示",
+    "triggerWhen": "「{{option}}」を選択した場合",
+    "subTriggerLabel": "表示条件",
+    "moveUp": "上に移動",
+    "moveDown": "下に移動"
   },
   "stats": {
     "classTitle": "クラス統計",

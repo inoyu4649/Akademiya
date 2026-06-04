@@ -18,7 +18,6 @@ export default function SurveyPublicPage() {
   const [toast,      setToast]      = useState("");
   const [answers,    setAnswers]    = useState<Record<number, SurveyAnswer>>({});
 
-  // localStorage로 중복 제출 방지 (allow_multiple=1이면 무시)
   const storageKey = `akademiya_survey_${surveyId}_responded`;
   const alreadyResponded =
     !survey?.allow_multiple && localStorage.getItem(storageKey) === "1";
@@ -56,10 +55,28 @@ export default function SurveyPublicPage() {
     });
   }
 
+  /** 현재 answers 기준으로 표시해야 할 질문 목록 (부속 포함) */
+  function getVisibleQuestions(): Array<{ q: SurveyQuestion; label: string; indent: boolean }> {
+    const result: Array<{ q: SurveyQuestion; label: string; indent: boolean }> = [];
+    questions.forEach((q, qi) => {
+      result.push({ q, label: `${qi + 1}`, indent: false });
+      const selectedOptionIds = answers[q.id]?.option_ids ?? [];
+      (q.children ?? []).forEach((sq, sqi) => {
+        const show =
+          sq.trigger_option_id == null ||
+          selectedOptionIds.includes(sq.trigger_option_id);
+        if (show) {
+          result.push({ q: sq, label: `${qi + 1}-${sqi + 1}`, indent: true });
+        }
+      });
+    });
+    return result;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // 필수 문항 검사
-    for (const q of questions) {
+    const visible = getVisibleQuestions();
+    for (const { q } of visible) {
       if (!q.required) continue;
       const ans = answers[q.id];
       if (q.type === "text" || q.type === "rating") {
@@ -76,10 +93,9 @@ export default function SurveyPublicPage() {
     setSubmitting(true);
     try {
       await surveyApi.publicRespond(surveyId, Object.values(answers));
-      // allow_multiple이면 localStorage 저장 안 함 (계속 응답 가능)
       if (!survey?.allow_multiple) localStorage.setItem(storageKey, "1");
       setSubmitted(true);
-      setAnswers({});   // 복수 응답 시 폼 초기화
+      setAnswers({});
       showToast(t("survey.submitSuccess"));
     } catch (err: any) {
       const code = err?.response?.data?.error ?? "";
@@ -90,7 +106,6 @@ export default function SurveyPublicPage() {
     }
   }
 
-  /* ── 로딩 / 404 ── */
   if (loading) {
     return (
       <div className={styles.publicWrapper}>
@@ -109,50 +124,41 @@ export default function SurveyPublicPage() {
   }
 
   const isExpired  = !!survey.expires_at && new Date(survey.expires_at) < new Date();
-  // allow_multiple이면 제출 후에도 폼 다시 표시
   const canRespond = !alreadyResponded && !isExpired &&
     (!submitted || !!survey.allow_multiple);
+
+  const visibleQuestions = getVisibleQuestions();
 
   return (
     <div className={styles.publicWrapper}>
       {toast && <div className={styles.toast}>{toast}</div>}
 
       <div className={styles.publicCard}>
-        {/* 브랜드 헤더 */}
         <div className={styles.publicBrand}>
           <img src="/logo.png" alt="Akademiya" className={styles.publicBrandImg} />
           <span className={styles.publicBrandSub}>Survey</span>
         </div>
 
-        {/* 설문 헤더 */}
         <div className={styles.surveyHeader}>
           <div className={styles.surveyMeta}>
             <span className={`${styles.scopeBadge} ${styles.scope_public}`}>
               {t("survey.scopePublic")}
             </span>
-            {isExpired && (
-              <span className={styles.expiredBadge}>{t("survey.expired")}</span>
-            )}
+            {isExpired && <span className={styles.expiredBadge}>{t("survey.expired")}</span>}
             {(alreadyResponded || submitted) && (
               <span className={styles.respondedBadge}>{t("survey.responded")}</span>
             )}
           </div>
           <h1 className={styles.pageTitle}>{survey.title}</h1>
-          {survey.description && (
-            <p className={styles.surveyDesc}>{survey.description}</p>
-          )}
+          {survey.description && <p className={styles.surveyDesc}>{survey.description}</p>}
           <div className={styles.surveyInfo}>
             <span>{t("survey.by")}: {survey.creator_name}</span>
             {survey.expires_at && (
-              <span>
-                · {t("survey.expiresAt")}:{" "}
-                {new Date(survey.expires_at).toLocaleString()}
-              </span>
+              <span>· {t("survey.expiresAt")}: {new Date(survey.expires_at).toLocaleString()}</span>
             )}
           </div>
         </div>
 
-        {/* 이미 응답 */}
         {(alreadyResponded || submitted) && (
           <div className={styles.respondedBox}>
             <span>✓</span>
@@ -160,84 +166,61 @@ export default function SurveyPublicPage() {
           </div>
         )}
 
-        {/* 만료됨 */}
         {!alreadyResponded && !submitted && isExpired && (
           <div className={styles.respondedBox}>
             <p>{t("survey.expiredErr")}</p>
           </div>
         )}
 
-        {/* 응답 폼 */}
         {canRespond && (
           <form onSubmit={handleSubmit} className={styles.respondForm}>
-            {questions.map((q, qi) => (
-              <div key={q.id} className={styles.questionBlock}>
+            {visibleQuestions.map(({ q, label, indent }) => (
+              <div key={q.id} className={`${styles.questionBlock} ${indent ? styles.questionBlockIndent : ""}`}>
                 <div className={styles.questionLabel}>
-                  <span className={styles.questionNum}>{qi + 1}.</span>
+                  <span className={styles.questionNum}>{label}.</span>
                   {q.title}
-                  {q.required === 1 && (
-                    <span className={styles.requiredMark}>*</span>
-                  )}
+                  {q.required === 1 && <span className={styles.requiredMark}>*</span>}
                 </div>
-                {q.description && (
-                  <p className={styles.questionDesc}>{q.description}</p>
-                )}
+                {q.description && <p className={styles.questionDesc}>{q.description}</p>}
 
-                {/* 단일 선택 */}
-                {q.type === "single" &&
-                  q.options?.map((opt) => (
-                    <label key={opt.id} className={styles.optLabel}>
-                      <input
-                        type="radio"
-                        name={`q${q.id}`}
-                        checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
-                        onChange={() => toggleOption(q.id, opt.id, false)}
-                      />
-                      {opt.label}
-                    </label>
-                  ))}
+                {q.type === "single" && q.options?.map((opt) => (
+                  <label key={opt.id} className={styles.optLabel}>
+                    <input
+                      type="radio" name={`q${q.id}`}
+                      checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
+                      onChange={() => toggleOption(q.id, opt.id, false)}
+                    />
+                    {opt.label}
+                  </label>
+                ))}
 
-                {/* 복수 선택 */}
-                {q.type === "multiple" &&
-                  q.options?.map((opt) => (
-                    <label key={opt.id} className={styles.optLabel}>
-                      <input
-                        type="checkbox"
-                        checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
-                        onChange={() => toggleOption(q.id, opt.id, true)}
-                      />
-                      {opt.label}
-                    </label>
-                  ))}
+                {q.type === "multiple" && q.options?.map((opt) => (
+                  <label key={opt.id} className={styles.optLabel}>
+                    <input
+                      type="checkbox"
+                      checked={(answers[q.id]?.option_ids ?? []).includes(opt.id)}
+                      onChange={() => toggleOption(q.id, opt.id, true)}
+                    />
+                    {opt.label}
+                  </label>
+                ))}
 
-                {/* 단답형 */}
                 {q.type === "text" && (
                   <textarea
-                    className={styles.textarea}
-                    rows={3}
+                    className={styles.textarea} rows={3}
                     value={answers[q.id]?.text_answer ?? ""}
-                    onChange={(e) =>
-                      setAnswer(q.id, { text_answer: e.target.value })
-                    }
+                    onChange={(e) => setAnswer(q.id, { text_answer: e.target.value })}
                     placeholder={t("survey.textAnswerPlaceholder")}
                   />
                 )}
 
-                {/* 평점 */}
                 {q.type === "rating" && (
                   <div className={styles.ratingRow}>
                     {[1, 2, 3, 4, 5].map((n) => (
                       <button
-                        key={n}
-                        type="button"
-                        className={`${styles.ratingBtn} ${
-                          answers[q.id]?.text_answer === String(n)
-                            ? styles.ratingBtnActive
-                            : ""
-                        }`}
-                        onClick={() =>
-                          setAnswer(q.id, { text_answer: String(n) })
-                        }
+                        key={n} type="button"
+                        className={`${styles.ratingBtn} ${answers[q.id]?.text_answer === String(n) ? styles.ratingBtnActive : ""}`}
+                        onClick={() => setAnswer(q.id, { text_answer: String(n) })}
                       >
                         {n}
                       </button>
@@ -247,11 +230,7 @@ export default function SurveyPublicPage() {
               </div>
             ))}
 
-            <button
-              type="submit"
-              className={styles.submitBtn}
-              disabled={submitting}
-            >
+            <button type="submit" className={styles.submitBtn} disabled={submitting}>
               {submitting ? t("common.loading") : t("survey.submit")}
             </button>
           </form>

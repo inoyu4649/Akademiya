@@ -36,12 +36,17 @@ async function canViewStats(
   return (rows as any[]).length > 0;
 }
 
-/** 문항 + 선택지 로드 헬퍼 */
+/** 문항 + 선택지 로드 — 계층 구조(children) 반환 */
 async function loadQuestions(surveyId: number): Promise<any[]> {
   const [questions] = await pool.execute(
-    "SELECT q.id, q.order_num, q.type, q.title, q.description, q.required FROM survey_questions q WHERE q.survey_id = ? ORDER BY q.order_num",
+    `SELECT q.id, q.order_num, q.type, q.title, q.description, q.required,
+            q.parent_question_id, q.trigger_option_id
+     FROM survey_questions q
+     WHERE q.survey_id = ?
+     ORDER BY (q.parent_question_id IS NOT NULL), q.order_num`,
     [surveyId]
   ) as any[];
+
   for (const q of questions as any[]) {
     if (["single", "multiple"].includes(q.type)) {
       const [opts] = await pool.execute(
@@ -51,7 +56,93 @@ async function loadQuestions(surveyId: number): Promise<any[]> {
       q.options = opts;
     }
   }
+
+  // 계층 구조 빌드
+  const topLevel: any[] = [];
+  const childMap: Record<number, any[]> = {};
+  for (const q of questions as any[]) {
+    if (q.parent_question_id == null) {
+      q.children = [];
+      topLevel.push(q);
+    } else {
+      if (!childMap[q.parent_question_id]) childMap[q.parent_question_id] = [];
+      childMap[q.parent_question_id].push(q);
+    }
+  }
+  for (const q of topLevel) {
+    q.children = childMap[q.id] ?? [];
+  }
+  return topLevel;
+}
+
+/** 문항 + 선택지 평탄 로드 (통계용) */
+async function loadQuestionsFlat(surveyId: number): Promise<any[]> {
+  const [questions] = await pool.execute(
+    `SELECT q.id, q.order_num, q.type, q.title, q.description, q.required,
+            q.parent_question_id, q.trigger_option_id
+     FROM survey_questions q
+     WHERE q.survey_id = ?
+     ORDER BY (q.parent_question_id IS NOT NULL), q.order_num`,
+    [surveyId]
+  ) as any[];
   return questions as any[];
+}
+
+/** 질문 목록을 DB에 삽입 (생성 및 수정 공용) */
+async function insertQuestions(conn: any, surveyId: number, questions: any[]) {
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i];
+    const [qIns] = await conn.execute(
+      `INSERT INTO survey_questions
+         (survey_id, order_num, type, title, description, required,
+          parent_question_id, trigger_option_id)
+       VALUES (?, ?, ?, ?, ?, ?, NULL, NULL)`,
+      [surveyId, i, q.type, q.title?.trim(), q.description?.trim() || null, q.required ? 1 : 0]
+    ) as any[];
+    const qId = (qIns as any).insertId;
+
+    // 선택지 삽입
+    const optionIdMap: Record<number, number> = {}; // optionIndex → DB id
+    if (["single", "multiple"].includes(q.type) && q.options?.length) {
+      for (let j = 0; j < q.options.length; j++) {
+        const [optIns] = await conn.execute(
+          "INSERT INTO survey_options (question_id, order_num, label) VALUES (?, ?, ?)",
+          [qId, j, q.options[j]]
+        ) as any[];
+        optionIdMap[j] = (optIns as any).insertId;
+      }
+    }
+
+    // 부속 질문 삽입
+    const subQuestions: any[] = q.sub_questions ?? [];
+    for (let si = 0; si < subQuestions.length; si++) {
+      const sq = subQuestions[si];
+      // trigger_option_idx → 실제 option DB id
+      const triggerOptId =
+        sq.trigger_option_idx != null && optionIdMap[sq.trigger_option_idx] != null
+          ? optionIdMap[sq.trigger_option_idx]
+          : null;
+
+      const [sqIns] = await conn.execute(
+        `INSERT INTO survey_questions
+           (survey_id, order_num, type, title, description, required,
+            parent_question_id, trigger_option_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [surveyId, si, sq.type, sq.title?.trim(), sq.description?.trim() || null,
+         sq.required ? 1 : 0, qId, triggerOptId]
+      ) as any[];
+      const sqId = (sqIns as any).insertId;
+
+      if (["single", "multiple"].includes(sq.type) && sq.options?.length) {
+        for (let oj = 0; oj < sq.options.length; oj++) {
+          await conn.execute(
+            "INSERT INTO survey_options (question_id, order_num, label) VALUES (?, ?, ?)",
+            [sqId, oj, sq.options[oj]]
+          );
+        }
+      }
+    }
+  }
 }
 
 // ── POST /api/surveys — 설문 생성 ─────────────────────────────────────────────
@@ -72,12 +163,11 @@ router.post("/", requireAuth, async (req, res) => {
     return;
   }
 
-  // 공개 설문은 항상 익명
-  const isPublic     = scope_type === "public";
-  const storeAnon    = isPublic ? 1 : (allow_anonymous ? 1 : 0);
-  const storeEdit    = allow_edit    ? 1 : 0;
-  const storeMulti   = allow_multiple ? 1 : 0;
-  const sid          = scope_id ? Number(scope_id) : null;
+  const isPublic   = scope_type === "public";
+  const storeAnon  = isPublic ? 1 : (allow_anonymous ? 1 : 0);
+  const storeEdit  = allow_edit    ? 1 : 0;
+  const storeMulti = allow_multiple ? 1 : 0;
+  const sid        = scope_id ? Number(scope_id) : null;
 
   // scope 권한 확인
   if (scope_type === "class" && sid) {
@@ -109,37 +199,12 @@ router.post("/", requireAuth, async (req, res) => {
          (creator_id, title, description, scope_type, scope_id,
           allow_anonymous, allow_edit, allow_multiple, expires_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        userId,
-        title.trim(),
-        description?.trim() || null,
-        scope_type,
-        sid,
-        storeAnon,
-        storeEdit,
-        storeMulti,
-        expires_at || null,
-      ]
+      [userId, title.trim(), description?.trim() || null, scope_type, sid,
+       storeAnon, storeEdit, storeMulti, expires_at || null]
     ) as any[];
     const surveyId = (ins as any).insertId;
 
-    for (let i = 0; i < questions.length; i++) {
-      const q = questions[i];
-      const [qIns] = await conn.execute(
-        "INSERT INTO survey_questions (survey_id, order_num, type, title, description, required) VALUES (?, ?, ?, ?, ?, ?)",
-        [surveyId, i, q.type, q.title?.trim(), q.description?.trim() || null, q.required ? 1 : 0]
-      ) as any[];
-      const qId = (qIns as any).insertId;
-
-      if (["single", "multiple"].includes(q.type) && q.options?.length) {
-        for (let j = 0; j < q.options.length; j++) {
-          await conn.execute(
-            "INSERT INTO survey_options (question_id, order_num, label) VALUES (?, ?, ?)",
-            [qId, j, q.options[j]]
-          );
-        }
-      }
-    }
+    await insertQuestions(conn, surveyId, questions);
 
     // 새 설문 알림 (class/org)
     const notifyMembers = async (memberQuery: string, params: any[]) => {
@@ -342,14 +407,12 @@ router.get("/:id", requireAuth, async (req, res) => {
   const hasAccess = await canAccessSurvey(userId, survey);
   if (!hasAccess) { res.status(403).json({ error: "forbidden" }); return; }
 
-  // 기존 응답 여부
   const [respRows] = await pool.execute(
     "SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ? ORDER BY id DESC LIMIT 1",
     [surveyId, userId]
   ) as any[];
   const alreadyResponded = (respRows as any[]).length > 0;
 
-  // 수정 허용이면 기존 응답 내용 반환 (폼 프리필 용)
   let myAnswers: any[] = [];
   if (alreadyResponded && survey.allow_edit) {
     const responseId = (respRows as any[])[0].id;
@@ -363,6 +426,12 @@ router.get("/:id", requireAuth, async (req, res) => {
   const questions = await loadQuestions(surveyId);
   const canStats  = await canViewStats(userId, surveyId, survey.creator_id);
 
+  // 응답 수 (수정 페이지용)
+  const [[countRow]] = await pool.execute(
+    "SELECT COUNT(*) AS cnt FROM survey_responses WHERE survey_id = ?",
+    [surveyId]
+  ) as any[];
+
   res.json({
     survey,
     questions,
@@ -370,6 +439,7 @@ router.get("/:id", requireAuth, async (req, res) => {
     myAnswers,
     canViewStats: canStats,
     isCreator: survey.creator_id === userId,
+    responseCount: (countRow as any).cnt,
   });
 });
 
@@ -413,7 +483,6 @@ router.post("/:id/respond", requireAuth, async (req, res) => {
   const hasAccess = await canAccessSurvey(userId, survey);
   if (!hasAccess) { res.status(403).json({ error: "forbidden" }); return; }
 
-  // 복수 응답 불허인 경우 중복 방지
   if (!survey.allow_multiple) {
     const [existing] = await pool.execute(
       "SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ?",
@@ -499,10 +568,7 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
     res.status(403).json({ error: "forbidden" }); return;
   }
 
-  const [questions] = await pool.execute(
-    "SELECT * FROM survey_questions WHERE survey_id = ? ORDER BY order_num",
-    [surveyId]
-  ) as any[];
+  const questions = await loadQuestionsFlat(surveyId);
 
   const [[totalRow]] = await pool.execute(
     "SELECT COUNT(*) AS cnt FROM survey_responses WHERE survey_id = ?",
@@ -510,7 +576,7 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
   ) as any[];
   const total = (totalRow as any).cnt;
 
-  for (const q of questions as any[]) {
+  for (const q of questions) {
     if (["single", "multiple"].includes(q.type)) {
       const [opts] = await pool.execute(
         `SELECT so.id, so.label, COUNT(sri.id) AS count
@@ -533,7 +599,6 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
         [q.id]
       ) as any[];
       q.rating_stats = ratingRow;
-      // 분포 (1~5 각 개수)
       const [dist] = await pool.execute(
         `SELECT CAST(sri.text_answer AS UNSIGNED) AS rating, COUNT(*) AS count
          FROM survey_response_items sri
@@ -543,6 +608,22 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
       ) as any[];
       q.rating_distribution = dist;
     }
+  }
+
+  // 통계도 계층 구조로 반환
+  const topLevel: any[] = [];
+  const childMap: Record<number, any[]> = {};
+  for (const q of questions) {
+    if (q.parent_question_id == null) {
+      q.children = [];
+      topLevel.push(q);
+    } else {
+      if (!childMap[q.parent_question_id]) childMap[q.parent_question_id] = [];
+      childMap[q.parent_question_id].push(q);
+    }
+  }
+  for (const q of topLevel) {
+    q.children = childMap[q.id] ?? [];
   }
 
   let statViewers: any[] = [];
@@ -555,7 +636,7 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
     statViewers = sv as any[];
   }
 
-  res.json({ survey, questions, totalResponses: total, statViewers });
+  res.json({ survey, questions: topLevel, totalResponses: total, statViewers });
 });
 
 // ── POST /api/surveys/:id/viewers ─────────────────────────────────────────────
@@ -595,7 +676,7 @@ router.delete("/:id/viewers/:uid", requireAuth, async (req, res) => {
   res.json({ message: "removed" });
 });
 
-// ── PATCH /api/surveys/:id ────────────────────────────────────────────────────
+// ── PATCH /api/surveys/:id — 부분 수정 (활성화/비활성화 등) ───────────────────
 router.patch("/:id", requireAuth, async (req, res) => {
   const userId   = req.user!.id;
   const surveyId = Number(req.params.id);
@@ -616,6 +697,69 @@ router.patch("/:id", requireAuth, async (req, res) => {
 
   await pool.execute(`UPDATE surveys SET ${updates.join(", ")} WHERE id = ?`, params);
   res.json({ message: "updated" });
+});
+
+// ── PUT /api/surveys/:id — 설문 전체 수정 (문항 포함) ────────────────────────
+router.put("/:id", requireAuth, async (req, res) => {
+  const userId   = req.user!.id;
+  const surveyId = Number(req.params.id);
+  const {
+    title, description,
+    allow_anonymous, allow_edit, allow_multiple,
+    expires_at, questions,
+  } = req.body as any;
+
+  if (!title?.trim()) {
+    res.status(400).json({ error: "survey.missingFields" });
+    return;
+  }
+
+  const [rows] = await pool.execute(
+    "SELECT creator_id, scope_type FROM surveys WHERE id = ?",
+    [surveyId]
+  ) as any[];
+  if (!(rows as any[]).length) { res.status(404).json({ error: "notFound" }); return; }
+  const { creator_id, scope_type } = (rows as any[])[0];
+  if (creator_id !== userId) { res.status(403).json({ error: "forbidden" }); return; }
+
+  const isPublic   = scope_type === "public";
+  const storeAnon  = isPublic ? 1 : (allow_anonymous ? 1 : 0);
+  const storeEdit  = allow_edit    ? 1 : 0;
+  const storeMulti = allow_multiple ? 1 : 0;
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // 기존 응답 + 문항 삭제 (CASCADE로 response_items 자동 삭제)
+    await conn.execute("DELETE FROM survey_responses WHERE survey_id = ?", [surveyId]);
+    await conn.execute(
+      "DELETE FROM survey_questions WHERE survey_id = ? AND parent_question_id IS NULL",
+      [surveyId]
+    );
+
+    // surveys 기본 정보 업데이트
+    await conn.execute(
+      `UPDATE surveys SET title = ?, description = ?,
+        allow_anonymous = ?, allow_edit = ?, allow_multiple = ?, expires_at = ?
+       WHERE id = ?`,
+      [title.trim(), description?.trim() || null,
+       storeAnon, storeEdit, storeMulti, expires_at || null, surveyId]
+    );
+
+    // 문항 재삽입
+    if (questions?.length) {
+      await insertQuestions(conn, surveyId, questions);
+    }
+
+    await conn.commit();
+    res.json({ message: "updated" });
+  } catch (e) {
+    try { await conn.rollback(); } catch { /* ignore */ }
+    throw e;
+  } finally {
+    try { conn.release(); } catch { /* ignore */ }
+  }
 });
 
 // ── DELETE /api/surveys/:id ───────────────────────────────────────────────────

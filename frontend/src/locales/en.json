@@ -541,7 +541,18 @@
     "badgeMultiple": "Multi-response",
     "downloadCsv": "Download CSV",
     "viewChart": "View Chart",
-    "viewTable": "View Table"
+    "viewTable": "View Table",
+    "editTitle": "Edit Survey",
+    "editSurvey": "Edit Survey",
+    "saveEdit": "Save Changes",
+    "editHasResponses": "This survey has {{count}} response(s). Editing questions will delete all existing responses.",
+    "editWillDeleteResponses": "{{count}} existing response(s) will be permanently deleted. Continue?",
+    "addSubQuestion": "Add Sub-question",
+    "triggerAlways": "Always show",
+    "triggerWhen": "When '{{option}}' is selected",
+    "subTriggerLabel": "Show condition",
+    "moveUp": "Move up",
+    "moveDown": "Move down"
   },
   "stats": {
     "classTitle": "Class Stats",
