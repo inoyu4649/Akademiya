@@ -29,6 +29,13 @@ interface QuestionDraft {
 let _keyCounter = 0;
 const nextKey = () => String(++_keyCounter);
 
+/** UTC ISO 문자열 → datetime-local 입력 값(로컬 시간) */
+function utcToLocalDatetime(utcStr: string): string {
+  const d = new Date(utcStr);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 const defaultSubQuestion = (): SubQuestionDraft => ({
   _key: nextKey(), type: "text", title: "", description: "", required: false,
   has_other: false, options: ["", ""], triggerOptionIdx: null,
@@ -97,7 +104,7 @@ export default function SurveyEditPage() {
         setAllowAnon(!!s.allow_anonymous);
         setAllowEdit(!!s.allow_edit);
         setAllowMultiple(!!s.allow_multiple);
-        setExpiresAt(s.expires_at ? s.expires_at.slice(0, 16) : "");
+        setExpiresAt(s.expires_at ? utcToLocalDatetime(s.expires_at) : "");
         setScopeType(s.scope_type);
         setQuestions(questionsToDrafts(qs));
         setResponseCount(rc ?? 0);
@@ -225,7 +232,7 @@ export default function SurveyEditPage() {
         allow_anonymous: scopeType === "public" ? true : allowAnon,
         allow_edit: allowEdit,
         allow_multiple: allowMultiple,
-        expires_at: expiresAt || null,
+        expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
         questions: questions.map((q) => ({
           type: q.type,
           title: q.title.trim(),

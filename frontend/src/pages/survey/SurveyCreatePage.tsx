@@ -241,7 +241,7 @@ export default function SurveyCreatePage() {
         allow_anonymous: scopeType === "public" ? true : allowAnon,
         allow_edit: allowEdit,
         allow_multiple: allowMultiple,
-        expires_at: expiresAt || null,
+        expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
         questions: questions.map((q) => ({
           type: q.type,
           title: q.title.trim(),
