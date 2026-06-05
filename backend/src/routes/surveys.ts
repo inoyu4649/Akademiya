@@ -344,6 +344,56 @@ router.get("/org/:orgId", requireAuth, async (req, res) => {
   res.json({ surveys: rows });
 });
 
+// ── GET /api/surveys/og/:id — 소셜 봇용 OG 메타 HTML ─────────────────────────
+router.get("/og/:id", async (req, res) => {
+  const surveyId = Number(req.params.id);
+
+  const [rows] = await pool.execute(
+    "SELECT title FROM surveys WHERE id = ? AND scope_type = 'public' AND is_active = 1",
+    [surveyId]
+  ) as any[];
+
+  const surveyTitle = (rows as any[]).length > 0
+    ? (rows as any[])[0].title as string
+    : "";
+
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const host = (req.headers["x-forwarded-host"] as string) ?? req.headers.host ?? "akademiya.kr";
+  const pageUrl = `https://${host}/surveys/public/${surveyId}`;
+  const imageUrl = `https://${host}/logo.png`;
+
+  const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Akademiya Surveys</title>
+  <meta property="og:title" content="Akademiya Surveys">
+  <meta property="og:description" content="${esc(surveyTitle)}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="${pageUrl}">
+  <meta property="og:image" content="${imageUrl}">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:site_name" content="Akademiya">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Akademiya Surveys">
+  <meta name="twitter:description" content="${esc(surveyTitle)}">
+  <meta http-equiv="refresh" content="0; url=${pageUrl}">
+</head>
+<body>
+  <p><a href="${pageUrl}">설문 참여하기 →</a></p>
+  <script>window.location.replace(${JSON.stringify(pageUrl)});</script>
+</body>
+</html>`;
+
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.send(html);
+});
+
 // ── GET /api/surveys/public/:id — 공개 설문 (비로그인) ────────────────────────
 router.get("/public/:id", async (req, res) => {
   const surveyId = Number(req.params.id);
