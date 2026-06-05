@@ -1,0 +1,138 @@
+.wrapper {
+  min-height: 100vh;
+  background: var(--bg-base);
+  padding: 40px 24px;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.logoLink {
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.logo {
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.meta {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.preamble {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin-bottom: 28px;
+}
+
+.toc {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+
+.tocTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tocList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tocLink {
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.tocLink:hover {
+  text-decoration: underline;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.section {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sectionContent {
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--text-secondary);
+}
+
+.line {
+  margin: 0;
+}
+
+.blank {
+  height: 10px;
+  margin: 0;
+}
+
+.footer {
+  margin-top: 40px;
+  text-align: center;
+  padding-bottom: 40px;
+}
+
+.backLink {
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}

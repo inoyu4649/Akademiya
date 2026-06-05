@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import './App.css'
 import LoginPage from './components/LoginPage'
 import Dashboard from './components/Dashboard'
+import PrivacyPolicyModal from './components/PrivacyPolicyModal'
 
 const SESSION_KEY = 'gmcauto_session'
 const THEME_KEY   = 'gmcauto_theme'
@@ -16,6 +17,7 @@ function App() {
   const [session, setSession]               = useState(null)
   const [bootChecked, setBootChecked]       = useState(false)
   const [sessionExpired, setSessionExpired] = useState(false)
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false)
 
   // 다크모드 (localStorage 저장, data-theme 속성으로 적용)
   const [theme, setTheme] = useState(() => {
@@ -52,6 +54,9 @@ function App() {
         .then(check => {
           if (check.valid) {
             setSession({ ...data, role: check.role ?? data.role ?? 0 })
+            if (check.needsPrivacyConsent) {
+              setShowPrivacyModal(true)
+            }
           } else {
             localStorage.removeItem(SESSION_KEY)
             setSessionExpired(true)
@@ -72,6 +77,9 @@ function App() {
     localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData))
     setSessionExpired(false)
     setSession(sessionData)
+    if (sessionData.needsPrivacyConsent) {
+      setShowPrivacyModal(true)
+    }
   }, [])
 
   const handleLogout = useCallback(async () => {
@@ -105,6 +113,14 @@ function App() {
 
   return (
     <>
+      {/* 개인정보 처리방침 동의 모달 */}
+      {showPrivacyModal && session && (
+        <PrivacyPolicyModal
+          sessionId={session.sessionId}
+          onConsented={() => setShowPrivacyModal(false)}
+        />
+      )}
+
       {/* 상단 정보 바 */}
       <div className="top-bar">
         {t('app.contact')} &nbsp;/&nbsp; {t('app.madeWith')}

@@ -47,7 +47,11 @@
       "passwordTooShort": "비밀번호는 8자 이상이어야 합니다.",
       "emailExists": "이미 사용 중인 이메일입니다.",
       "invalidEmail": "올바른 이메일 형식이 아닙니다.",
-      "serverError": "서버 오류가 발생했습니다."
+      "serverError": "서버 오류가 발생했습니다.",
+      "privacyAgree": "",
+      "privacyLink": "개인정보 처리방침",
+      "privacyAgreeSuffix": "에 동의합니다. (필수)",
+      "privacyRequired": "개인정보 처리방침에 동의해 주세요."
     },
     "forgotPassword": {
       "title": "비밀번호 찾기",
@@ -391,14 +395,14 @@
     "delete": "알림 삭제",
     "type": {
       "new_assignment": "새 과제",
-      "deadline_1d":    "마감 D-1",
-      "deadline_3h":    "마감 3시간 전",
-      "deadline_1h":    "마감 1시간 전",
-      "deadline_10m":   "마감 10분 전",
-      "broadcast":      "공지",
-      "org_rejected":   "조직 개설 거절",
+      "deadline_1d": "마감 D-1",
+      "deadline_3h": "마감 3시간 전",
+      "deadline_1h": "마감 1시간 전",
+      "deadline_10m": "마감 10분 전",
+      "broadcast": "공지",
+      "org_rejected": "조직 개설 거절",
       "class_rejected": "반 개설 거절",
-      "new_survey":     "새 설문"
+      "new_survey": "새 설문"
     },
     "broadcast": {
       "title": "공지 보내기",
@@ -464,7 +468,7 @@
     "noLeaderClass": "반장 권한이 있는 반이 없습니다.",
     "noAdminOrg": "관리자 권한이 있는 조직이 없습니다.",
     "allowAnonymous": "익명 응답 허용",
-    "expiresAt": "마감일시",
+    "expiresAt": "마감",
     "expiresAtHint": "미입력 시 마감 없음",
     "questions": "문항",
     "questionsRequired": "문항을 하나 이상 추가해주세요.",
@@ -495,7 +499,6 @@
     "responded": "응답 완료",
     "notResponded": "미응답",
     "responseCount": "{{count}}명 응답",
-    "expiresAt": "마감",
     "by": "작성자",
     "viewStats": "통계 보기",
     "deactivate": "비활성화",
@@ -639,5 +642,13 @@
       "notePlaceholder": "처리 메모를 입력하세요.",
       "saveSuccess": "저장되었습니다."
     }
+  },
+  "privacy": {
+    "modalTitle": "개인정보 처리방침 동의",
+    "modalSubtitle": "서비스 이용을 위해 개인정보 처리방침에 동의해 주세요.",
+    "agreeLabel": "개인정보 처리방침을 읽었으며, 이에 동의합니다.",
+    "agreeBtn": "동의하고 계속하기",
+    "consentError": "동의 처리 중 오류가 발생했습니다. 다시 시도해 주세요.",
+    "updatedNotice": "개인정보 처리방침이 업데이트되었습니다. 새 버전을 확인하고 동의해 주세요."
   }
 }

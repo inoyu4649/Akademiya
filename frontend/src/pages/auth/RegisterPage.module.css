@@ -1,0 +1,28 @@
+.privacyLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.privacyCheckbox {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.privacyLink {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.privacyLink:hover {
+  text-decoration: underline;
+}

@@ -21,6 +21,7 @@ import statsRouter from "./routes/stats.js";
 import bugReportsRouter from "./routes/bugReports.js";
 import oauthRouter from "./routes/oauth.js";
 import surveysRouter from "./routes/surveys.js";
+import privacyRouter from "./routes/privacy.js";
 import { startDeadlineScheduler } from "./scheduler/deadlines.js";
 import { preloadHolidays } from "./utils/holidays.js";
 
@@ -136,6 +137,7 @@ app.use("/api/stats",        statsRouter);
 app.use("/api/bug-reports",  bugReportsRouter);
 app.use("/api/oauth",        oauthRouter);        // GMCAuto ↔ Akademiya OAuth
 app.use("/api/surveys",      surveysRouter);
+app.use("/api/privacy",      privacyRouter);
 
 // ── 헬스체크 ─────────────────────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {

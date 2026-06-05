@@ -98,6 +98,18 @@ export async function initDb() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
+  // 개인정보 처리방침 동의 이력 테이블
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS privacy_consents (
+      id           INT AUTO_INCREMENT PRIMARY KEY,
+      gmc_user_id  INT NOT NULL,
+      version      INT NOT NULL,
+      consented_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_gmc_user (gmc_user_id),
+      FOREIGN KEY (gmc_user_id) REFERENCES gmc_users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
   // 7일 지난 schedules 자동 정리
   await pool.execute(
     "DELETE FROM schedules WHERE date < DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
@@ -385,6 +397,25 @@ export async function deleteFailedStats({ grade, cls, dateFrom, dateTo } = {}) {
     params
   );
   return res.affectedRows;
+}
+
+// ========== 개인정보 처리방침 동의 ==========
+
+export async function getPrivacyConsent(gmcUserId) {
+  const [rows] = await pool.execute(
+    'SELECT version FROM privacy_consents WHERE gmc_user_id = ?',
+    [gmcUserId]
+  );
+  return rows[0]?.version ?? 0;
+}
+
+export async function savePrivacyConsent(gmcUserId, version) {
+  await pool.execute(
+    `INSERT INTO privacy_consents (gmc_user_id, version)
+     VALUES (?, ?)
+     ON DUPLICATE KEY UPDATE version = VALUES(version), consented_at = NOW()`,
+    [gmcUserId, version]
+  );
 }
 
 // ========== 정기 정리 ==========

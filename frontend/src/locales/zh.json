@@ -47,7 +47,11 @@
       "passwordTooShort": "密码长度至少8位。",
       "emailExists": "该邮箱已被注册。",
       "invalidEmail": "请输入有效的邮箱地址。",
-      "serverError": "服务器错误，请稍后再试。"
+      "serverError": "服务器错误，请稍后再试。",
+      "privacyAgree": "我已阅读并同意",
+      "privacyLink": "隐私政策",
+      "privacyAgreeSuffix": "（必填）",
+      "privacyRequired": "请同意隐私政策。"
     },
     "forgotPassword": {
       "title": "忘记密码",
@@ -391,14 +395,14 @@
     "delete": "删除通知",
     "type": {
       "new_assignment": "新作业",
-      "deadline_1d":    "截止前1天",
-      "deadline_3h":    "截止前3小时",
-      "deadline_1h":    "截止前1小时",
-      "deadline_10m":   "截止前10分钟",
-      "broadcast":      "公告",
-      "org_rejected":   "组织申请被拒",
+      "deadline_1d": "截止前1天",
+      "deadline_3h": "截止前3小时",
+      "deadline_1h": "截止前1小时",
+      "deadline_10m": "截止前10分钟",
+      "broadcast": "公告",
+      "org_rejected": "组织申请被拒",
       "class_rejected": "班级申请被拒",
-      "new_survey":     "新问卷"
+      "new_survey": "新问卷"
     },
     "broadcast": {
       "title": "发送公告",
@@ -638,5 +642,13 @@
       "notePlaceholder": "请输入处理备注。",
       "saveSuccess": "已保存。"
     }
+  },
+  "privacy": {
+    "modalTitle": "隐私政策同意",
+    "modalSubtitle": "请同意隐私政策以继续使用服务。",
+    "agreeLabel": "我已阅读并同意隐私政策。",
+    "agreeBtn": "同意并继续",
+    "consentError": "保存同意时发生错误，请重试。",
+    "updatedNotice": "我们的隐私政策已更新，请查看并同意新版本。"
   }
 }

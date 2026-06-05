@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { PRIVACY_POLICY_VERSION } from "./privacy.js";
 import bcrypt from "bcrypt";
 import { pool } from "../db/pool.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -44,11 +45,15 @@ function userPayload(u: DbUser) {
 
 // ─── POST /register ──────────────────────────────────────────────────────────
 router.post("/register", async (req, res) => {
-  const { email, password, displayName, country, phone } =
+  const { email, password, displayName, country, phone, privacyVersion } =
     req.body as Record<string, string>;
 
   if (!email || !password || !displayName || !country || !phone) {
     res.status(400).json({ error: "MISSING_FIELDS" });
+    return;
+  }
+  if (Number(privacyVersion) !== PRIVACY_POLICY_VERSION) {
+    res.status(400).json({ error: "PRIVACY_CONSENT_REQUIRED" });
     return;
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -92,6 +97,12 @@ router.post("/register", async (req, res) => {
         );
       }
     }
+
+    // 개인정보 처리방침 동의 저장
+    await pool.query(
+      "INSERT INTO privacy_consents (user_id, service, version) VALUES (?, 'akademiya', ?)",
+      [userId, PRIVACY_POLICY_VERSION]
+    );
 
     const accessToken = generateAccessToken({ id: userId, email: email.toLowerCase(), role: "user" });
     const refreshToken = generateRefreshToken();

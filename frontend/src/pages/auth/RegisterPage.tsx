@@ -5,6 +5,8 @@ import AuthLayout, { css as s } from "../../components/layout/AuthLayout";
 import { authApi } from "../../api/auth.api";
 import { useAuthStore } from "../../store/auth.store";
 import { sortedCountries } from "../../utils/countries";
+import { PRIVACY_POLICY_VERSION } from "../privacy/privacyContent";
+import rs from "./RegisterPage.module.css";
 
 export default function RegisterPage() {
   const { t, i18n } = useTranslation();
@@ -20,7 +22,8 @@ export default function RegisterPage() {
     country: "",
     phone: "",
   });
-  const [errors, setErrors] = useState<Partial<typeof form & { global: string }>>({});
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
+  const [errors, setErrors] = useState<Partial<typeof form & { global: string; privacy: string }>>({});
   const [loading, setLoading] = useState(false);
 
   const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -36,6 +39,7 @@ export default function RegisterPage() {
     if (form.password !== form.confirmPassword) e.confirmPassword = t("auth.register.passwordMismatch");
     if (!form.country) e.country = t("common.required");
     if (!form.phone) e.phone = t("common.required");
+    if (!privacyAgreed) e.privacy = t("auth.register.privacyRequired");
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -51,6 +55,7 @@ export default function RegisterPage() {
         displayName: form.displayName,
         country: form.country,
         phone: form.phone,
+        privacyVersion: PRIVACY_POLICY_VERSION,
       });
       setAuth(res.data.user, res.data.accessToken);
       navigate("/");
@@ -103,6 +108,24 @@ export default function RegisterPage() {
           <label className={s.label}>{t("auth.register.phoneLabel")}</label>
           <input className={s.input} type="tel" placeholder={t("auth.register.phonePlaceholder")} value={form.phone} onChange={set("phone")} />
           {errors.phone && <p className={s.fieldError}>{errors.phone}</p>}
+        </div>
+        <div className={s.field}>
+          <label className={rs.privacyLabel}>
+            <input
+              type="checkbox"
+              className={rs.privacyCheckbox}
+              checked={privacyAgreed}
+              onChange={(e) => setPrivacyAgreed(e.target.checked)}
+            />
+            <span>
+              {t("auth.register.privacyAgree")}{" "}
+              <Link to="/privacy" target="_blank" rel="noopener noreferrer" className={rs.privacyLink}>
+                {t("auth.register.privacyLink")}
+              </Link>
+              {" "}{t("auth.register.privacyAgreeSuffix")}
+            </span>
+          </label>
+          {errors.privacy && <p className={s.fieldError}>{errors.privacy}</p>}
         </div>
         <button className={s.btn} type="submit" disabled={loading}>
           {loading ? t("common.loading") : t("auth.register.submitButton")}

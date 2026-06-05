@@ -22,7 +22,10 @@ import {
   backupDb,
   cleanupOldSchedules,
   saveAkademiyaUser, getByAkademiyaUserId, linkGoingHafsCredentials,
+  getPrivacyConsent, savePrivacyConsent,
 } from './db.js';
+
+const GMC_PRIVACY_POLICY_VERSION = 1;
 import { isHolidayCached, preloadHolidays, ensureMonthLoaded } from './holidays.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -556,8 +559,11 @@ app.post('/api/login', async (req, res) => {
     }
 
     const role = await getUserRole(studentNo);
+    const dbUser = await getCredentials(studentNo);
+    const consentedVersion = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
+    const needsPrivacyConsent = consentedVersion < GMC_PRIVACY_POLICY_VERSION;
     console.log(`[${studentNo}] 로그인 성공 ${studentName ? `(${studentName})` : ''} (권한 ${role})`);
-    res.json({ success: true, message: '로그인 성공', sessionId, studentName, studentNo, role });
+    res.json({ success: true, message: '로그인 성공', sessionId, studentName, studentNo, role, needsPrivacyConsent });
 
   } catch (error) {
     console.error('Login error:', error.message);
@@ -628,6 +634,7 @@ app.post('/api/akademiya/verify', async (req, res) => {
       const existing = await getMySchedule(gmcUser.student_no, todayStr());
       if (existing) await updateScheduleSessionId(gmcUser.student_no, todayStr(), sessionId);
 
+      const consentedVersion = await getPrivacyConsent(gmcUser.id);
       return res.json({
         success: true,
         linked: true,
@@ -635,6 +642,7 @@ app.post('/api/akademiya/verify', async (req, res) => {
         studentNo: gmcUser.student_no,
         studentName: displayName || '',
         role: gmcRole,
+        needsPrivacyConsent: consentedVersion < GMC_PRIVACY_POLICY_VERSION,
       });
     }
 
@@ -740,7 +748,8 @@ app.post('/api/akademiya/link', async (req, res) => {
     sessions.set(sessionId, { cookies, studentNo, loginTime: new Date().toISOString() });
 
     console.log(`[Akademiya 연동 완료] ${akademiyaEmail} → ${studentNo} (role ${gmcRole ?? 0})`);
-    res.json({ success: true, sessionId, studentNo, studentName, role: gmcRole ?? 0 });
+    // 신규 연동은 항상 개인정보 처리방침 미동의 상태
+    res.json({ success: true, sessionId, studentNo, studentName, role: gmcRole ?? 0, needsPrivacyConsent: true });
 
   } catch (err) {
     console.error('[Akademiya 연동 오류]', err.message);
@@ -1055,17 +1064,46 @@ app.get('/api/session/check', async (req, res) => {
     }
 
     const role = await getUserRole(session.studentNo);
-    res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role });
+    const dbUser = await getCredentials(session.studentNo);
+    const consentedVersion = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
+    res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role, needsPrivacyConsent: consentedVersion < GMC_PRIVACY_POLICY_VERSION });
   } catch (err) {
     console.warn(`[세션 확인] 네트워크 오류 (skip deep check): ${err.message}`);
     const role = await getUserRole(session.studentNo);
-    res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role });
+    const dbUser = await getCredentials(session.studentNo);
+    const consentedVersion = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
+    res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role, needsPrivacyConsent: consentedVersion < GMC_PRIVACY_POLICY_VERSION });
   }
 });
 
 app.post('/api/logout', (req, res) => {
   sessions.delete(req.body.sessionId);
   res.json({ success: true });
+});
+
+// ── 개인정보 처리방침 버전 확인 ────────────────────────────────────────────
+app.get('/api/privacy/version', (_req, res) => {
+  res.json({ version: GMC_PRIVACY_POLICY_VERSION });
+});
+
+// ── 개인정보 처리방침 동의 저장 ────────────────────────────────────────────
+app.post('/api/privacy/consent', async (req, res) => {
+  const { sessionId, version } = req.body;
+  const session = sessions.get(sessionId);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  if (version !== GMC_PRIVACY_POLICY_VERSION) {
+    return res.status(400).json({ success: false, message: 'INVALID_VERSION' });
+  }
+  try {
+    const user = await getByAkademiyaUserId(session.akademiyaUserId)
+      || await getCredentials(session.studentNo);
+    if (!user) return res.status(404).json({ success: false, message: '사용자 없음' });
+    await savePrivacyConsent(user.id, version);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[privacy/consent]', err);
+    res.status(500).json({ success: false, message: 'SERVER_ERROR' });
+  }
 });
 
 app.post('/api/account/delete', async (req, res) => {

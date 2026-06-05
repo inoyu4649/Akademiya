@@ -47,7 +47,11 @@
       "passwordTooShort": "Password must be at least 8 characters.",
       "emailExists": "This email is already in use.",
       "invalidEmail": "Please enter a valid email address.",
-      "serverError": "Server error. Please try again."
+      "serverError": "Server error. Please try again.",
+      "privacyAgree": "I have read and agree to the",
+      "privacyLink": "Privacy Policy",
+      "privacyAgreeSuffix": "(required)",
+      "privacyRequired": "You must agree to the Privacy Policy."
     },
     "forgotPassword": {
       "title": "Forgot Password",
@@ -391,14 +395,14 @@
     "delete": "Delete notification",
     "type": {
       "new_assignment": "New Assignment",
-      "deadline_1d":    "Due Tomorrow",
-      "deadline_3h":    "Due in 3h",
-      "deadline_1h":    "Due in 1h",
-      "deadline_10m":   "Due in 10m",
-      "broadcast":      "Announcement",
-      "org_rejected":   "Org Rejected",
+      "deadline_1d": "Due Tomorrow",
+      "deadline_3h": "Due in 3h",
+      "deadline_1h": "Due in 1h",
+      "deadline_10m": "Due in 10m",
+      "broadcast": "Announcement",
+      "org_rejected": "Org Rejected",
       "class_rejected": "Class Rejected",
-      "new_survey":     "New Survey"
+      "new_survey": "New Survey"
     },
     "broadcast": {
       "title": "Send Announcement",
@@ -464,7 +468,7 @@
     "noLeaderClass": "No class where you are a leader.",
     "noAdminOrg": "No organization where you are an admin.",
     "allowAnonymous": "Allow anonymous responses",
-    "expiresAt": "Expires At",
+    "expiresAt": "Expires",
     "expiresAtHint": "Leave empty for no expiration",
     "questions": "Questions",
     "questionsRequired": "Add at least one question.",
@@ -495,7 +499,6 @@
     "responded": "Responded",
     "notResponded": "Not Responded",
     "responseCount": "{{count}} responses",
-    "expiresAt": "Expires",
     "by": "By",
     "viewStats": "View Stats",
     "deactivate": "Deactivate",
@@ -639,5 +642,13 @@
       "notePlaceholder": "Enter admin note...",
       "saveSuccess": "Saved."
     }
+  },
+  "privacy": {
+    "modalTitle": "Privacy Policy Agreement",
+    "modalSubtitle": "Please agree to the Privacy Policy to continue using the service.",
+    "agreeLabel": "I have read and agree to the Privacy Policy.",
+    "agreeBtn": "Agree and Continue",
+    "consentError": "An error occurred while saving your consent. Please try again.",
+    "updatedNotice": "Our Privacy Policy has been updated. Please review and agree to the new version."
   }
 }

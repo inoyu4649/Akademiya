@@ -6,6 +6,7 @@ import { authApi } from "../../api/auth.api";
 import { orgApi } from "../../api/org.api";
 import NotificationBell from "../common/NotificationBell";
 import { useTheme } from "../../hooks/useTheme";
+import PrivacyPolicyModal from "../privacy/PrivacyPolicyModal";
 import styles from "./AppLayout.module.css";
 import client from "../../api/client";
 
@@ -170,6 +171,17 @@ export default function AppLayout() {
   const [isHafsOrgMember, setIsHafsOrgMember] = useState(false);
   const [gmcLoading, setGmcLoading]       = useState(false);
   const { theme, toggle: toggleTheme }    = useTheme();
+  const [privacyNeedsConsent, setPrivacyNeedsConsent] = useState(false);
+
+  // 개인정보 처리방침 동의 여부 확인
+  useEffect(() => {
+    if (!user) return;
+    client.get<{ needsConsent: boolean }>("/privacy/check")
+      .then((res) => {
+        if (res.data.needsConsent) setPrivacyNeedsConsent(true);
+      })
+      .catch(() => { /* 무시 */ });
+  }, [user]);
 
   // HAFS 조직 가입 여부 확인 (사이드바 GMCAuto 메뉴 노출 조건)
   useEffect(() => {
@@ -215,6 +227,10 @@ export default function AppLayout() {
   }
 
   return (
+    <>
+      {privacyNeedsConsent && (
+        <PrivacyPolicyModal onConsented={() => setPrivacyNeedsConsent(false)} />
+      )}
     <div className={styles.layout}>
       {/* ── Mobile top header ── */}
       <header className={styles.mobileHeader}>
@@ -389,5 +405,6 @@ export default function AppLayout() {
         <Outlet />
       </main>
     </div>
+    </>
   );
 }
