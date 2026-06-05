@@ -51,7 +51,11 @@
       "privacyAgree": "",
       "privacyLink": "개인정보 처리방침",
       "privacyAgreeSuffix": "에 동의합니다. (필수)",
-      "privacyRequired": "개인정보 처리방침에 동의해 주세요."
+      "privacyRequired": "개인정보 처리방침에 동의해 주세요.",
+      "termsAgree": "",
+      "termsLink": "이용약관",
+      "termsAgreeSuffix": "에 동의합니다. (필수)",
+      "termsRequired": "이용약관에 동의해 주세요."
     },
     "forgotPassword": {
       "title": "비밀번호 찾기",
@@ -650,5 +654,13 @@
     "agreeBtn": "동의하고 계속하기",
     "consentError": "동의 처리 중 오류가 발생했습니다. 다시 시도해 주세요.",
     "updatedNotice": "개인정보 처리방침이 업데이트되었습니다. 새 버전을 확인하고 동의해 주세요."
+  },
+  "terms": {
+    "modalTitle": "이용약관 동의",
+    "modalSubtitle": "서비스 이용을 위해 이용약관에 동의해 주세요.",
+    "agreeLabel": "이용약관을 읽었으며, 이에 동의합니다.",
+    "agreeBtn": "동의하고 계속하기",
+    "consentError": "동의 처리 중 오류가 발생했습니다. 다시 시도해 주세요.",
+    "updatedNotice": "이용약관이 업데이트되었습니다. 새 버전을 확인하고 동의해 주세요."
   }
 }

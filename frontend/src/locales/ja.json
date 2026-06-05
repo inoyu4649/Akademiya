@@ -51,7 +51,11 @@
       "privacyAgree": "",
       "privacyLink": "プライバシーポリシー",
       "privacyAgreeSuffix": "に同意します。（必須）",
-      "privacyRequired": "プライバシーポリシーへの同意が必要です。"
+      "privacyRequired": "プライバシーポリシーへの同意が必要です。",
+      "termsAgree": "",
+      "termsLink": "利用規約",
+      "termsAgreeSuffix": "に同意します。（必須）",
+      "termsRequired": "利用規約への同意が必要です。"
     },
     "forgotPassword": {
       "title": "パスワードの再設定",
@@ -650,5 +654,13 @@
     "agreeBtn": "同意して続ける",
     "consentError": "同意の処理中にエラーが発生しました。もう一度お試しください。",
     "updatedNotice": "プライバシーポリシーが更新されました。新しいバージョンを確認して同意してください。"
+  },
+  "terms": {
+    "modalTitle": "利用規約への同意",
+    "modalSubtitle": "サービスを利用するには、利用規約への同意が必要です。",
+    "agreeLabel": "利用規約を読み、同意します。",
+    "agreeBtn": "同意して続ける",
+    "consentError": "同意の処理中にエラーが発生しました。もう一度お試しください。",
+    "updatedNotice": "利用規約が更新されました。新しいバージョンを確認して同意してください。"
   }
 }

@@ -51,7 +51,11 @@
       "privacyAgree": "我已阅读并同意",
       "privacyLink": "隐私政策",
       "privacyAgreeSuffix": "（必填）",
-      "privacyRequired": "请同意隐私政策。"
+      "privacyRequired": "请同意隐私政策。",
+      "termsAgree": "我已阅读并同意",
+      "termsLink": "使用条款",
+      "termsAgreeSuffix": "（必填）",
+      "termsRequired": "请同意使用条款。"
     },
     "forgotPassword": {
       "title": "忘记密码",
@@ -650,5 +654,13 @@
     "agreeBtn": "同意并继续",
     "consentError": "保存同意时发生错误，请重试。",
     "updatedNotice": "我们的隐私政策已更新，请查看并同意新版本。"
+  },
+  "terms": {
+    "modalTitle": "使用条款同意",
+    "modalSubtitle": "请同意使用条款以继续使用服务。",
+    "agreeLabel": "我已阅读并同意使用条款。",
+    "agreeBtn": "同意并继续",
+    "consentError": "保存同意时发生错误，请重试。",
+    "updatedNotice": "我们的使用条款已更新，请查看并同意新版本。"
   }
 }

@@ -4,6 +4,7 @@ import './App.css'
 import LoginPage from './components/LoginPage'
 import Dashboard from './components/Dashboard'
 import PrivacyPolicyModal from './components/PrivacyPolicyModal'
+import TermsOfUseModal from './components/TermsOfUseModal'
 
 const SESSION_KEY = 'gmcauto_session'
 const THEME_KEY   = 'gmcauto_theme'
@@ -18,6 +19,7 @@ function App() {
   const [bootChecked, setBootChecked]       = useState(false)
   const [sessionExpired, setSessionExpired] = useState(false)
   const [showPrivacyModal, setShowPrivacyModal] = useState(false)
+  const [showTermsModal, setShowTermsModal] = useState(false)
 
   // 다크모드 (localStorage 저장, data-theme 속성으로 적용)
   const [theme, setTheme] = useState(() => {
@@ -56,6 +58,8 @@ function App() {
             setSession({ ...data, role: check.role ?? data.role ?? 0 })
             if (check.needsPrivacyConsent) {
               setShowPrivacyModal(true)
+            } else if (check.needsTermsConsent) {
+              setShowTermsModal(true)
             }
           } else {
             localStorage.removeItem(SESSION_KEY)
@@ -79,6 +83,8 @@ function App() {
     setSession(sessionData)
     if (sessionData.needsPrivacyConsent) {
       setShowPrivacyModal(true)
+    } else if (sessionData.needsTermsConsent) {
+      setShowTermsModal(true)
     }
   }, [])
 
@@ -113,11 +119,29 @@ function App() {
 
   return (
     <>
-      {/* 개인정보 처리방침 동의 모달 */}
+      {/* 개인정보 처리방침 동의 모달 — 개인정보 먼저, 이어서 이용약관 */}
       {showPrivacyModal && session && (
         <PrivacyPolicyModal
           sessionId={session.sessionId}
-          onConsented={() => setShowPrivacyModal(false)}
+          onConsented={() => {
+            setShowPrivacyModal(false)
+            // 개인정보 동의 완료 후 이용약관 확인
+            fetch(`/api/terms/version`)
+              .then(r => r.json())
+              .then(() => {
+                // session check로 needsTermsConsent 재확인
+                return fetch(`/api/session/check?sessionId=${encodeURIComponent(session.sessionId)}`)
+                  .then(r => r.json())
+                  .then(check => { if (check.needsTermsConsent) setShowTermsModal(true) })
+              })
+              .catch(() => {})
+          }}
+        />
+      )}
+      {!showPrivacyModal && showTermsModal && session && (
+        <TermsOfUseModal
+          sessionId={session.sessionId}
+          onConsented={() => setShowTermsModal(false)}
         />
       )}
 

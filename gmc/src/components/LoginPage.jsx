@@ -59,7 +59,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
       })
       const data = await res.json()
       if (data.success) {
-        onLogin({ sessionId: data.sessionId, studentNo: data.studentNo, studentName: data.studentName || '', role: data.role ?? 0, needsPrivacyConsent: data.needsPrivacyConsent ?? false })
+        onLogin({ sessionId: data.sessionId, studentNo: data.studentNo, studentName: data.studentName || '', role: data.role ?? 0, needsPrivacyConsent: data.needsPrivacyConsent ?? false, needsTermsConsent: data.needsTermsConsent ?? false })
       } else {
         setError(data.message || t('auth.loginFailed', '로그인에 실패했습니다.'))
       }
@@ -92,7 +92,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
         return
       }
       if (data.linked && !data.loginFailed) {
-        onLogin({ sessionId: data.sessionId, studentNo: data.studentNo, studentName: data.studentName || '', role: data.role ?? 0, needsPrivacyConsent: data.needsPrivacyConsent ?? false })
+        onLogin({ sessionId: data.sessionId, studentNo: data.studentNo, studentName: data.studentName || '', role: data.role ?? 0, needsPrivacyConsent: data.needsPrivacyConsent ?? false, needsTermsConsent: data.needsTermsConsent ?? false })
         return
       }
       if (data.linked && data.loginFailed) {
@@ -128,7 +128,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
       })
       const data = await res.json()
       if (data.success) {
-        onLogin({ sessionId: data.sessionId, studentNo: data.studentNo, studentName: data.studentName || '', role: data.role ?? 0, needsPrivacyConsent: data.needsPrivacyConsent ?? true })
+        onLogin({ sessionId: data.sessionId, studentNo: data.studentNo, studentName: data.studentName || '', role: data.role ?? 0, needsPrivacyConsent: data.needsPrivacyConsent ?? true, needsTermsConsent: data.needsTermsConsent ?? true })
       } else {
         setAkError(data.message || t('auth.ak.linkFailed'))
         setAkStep('link_needed')

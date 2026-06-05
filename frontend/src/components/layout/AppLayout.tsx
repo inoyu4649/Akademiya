@@ -7,6 +7,7 @@ import { orgApi } from "../../api/org.api";
 import NotificationBell from "../common/NotificationBell";
 import { useTheme } from "../../hooks/useTheme";
 import PrivacyPolicyModal from "../privacy/PrivacyPolicyModal";
+import TermsOfUseModal from "../privacy/TermsOfUseModal";
 import styles from "./AppLayout.module.css";
 import client from "../../api/client";
 
@@ -172,15 +173,18 @@ export default function AppLayout() {
   const [gmcLoading, setGmcLoading]       = useState(false);
   const { theme, toggle: toggleTheme }    = useTheme();
   const [privacyNeedsConsent, setPrivacyNeedsConsent] = useState(false);
+  const [termsNeedsConsent, setTermsNeedsConsent] = useState(false);
 
-  // 개인정보 처리방침 동의 여부 확인
+  // 개인정보 처리방침 + 이용약관 동의 여부 확인
   useEffect(() => {
     if (!user) return;
-    client.get<{ needsConsent: boolean }>("/privacy/check")
-      .then((res) => {
-        if (res.data.needsConsent) setPrivacyNeedsConsent(true);
-      })
-      .catch(() => { /* 무시 */ });
+    Promise.all([
+      client.get<{ needsConsent: boolean }>("/privacy/check"),
+      client.get<{ needsConsent: boolean }>("/terms/check"),
+    ]).then(([privacyRes, termsRes]) => {
+      if (privacyRes.data.needsConsent) setPrivacyNeedsConsent(true);
+      else if (termsRes.data.needsConsent) setTermsNeedsConsent(true);
+    }).catch(() => { /* 무시 */ });
   }, [user]);
 
   // HAFS 조직 가입 여부 확인 (사이드바 GMCAuto 메뉴 노출 조건)
@@ -229,7 +233,16 @@ export default function AppLayout() {
   return (
     <>
       {privacyNeedsConsent && (
-        <PrivacyPolicyModal onConsented={() => setPrivacyNeedsConsent(false)} />
+        <PrivacyPolicyModal onConsented={() => {
+          setPrivacyNeedsConsent(false);
+          // 개인정보 동의 완료 후 이용약관 재확인
+          client.get<{ needsConsent: boolean }>("/terms/check")
+            .then((r) => { if (r.data.needsConsent) setTermsNeedsConsent(true); })
+            .catch(() => {});
+        }} />
+      )}
+      {!privacyNeedsConsent && termsNeedsConsent && (
+        <TermsOfUseModal onConsented={() => setTermsNeedsConsent(false)} />
       )}
     <div className={styles.layout}>
       {/* ── Mobile top header ── */}

@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { PRIVACY_POLICY_VERSION } from "./privacy.js";
+import { TERMS_OF_USE_VERSION } from "./terms.js";
 import bcrypt from "bcrypt";
 import { pool } from "../db/pool.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -45,7 +46,7 @@ function userPayload(u: DbUser) {
 
 // ─── POST /register ──────────────────────────────────────────────────────────
 router.post("/register", async (req, res) => {
-  const { email, password, displayName, country, phone, privacyVersion } =
+  const { email, password, displayName, country, phone, privacyVersion, termsVersion } =
     req.body as Record<string, string>;
 
   if (!email || !password || !displayName || !country || !phone) {
@@ -54,6 +55,10 @@ router.post("/register", async (req, res) => {
   }
   if (Number(privacyVersion) !== PRIVACY_POLICY_VERSION) {
     res.status(400).json({ error: "PRIVACY_CONSENT_REQUIRED" });
+    return;
+  }
+  if (Number(termsVersion) !== TERMS_OF_USE_VERSION) {
+    res.status(400).json({ error: "TERMS_CONSENT_REQUIRED" });
     return;
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -102,6 +107,11 @@ router.post("/register", async (req, res) => {
     await pool.query(
       "INSERT INTO privacy_consents (user_id, service, version) VALUES (?, 'akademiya', ?)",
       [userId, PRIVACY_POLICY_VERSION]
+    );
+    // 이용약관 동의 저장
+    await pool.query(
+      "INSERT INTO terms_consents (user_id, service, version) VALUES (?, 'akademiya', ?)",
+      [userId, TERMS_OF_USE_VERSION]
     );
 
     const accessToken = generateAccessToken({ id: userId, email: email.toLowerCase(), role: "user" });

@@ -23,9 +23,11 @@ import {
   cleanupOldSchedules,
   saveAkademiyaUser, getByAkademiyaUserId, linkGoingHafsCredentials,
   getPrivacyConsent, savePrivacyConsent,
+  getTermsConsent, saveTermsConsent,
 } from './db.js';
 
 const GMC_PRIVACY_POLICY_VERSION = 1;
+const GMC_TERMS_OF_USE_VERSION = 1;
 import { isHolidayCached, preloadHolidays, ensureMonthLoaded } from './holidays.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -560,10 +562,12 @@ app.post('/api/login', async (req, res) => {
 
     const role = await getUserRole(studentNo);
     const dbUser = await getCredentials(studentNo);
-    const consentedVersion = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
-    const needsPrivacyConsent = consentedVersion < GMC_PRIVACY_POLICY_VERSION;
+    const privacyConsentedVersion = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
+    const termsConsentedVersion   = dbUser ? await getTermsConsent(dbUser.id) : 0;
+    const needsPrivacyConsent = privacyConsentedVersion < GMC_PRIVACY_POLICY_VERSION;
+    const needsTermsConsent   = termsConsentedVersion   < GMC_TERMS_OF_USE_VERSION;
     console.log(`[${studentNo}] 로그인 성공 ${studentName ? `(${studentName})` : ''} (권한 ${role})`);
-    res.json({ success: true, message: '로그인 성공', sessionId, studentName, studentNo, role, needsPrivacyConsent });
+    res.json({ success: true, message: '로그인 성공', sessionId, studentName, studentNo, role, needsPrivacyConsent, needsTermsConsent });
 
   } catch (error) {
     console.error('Login error:', error.message);
@@ -634,7 +638,8 @@ app.post('/api/akademiya/verify', async (req, res) => {
       const existing = await getMySchedule(gmcUser.student_no, todayStr());
       if (existing) await updateScheduleSessionId(gmcUser.student_no, todayStr(), sessionId);
 
-      const consentedVersion = await getPrivacyConsent(gmcUser.id);
+      const privacyConsentedVer = await getPrivacyConsent(gmcUser.id);
+      const termsConsentedVer   = await getTermsConsent(gmcUser.id);
       return res.json({
         success: true,
         linked: true,
@@ -642,7 +647,8 @@ app.post('/api/akademiya/verify', async (req, res) => {
         studentNo: gmcUser.student_no,
         studentName: displayName || '',
         role: gmcRole,
-        needsPrivacyConsent: consentedVersion < GMC_PRIVACY_POLICY_VERSION,
+        needsPrivacyConsent: privacyConsentedVer < GMC_PRIVACY_POLICY_VERSION,
+        needsTermsConsent:   termsConsentedVer   < GMC_TERMS_OF_USE_VERSION,
       });
     }
 
@@ -748,8 +754,8 @@ app.post('/api/akademiya/link', async (req, res) => {
     sessions.set(sessionId, { cookies, studentNo, loginTime: new Date().toISOString() });
 
     console.log(`[Akademiya 연동 완료] ${akademiyaEmail} → ${studentNo} (role ${gmcRole ?? 0})`);
-    // 신규 연동은 항상 개인정보 처리방침 미동의 상태
-    res.json({ success: true, sessionId, studentNo, studentName, role: gmcRole ?? 0, needsPrivacyConsent: true });
+    // 신규 연동은 항상 개인정보 처리방침 및 이용약관 미동의 상태
+    res.json({ success: true, sessionId, studentNo, studentName, role: gmcRole ?? 0, needsPrivacyConsent: true, needsTermsConsent: true });
 
   } catch (err) {
     console.error('[Akademiya 연동 오류]', err.message);
@@ -1065,14 +1071,20 @@ app.get('/api/session/check', async (req, res) => {
 
     const role = await getUserRole(session.studentNo);
     const dbUser = await getCredentials(session.studentNo);
-    const consentedVersion = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
-    res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role, needsPrivacyConsent: consentedVersion < GMC_PRIVACY_POLICY_VERSION });
+    const privacyVer = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
+    const termsVer   = dbUser ? await getTermsConsent(dbUser.id)   : 0;
+    res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role,
+      needsPrivacyConsent: privacyVer < GMC_PRIVACY_POLICY_VERSION,
+      needsTermsConsent:   termsVer   < GMC_TERMS_OF_USE_VERSION });
   } catch (err) {
     console.warn(`[세션 확인] 네트워크 오류 (skip deep check): ${err.message}`);
     const role = await getUserRole(session.studentNo);
     const dbUser = await getCredentials(session.studentNo);
-    const consentedVersion = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
-    res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role, needsPrivacyConsent: consentedVersion < GMC_PRIVACY_POLICY_VERSION });
+    const privacyVer = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
+    const termsVer   = dbUser ? await getTermsConsent(dbUser.id)   : 0;
+    res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role,
+      needsPrivacyConsent: privacyVer < GMC_PRIVACY_POLICY_VERSION,
+      needsTermsConsent:   termsVer   < GMC_TERMS_OF_USE_VERSION });
   }
 });
 
@@ -1084,6 +1096,11 @@ app.post('/api/logout', (req, res) => {
 // ── 개인정보 처리방침 버전 확인 ────────────────────────────────────────────
 app.get('/api/privacy/version', (_req, res) => {
   res.json({ version: GMC_PRIVACY_POLICY_VERSION });
+});
+
+// ── 이용약관 버전 확인 ──────────────────────────────────────────────────────
+app.get('/api/terms/version', (_req, res) => {
+  res.json({ version: GMC_TERMS_OF_USE_VERSION });
 });
 
 // ── 개인정보 처리방침 동의 저장 ────────────────────────────────────────────
@@ -1102,6 +1119,26 @@ app.post('/api/privacy/consent', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('[privacy/consent]', err);
+    res.status(500).json({ success: false, message: 'SERVER_ERROR' });
+  }
+});
+
+// ── 이용약관 동의 저장 ──────────────────────────────────────────────────────
+app.post('/api/terms/consent', async (req, res) => {
+  const { sessionId, version } = req.body;
+  const session = sessions.get(sessionId);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  if (version !== GMC_TERMS_OF_USE_VERSION) {
+    return res.status(400).json({ success: false, message: 'INVALID_VERSION' });
+  }
+  try {
+    const user = (session.akademiyaUserId ? await getByAkademiyaUserId(session.akademiyaUserId) : null)
+      || await getCredentials(session.studentNo);
+    if (!user) return res.status(404).json({ success: false, message: '사용자 없음' });
+    await saveTermsConsent(user.id, version);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[terms/consent]', err);
     res.status(500).json({ success: false, message: 'SERVER_ERROR' });
   }
 });

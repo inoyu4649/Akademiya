@@ -51,7 +51,11 @@
       "privacyAgree": "I have read and agree to the",
       "privacyLink": "Privacy Policy",
       "privacyAgreeSuffix": "(required)",
-      "privacyRequired": "You must agree to the Privacy Policy."
+      "privacyRequired": "You must agree to the Privacy Policy.",
+      "termsAgree": "I have read and agree to the",
+      "termsLink": "Terms of Use",
+      "termsAgreeSuffix": "(required)",
+      "termsRequired": "You must agree to the Terms of Use."
     },
     "forgotPassword": {
       "title": "Forgot Password",
@@ -650,5 +654,13 @@
     "agreeBtn": "Agree and Continue",
     "consentError": "An error occurred while saving your consent. Please try again.",
     "updatedNotice": "Our Privacy Policy has been updated. Please review and agree to the new version."
+  },
+  "terms": {
+    "modalTitle": "Terms of Use Agreement",
+    "modalSubtitle": "Please agree to the Terms of Use to continue using the service.",
+    "agreeLabel": "I have read and agree to the Terms of Use.",
+    "agreeBtn": "Agree and Continue",
+    "consentError": "An error occurred while saving your consent. Please try again.",
+    "updatedNotice": "Our Terms of Use have been updated. Please review and agree to the new version."
   }
 }
