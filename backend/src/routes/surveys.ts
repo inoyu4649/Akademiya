@@ -6,6 +6,12 @@ const router: IRouter = Router();
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
+/** ISO 8601 → MySQL DATETIME 문자열 (YYYY-MM-DD HH:MM:SS, UTC) */
+function toMysqlDatetime(v: string | null | undefined): string | null {
+  if (!v) return null;
+  return new Date(v).toISOString().slice(0, 19).replace("T", " ");
+}
+
 async function canAccessSurvey(userId: number, survey: any): Promise<boolean> {
   if (survey.scope_type === "public") return true;
   if (survey.scope_type === "class") {
@@ -201,7 +207,7 @@ router.post("/", requireAuth, async (req, res) => {
           allow_anonymous, allow_edit, allow_multiple, expires_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [userId, title.trim(), description?.trim() || null, scope_type, sid,
-       storeAnon, storeEdit, storeMulti, expires_at || null]
+       storeAnon, storeEdit, storeMulti, toMysqlDatetime(expires_at)]
     ) as any[];
     const surveyId = (ins as any).insertId;
 
@@ -713,7 +719,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
   if (title?.trim())             { updates.push("title = ?");       params.push(title.trim()); }
   if (description !== undefined) { updates.push("description = ?"); params.push(description?.trim() || null); }
   if (is_active !== undefined)   { updates.push("is_active = ?");   params.push(is_active ? 1 : 0); }
-  if (expires_at !== undefined)  { updates.push("expires_at = ?");  params.push(expires_at || null); }
+  if (expires_at !== undefined)  { updates.push("expires_at = ?");  params.push(toMysqlDatetime(expires_at)); }
   if (updates.length === 0) { res.json({ message: "nothing" }); return; }
   params.push(surveyId);
 
@@ -766,7 +772,7 @@ router.put("/:id", requireAuth, async (req, res) => {
         allow_anonymous = ?, allow_edit = ?, allow_multiple = ?, expires_at = ?
        WHERE id = ?`,
       [title.trim(), description?.trim() || null,
-       storeAnon, storeEdit, storeMulti, expires_at || null, surveyId]
+       storeAnon, storeEdit, storeMulti, toMysqlDatetime(expires_at), surveyId]
     );
 
     // 문항 재삽입
