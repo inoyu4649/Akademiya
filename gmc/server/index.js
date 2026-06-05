@@ -1095,7 +1095,7 @@ app.post('/api/privacy/consent', async (req, res) => {
     return res.status(400).json({ success: false, message: 'INVALID_VERSION' });
   }
   try {
-    const user = await getByAkademiyaUserId(session.akademiyaUserId)
+    const user = (session.akademiyaUserId ? await getByAkademiyaUserId(session.akademiyaUserId) : null)
       || await getCredentials(session.studentNo);
     if (!user) return res.status(404).json({ success: false, message: '사용자 없음' });
     await savePrivacyConsent(user.id, version);
