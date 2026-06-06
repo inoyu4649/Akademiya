@@ -399,8 +399,9 @@
   .header {
     padding: 10px 14px;
   }
-  .header h1 {
-    font-size: 15px;
+  .header h1,
+  .header .version {
+    display: none;
   }
   .main-content {
     padding: 16px 10px;
