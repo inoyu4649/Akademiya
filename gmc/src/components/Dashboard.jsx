@@ -197,6 +197,35 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
         {/* ── 홈 ── */}
         {view === 'home' && (
           <div className="dashboard-grid">
+            {/* 설문 배너 */}
+            <a
+              href="https://akademiya.kr/surveys/public/7"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                gridColumn: '1 / -1',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                background: 'rgba(79, 195, 247, 0.08)',
+                border: '1px solid rgba(79, 195, 247, 0.3)',
+                borderRadius: '8px',
+                color: 'var(--primary)',
+                fontSize: '13px',
+                fontWeight: '500',
+                textDecoration: 'none',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(79, 195, 247, 0.15)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(79, 195, 247, 0.08)'}
+            >
+              <span>📋</span>
+              <span>더 나은 GMCAuto 2를 만들기 위해 설문조사에 참여해주세요! (~7월 6일)</span>
+              <span style={{ fontSize: '11px', opacity: 0.7 }}>↗</span>
+            </a>
+
             {/* 내 자동 신청 현황 */}
             {mySchedule && (
               <div className="card">
