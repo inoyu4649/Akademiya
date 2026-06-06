@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { SessionData } from '../types'
+
+interface LoginPageProps {
+  onLogin: (sessionData: SessionData) => void
+  sessionExpired: boolean
+  theme: string
+  toggleTheme: () => void
+}
 
 function IconSun() {
   return (
@@ -20,22 +28,30 @@ function IconMoon() {
   )
 }
 
-export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme }) {
+type AkStep = 'idle' | 'verifying' | 'link_needed' | 'linking'
+
+interface AkUserInfo {
+  displayName?: string
+  email?: string
+  hafsOrgPerm?: number
+  gmcRole?: number
+  akademiyaUserId?: number
+}
+
+export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme }: LoginPageProps) {
   const { t } = useTranslation()
-  const [tab, setTab]           = useState('gmc')   // 'gmc' | 'akademiya'
+  const [tab, setTab]           = useState<'gmc' | 'akademiya'>('gmc')
   const [studentNo, setStudentNo] = useState('')
   const [password, setPassword]   = useState('')
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState('')
 
-  // Akademiya OAuth
-  const [akStep, setAkStep]         = useState('idle')  // 'idle'|'verifying'|'link_needed'|'linking'
-  const [akUserInfo, setAkUserInfo]  = useState(null)
+  const [akStep, setAkStep]         = useState<AkStep>('idle')
+  const [akUserInfo, setAkUserInfo]  = useState<AkUserInfo | null>(null)
   const [akStudentNo, setAkStudentNo] = useState('')
   const [akPassword, setAkPassword]   = useState('')
   const [akError, setAkError]         = useState('')
 
-  // URL ?code= 파라미터 처리
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const code   = params.get('code')
@@ -46,8 +62,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
     }
   }, [])
 
-  // ── GMCAuto 계정 로그인 ───────────────────────────────────────────────────
-  const handleGmcSubmit = async (e) => {
+  const handleGmcSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
@@ -57,9 +72,20 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ studentNo, password }),
       })
-      const data = await res.json()
+      const data = await res.json() as {
+        success: boolean; message?: string;
+        sessionId: string; studentNo: string; studentName?: string;
+        role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
+      }
       if (data.success) {
-        onLogin({ sessionId: data.sessionId, studentNo: data.studentNo, studentName: data.studentName || '', role: data.role ?? 0, needsPrivacyConsent: data.needsPrivacyConsent ?? false, needsTermsConsent: data.needsTermsConsent ?? false })
+        onLogin({
+          sessionId: data.sessionId,
+          studentNo: data.studentNo,
+          studentName: data.studentName || '',
+          role: data.role ?? 0,
+          needsPrivacyConsent: data.needsPrivacyConsent ?? false,
+          needsTermsConsent: data.needsTermsConsent ?? false,
+        })
       } else {
         setError(data.message || t('auth.loginFailed', '로그인에 실패했습니다.'))
       }
@@ -70,13 +96,12 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
     }
   }
 
-  // ── Akademiya OAuth ────────────────────────────────────────────────────────
   const handleAkademiyaLogin = () => {
     const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback')
     window.location.href = `https://akademiya.kr/auth/gmcauto-oauth?redirect_uri=${redirectUri}`
   }
 
-  const verifyAkademiyaCode = async (code) => {
+  const verifyAkademiyaCode = async (code: string) => {
     setAkStep('verifying')
     setAkError('')
     try {
@@ -85,14 +110,27 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ code }),
       })
-      const data = await res.json()
+      const data = await res.json() as {
+        success: boolean; message?: string;
+        linked?: boolean; loginFailed?: boolean;
+        sessionId?: string; studentNo?: string; studentName?: string;
+        role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
+        userInfo?: AkUserInfo;
+      }
       if (!data.success) {
         setAkError(data.message || t('auth.ak.verifyFailed'))
         setAkStep('idle')
         return
       }
       if (data.linked && !data.loginFailed) {
-        onLogin({ sessionId: data.sessionId, studentNo: data.studentNo, studentName: data.studentName || '', role: data.role ?? 0, needsPrivacyConsent: data.needsPrivacyConsent ?? false, needsTermsConsent: data.needsTermsConsent ?? false })
+        onLogin({
+          sessionId: data.sessionId!,
+          studentNo: data.studentNo!,
+          studentName: data.studentName || '',
+          role: data.role ?? 0,
+          needsPrivacyConsent: data.needsPrivacyConsent ?? false,
+          needsTermsConsent: data.needsTermsConsent ?? false,
+        })
         return
       }
       if (data.linked && data.loginFailed) {
@@ -102,7 +140,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
         setAkError(t('auth.ak.relink'))
         return
       }
-      setAkUserInfo(data.userInfo)
+      setAkUserInfo(data.userInfo ?? null)
       setAkStep('link_needed')
     } catch {
       setAkError(t('auth.serverError'))
@@ -110,7 +148,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
     }
   }
 
-  const handleAkademiyaLink = async (e) => {
+  const handleAkademiyaLink = async (e: React.FormEvent) => {
     e.preventDefault()
     setAkError('')
     setAkStep('linking')
@@ -126,9 +164,20 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
           gmcRole:         akUserInfo?.gmcRole ?? 0,
         }),
       })
-      const data = await res.json()
+      const data = await res.json() as {
+        success: boolean; message?: string;
+        sessionId: string; studentNo: string; studentName?: string;
+        role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
+      }
       if (data.success) {
-        onLogin({ sessionId: data.sessionId, studentNo: data.studentNo, studentName: data.studentName || '', role: data.role ?? 0, needsPrivacyConsent: data.needsPrivacyConsent ?? true, needsTermsConsent: data.needsTermsConsent ?? true })
+        onLogin({
+          sessionId: data.sessionId,
+          studentNo: data.studentNo,
+          studentName: data.studentName || '',
+          role: data.role ?? 0,
+          needsPrivacyConsent: data.needsPrivacyConsent ?? true,
+          needsTermsConsent: data.needsTermsConsent ?? true,
+        })
       } else {
         setAkError(data.message || t('auth.ak.linkFailed'))
         setAkStep('link_needed')
@@ -141,7 +190,6 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
 
   return (
     <div className="login-container">
-      {/* 테마 버튼 */}
       <button
         onClick={toggleTheme}
         className="btn btn-outline"
@@ -152,7 +200,6 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
       </button>
 
       <div className="card login-card">
-        {/* 로고 */}
         <div className="login-logo">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '6px' }}>
             <img
@@ -165,11 +212,10 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
           <p>{t('app.subtitle')}</p>
         </div>
 
-        {/* 탭 */}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
           {[
-            { id: 'gmc',       label: t('auth.tabGmc',       'GMCAuto 계정') },
-            { id: 'akademiya', label: t('auth.tabAkademiya', 'Akademiya 로그인') },
+            { id: 'gmc' as const,       label: t('auth.tabGmc',       'GMCAuto 계정') },
+            { id: 'akademiya' as const, label: t('auth.tabAkademiya', 'Akademiya 로그인') },
           ].map(tb => (
             <button
               key={tb.id}
@@ -192,7 +238,6 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
             <div className="alert alert-warning">{t('auth.sessionExpired')}</div>
           )}
 
-          {/* ── GMCAuto 계정 ── */}
           {tab === 'gmc' && (
             <>
               {error && <div className="alert alert-error">{error}</div>}
@@ -221,7 +266,6 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
             </>
           )}
 
-          {/* ── Akademiya 로그인 ── */}
           {tab === 'akademiya' && (
             <>
               {akError && <div className="alert alert-error">{akError}</div>}

@@ -1,9 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { LogEntry } from '../types'
 
-export default function LogViewer({ logs }) {
+interface LogViewerProps {
+  logs: LogEntry[]
+}
+
+export default function LogViewer({ logs }: LogViewerProps) {
   const { t } = useTranslation()
-  const containerRef = useRef(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (containerRef.current) {

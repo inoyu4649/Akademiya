@@ -1,0 +1,56 @@
+// ── 공유 타입 ─────────────────────────────────────────────────────────────────
+
+export interface SessionData {
+  sessionId: string;
+  studentNo: string;
+  studentName: string;
+  role: number;
+  needsPrivacyConsent: boolean;
+  needsTermsConsent: boolean;
+}
+
+export interface ScheduleInfo {
+  time: string;
+  timeCode: string;
+  teacherId: string;
+  reason: string | null;
+  executed: boolean;
+  result: { success: boolean; message: string | null } | null;
+}
+
+export interface LogEntry {
+  time: string;
+  message: string;
+  type: 'info' | 'success' | 'error';
+}
+
+export interface PassRecord {
+  date: string;
+  type: string;
+  time: string;
+  confirmed: string;
+  teacher: string;
+}
+
+export interface StatRecord {
+  id: number;
+  student_no: string;
+  grade: string;
+  class: string;
+  number: string;
+  time_code: string;
+  schedule_time: string;
+  apply_date: string;
+  success: number | boolean;
+  message: string | null;
+  updated_at?: string;
+  role?: number;
+}
+
+export interface UserRecord {
+  student_no: string;
+  role: number;
+  updated_at?: string;
+  akademiya_user_id?: number;
+  akademiya_email?: string;
+}

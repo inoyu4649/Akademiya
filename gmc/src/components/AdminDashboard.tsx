@@ -5,16 +5,45 @@ import {
   PieChart, Pie, Cell, BarChart, Bar,
   XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
+import type { PieLabelRenderProps } from 'recharts'
+import type { SessionData, StatRecord, UserRecord } from '../types'
 
-const PIE_COLORS = ['#4fc3f7', '#4caf50', '#ff9800', '#f44336', '#ce93d8']
+const PIE_COLORS    = ['#4fc3f7', '#4caf50', '#ff9800', '#f44336', '#ce93d8']
 const SUCCESS_COLORS = ['#4caf50', '#f44336']
 
-const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-  if (percent < 0.05) return null
+interface AdminDashboardProps {
+  session: SessionData
+}
+
+interface ChartCardProps {
+  title: string
+  children: React.ReactNode
+}
+
+interface EmptyChartProps {
+  label: string
+}
+
+interface UserManagerProps {
+  session: SessionData
+  roleNames: string[]
+  ROLE_COLORS: string[]
+}
+
+const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: PieLabelRenderProps) => {
+  if (
+    cx === undefined || cy === undefined ||
+    midAngle === undefined || innerRadius === undefined ||
+    outerRadius === undefined || percent === undefined || percent < 0.05
+  ) return null
+  const cxN = Number(cx)
+  const cyN = Number(cy)
+  const irN = Number(innerRadius)
+  const orN = Number(outerRadius)
   const RADIAN = Math.PI / 180
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.55
-  const x = cx + radius * Math.cos(-midAngle * RADIAN)
-  const y = cy + radius * Math.sin(-midAngle * RADIAN)
+  const radius = irN + (orN - irN) * 0.55
+  const x = cxN + radius * Math.cos(-midAngle * RADIAN)
+  const y = cyN + radius * Math.sin(-midAngle * RADIAN)
   return (
     <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={600}>
       {`${(percent * 100).toFixed(0)}%`}
@@ -22,17 +51,20 @@ const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent })
   )
 }
 
-export default function AdminDashboard({ session }) {
+export default function AdminDashboard({ session }: AdminDashboardProps) {
   const { t } = useTranslation()
-  const [stats, setStats] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [grade, setGrade] = useState('')
-  const [cls, setCls] = useState('')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
+  const [stats, setStats]         = useState<StatRecord[]>([])
+  const [loading, setLoading]     = useState(false)
+  const [grade, setGrade]         = useState('')
+  const [cls, setCls]             = useState('')
+  const [dateFrom, setDateFrom]   = useState('')
+  const [dateTo, setDateTo]       = useState('')
   const [showCharts, setShowCharts] = useState(false)
 
-  const roleNames = t('admin.roleNames', { returnObjects: true }) || ['일반', '통계 보기', '통계+다운로드', '관리자']
+  const rawRoleNames = t('admin.roleNames', { returnObjects: true })
+  const roleNames: string[] = Array.isArray(rawRoleNames)
+    ? (rawRoleNames as string[])
+    : ['일반', '통계 보기', '통계+다운로드', '관리자']
 
   const fetchStats = useCallback(async () => {
     setLoading(true)
@@ -42,31 +74,32 @@ export default function AdminDashboard({ session }) {
       if (cls)      params.set('cls', cls)
       if (dateFrom) params.set('dateFrom', dateFrom)
       if (dateTo)   params.set('dateTo', dateTo)
-      const res = await fetch(`/api/admin/stats?${params}`)
-      const data = await res.json()
+      const res  = await fetch(`/api/admin/stats?${params}`)
+      const data = await res.json() as { success: boolean; records?: StatRecord[] }
       if (data.success) setStats(data.records || [])
-    } catch {
-      // 무시
-    } finally {
-      setLoading(false)
-    }
+    } catch { /* 무시 */ }
+    finally { setLoading(false) }
   }, [session.sessionId, grade, cls, dateFrom, dateTo])
 
   useEffect(() => { fetchStats() }, [fetchStats])
 
   const exportXlsx = () => {
-    const timeCodeMap = { '1': t('pass.yaja1'), '2': t('pass.yaja2'), '3': t('pass.yaja12') }
+    const timeCodeMap: Record<string, string> = {
+      '1': t('pass.yaja1'),
+      '2': t('pass.yaja2'),
+      '3': t('pass.yaja12'),
+    }
     const rows = stats.map(r => ({
       'ID': r.id,
-      [t('admin.colStudentNo', '학번')]: r.student_no,
-      [t('admin.colGrade', '학년')]: r.grade,
-      [t('admin.colClass', '반')]: parseInt(r.class, 10),
-      [t('admin.colNo', '번호')]: parseInt(r.number, 10),
-      [t('home.yajaLabel')]: timeCodeMap[r.time_code] || r.time_code,
+      [t('admin.colStudentNo', '학번')]:       r.student_no,
+      [t('admin.colGrade',    '학년')]:        r.grade,
+      [t('admin.colClass',    '반')]:          parseInt(r.class,  10),
+      [t('admin.colNo',       '번호')]:        parseInt(r.number, 10),
+      [t('home.yajaLabel')]:                   timeCodeMap[r.time_code] || r.time_code,
       [t('admin.colScheduleTime', '신청시간')]: r.schedule_time,
-      [t('admin.colApplyDate', '신청일')]: r.apply_date,
-      [t('admin.colResult', '결과')]: r.success ? '✓' : '✗',
-      [t('admin.colMessage', '메시지')]: r.message,
+      [t('admin.colApplyDate',    '신청일')]:   r.apply_date,
+      [t('admin.colResult',       '결과')]:     r.success ? '✓' : '✗',
+      [t('admin.colMessage',      '메시지')]:   r.message,
     }))
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
@@ -79,22 +112,21 @@ export default function AdminDashboard({ session }) {
     if (failCount === 0) return
     const rangeText = (dateFrom || dateTo) ? `${dateFrom || '처음'} ~ ${dateTo || '끝'}` : '⚠️ 전체 기간'
     const gradeText = grade ? ` / ${grade}학년` : ''
-    const clsText = cls ? ` / ${parseInt(cls, 10)}반` : ''
+    const clsText   = cls   ? ` / ${parseInt(cls, 10)}반` : ''
     if (!confirm(`실패 기록 ${failCount}건을 삭제합니다.\n범위: ${rangeText}${gradeText}${clsText}\n\n이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?`)) return
-
     try {
-      const res = await fetch('/api/admin/stats/delete-failures', {
-        method: 'POST',
+      const res  = await fetch('/api/admin/stats/delete-failures', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body:    JSON.stringify({
           sessionId: session.sessionId,
-          grade: grade || undefined,
-          cls: cls || undefined,
+          grade:    grade    || undefined,
+          cls:      cls      || undefined,
           dateFrom: dateFrom || undefined,
-          dateTo: dateTo || undefined,
+          dateTo:   dateTo   || undefined,
         }),
       })
-      const data = await res.json()
+      const data = await res.json() as { success: boolean; deleted?: number; message?: string }
       if (data.success) {
         alert(`실패 기록 ${data.deleted}건이 삭제되었습니다.`)
         fetchStats()
@@ -106,10 +138,14 @@ export default function AdminDashboard({ session }) {
     }
   }
 
-  const timeCodeMap = { '1': t('pass.yaja1'), '2': t('pass.yaja2'), '3': t('pass.yaja12') }
+  const timeCodeMap: Record<string, string> = {
+    '1': t('pass.yaja1'),
+    '2': t('pass.yaja2'),
+    '3': t('pass.yaja12'),
+  }
 
   const timeCodeData = Object.entries(
-    stats.reduce((acc, r) => {
+    stats.reduce<Record<string, number>>((acc, r) => {
       const label = timeCodeMap[r.time_code] || (r.time_code ? `코드 ${r.time_code}` : '기타')
       acc[label] = (acc[label] || 0) + 1
       return acc
@@ -117,7 +153,7 @@ export default function AdminDashboard({ session }) {
   ).map(([name, value]) => ({ name, value }))
 
   const hourData = Object.entries(
-    stats.reduce((acc, r) => {
+    stats.reduce<Record<string, number>>((acc, r) => {
       const hour = r.schedule_time ? r.schedule_time.slice(0, 2) + ':00' : '기타'
       acc[hour] = (acc[hour] || 0) + 1
       return acc
@@ -125,19 +161,19 @@ export default function AdminDashboard({ session }) {
   ).sort((a, b) => a[0].localeCompare(b[0])).map(([name, value]) => ({ name, value }))
 
   const successCount = stats.filter(r => r.success).length
-  const failCount = stats.length - successCount
-  const successData = [
+  const failCount    = stats.length - successCount
+  const successData  = [
     { name: t('home.executed_success', '성공'), value: successCount },
-    { name: t('home.executed_fail', '실패'), value: failCount },
+    { name: t('home.executed_fail',    '실패'), value: failCount    },
   ].filter(d => d.value > 0)
 
-  const selectStyle = {
+  const selectStyle: React.CSSProperties = {
     padding: '6px 10px', border: '1px solid var(--border)',
     borderRadius: 'var(--radius-sm)', fontSize: '13px',
     background: 'var(--bg-input)', color: 'var(--text)',
   }
-  const labelStyle = { fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '3px' }
-  const userRole = session.role ?? 0
+  const labelStyle: React.CSSProperties = { fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '3px' }
+  const userRole    = session.role ?? 0
   const ROLE_COLORS = ['var(--text-secondary)', 'var(--primary)', 'var(--success)', 'var(--danger)']
 
   return (
@@ -201,49 +237,27 @@ export default function AdminDashboard({ session }) {
             )}
           </span>
           <div style={{ flex: 1 }} />
-          <button
-            className="btn btn-outline"
-            onClick={() => setShowCharts(v => !v)}
-            style={{ fontSize: '12px', padding: '5px 12px' }}
-          >
+          <button className="btn btn-outline" onClick={() => setShowCharts(v => !v)} style={{ fontSize: '12px', padding: '5px 12px' }}>
             {showCharts ? t('admin.toggleChartHide') : t('admin.toggleChartShow')}
           </button>
           {userRole >= 2 && (
-            <button
-              className="btn btn-primary"
-              onClick={exportXlsx}
-              disabled={stats.length === 0}
-              style={{ fontSize: '12px', padding: '5px 12px' }}
-            >
+            <button className="btn btn-primary" onClick={exportXlsx} disabled={stats.length === 0} style={{ fontSize: '12px', padding: '5px 12px' }}>
               {t('admin.exportXlsx')}
             </button>
           )}
           {userRole >= 3 && (
-            <button
-              className="btn btn-danger"
-              onClick={deleteFailures}
-              disabled={failCount === 0}
-              style={{ fontSize: '12px', padding: '5px 12px' }}
-            >
+            <button className="btn btn-danger" onClick={deleteFailures} disabled={failCount === 0} style={{ fontSize: '12px', padding: '5px 12px' }}>
               {t('admin.deleteFailures')}
             </button>
           )}
-          <button
-            className="btn btn-outline"
-            onClick={fetchStats}
-            disabled={loading}
-            style={{ fontSize: '12px', padding: '5px 12px' }}
-          >
+          <button className="btn btn-outline" onClick={fetchStats} disabled={loading} style={{ fontSize: '12px', padding: '5px 12px' }}>
             {t('admin.refresh')}
           </button>
         </div>
 
         {/* ── 차트 ── */}
         {showCharts && (
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-            gap: '12px', marginBottom: '14px',
-          }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '14px' }}>
             <ChartCard title={t('admin.chartYaja')}>
               {timeCodeData.length === 0 ? <EmptyChart label={t('admin.chartEmpty')} /> : (
                 <ResponsiveContainer width="100%" height={200}>
@@ -305,9 +319,18 @@ export default function AdminDashboard({ session }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                 <tr style={{ background: 'var(--bg)', borderBottom: '2px solid var(--border)' }}>
-                  {['#', t('admin.colStudentNo', '학번'), t('admin.colGrade', '학년'), t('admin.colClass', '반'), t('admin.colNo', '번호'),
-                    t('home.yajaLabel'), t('admin.colScheduleTime', '신청시간'), t('admin.colApplyDate', '신청일'),
-                    t('admin.colResult', '결과'), t('admin.colMessage', '메시지')].map(h => (
+                  {[
+                    '#',
+                    t('admin.colStudentNo',    '학번'),
+                    t('admin.colGrade',        '학년'),
+                    t('admin.colClass',        '반'),
+                    t('admin.colNo',           '번호'),
+                    t('home.yajaLabel'),
+                    t('admin.colScheduleTime', '신청시간'),
+                    t('admin.colApplyDate',    '신청일'),
+                    t('admin.colResult',       '결과'),
+                    t('admin.colMessage',      '메시지'),
+                  ].map(h => (
                     <th key={h} style={{ padding: '7px 10px', textAlign: 'left', whiteSpace: 'nowrap', fontWeight: 600, background: 'var(--bg)', color: 'var(--text-secondary)' }}>{h}</th>
                   ))}
                 </tr>
@@ -318,7 +341,7 @@ export default function AdminDashboard({ session }) {
                     <td style={{ padding: '5px 10px', color: 'var(--text-muted)' }}>{r.id}</td>
                     <td style={{ padding: '5px 10px', fontWeight: 500 }}>{r.student_no}</td>
                     <td style={{ padding: '5px 10px' }}>{r.grade}</td>
-                    <td style={{ padding: '5px 10px' }}>{parseInt(r.class, 10)}</td>
+                    <td style={{ padding: '5px 10px' }}>{parseInt(r.class,  10)}</td>
                     <td style={{ padding: '5px 10px' }}>{parseInt(r.number, 10)}</td>
                     <td style={{ padding: '5px 10px', whiteSpace: 'nowrap' }}>{timeCodeMap[r.time_code] || r.time_code}</td>
                     <td style={{ padding: '5px 10px' }}>{r.schedule_time}</td>
@@ -328,7 +351,7 @@ export default function AdminDashboard({ session }) {
                         {r.success ? t('admin.successLabel', '✓ 성공') : t('admin.failLabel', '✗ 실패')}
                       </span>
                     </td>
-                    <td style={{ padding: '5px 10px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-secondary)' }} title={r.message}>
+                    <td style={{ padding: '5px 10px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-secondary)' }} title={r.message ?? ''}>
                       {r.message}
                     </td>
                   </tr>
@@ -345,7 +368,7 @@ export default function AdminDashboard({ session }) {
   )
 }
 
-function ChartCard({ title, children }) {
+function ChartCard({ title, children }: ChartCardProps) {
   return (
     <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px' }}>
       <h4 style={{ marginBottom: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{title}</h4>
@@ -354,7 +377,7 @@ function ChartCard({ title, children }) {
   )
 }
 
-function EmptyChart({ label }) {
+function EmptyChart({ label }: EmptyChartProps) {
   return (
     <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
       {label}
@@ -362,35 +385,35 @@ function EmptyChart({ label }) {
   )
 }
 
-function UserManager({ session, roleNames, ROLE_COLORS }) {
+function UserManager({ session, roleNames, ROLE_COLORS }: UserManagerProps) {
   const { t } = useTranslation()
-  const [users, setUsers] = useState([])
+  const [users, setUsers]               = useState<UserRecord[]>([])
   const [inputStudentNo, setInputStudentNo] = useState('')
-  const [inputRole, setInputRole] = useState('1')
-  const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState(null)
+  const [inputRole, setInputRole]       = useState('1')
+  const [saving, setSaving]             = useState(false)
+  const [message, setMessage]           = useState<{ success: boolean; text: string } | null>(null)
 
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await fetch(`/api/admin/users?sessionId=${session.sessionId}`)
-      const data = await res.json()
-      if (data.success) setUsers(data.users.filter(u => u.role > 0))
+      const res  = await fetch(`/api/admin/users?sessionId=${session.sessionId}`)
+      const data = await res.json() as { success: boolean; users?: UserRecord[] }
+      if (data.success) setUsers((data.users || []).filter(u => u.role > 0))
     } catch { /* ignore */ }
   }, [session.sessionId])
 
   useEffect(() => { fetchUsers() }, [fetchUsers])
 
-  const applyRole = useCallback(async (studentNo, role) => {
+  const applyRole = useCallback(async (studentNo: string, role: number) => {
     setSaving(true)
     setMessage(null)
     try {
-      const res = await fetch('/api/admin/users/role', {
-        method: 'POST',
+      const res  = await fetch('/api/admin/users/role', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: session.sessionId, studentNo, role }),
+        body:    JSON.stringify({ sessionId: session.sessionId, studentNo, role }),
       })
-      const data = await res.json()
-      setMessage({ success: data.success, text: data.message })
+      const data = await res.json() as { success: boolean; message?: string }
+      setMessage({ success: data.success, text: data.message || '' })
       if (data.success) fetchUsers()
     } catch {
       setMessage({ success: false, text: '서버 오류가 발생했습니다.' })
@@ -406,7 +429,7 @@ function UserManager({ session, roleNames, ROLE_COLORS }) {
     setInputStudentNo('')
   }
 
-  const inputStyle = {
+  const inputStyle: React.CSSProperties = {
     padding: '6px 10px', border: '1px solid var(--border)',
     borderRadius: 'var(--radius-sm)', fontSize: '13px',
     background: 'var(--bg-input)', color: 'var(--text)',
@@ -455,8 +478,8 @@ function UserManager({ session, roleNames, ROLE_COLORS }) {
         <div style={{
           padding: '7px 10px', borderRadius: 'var(--radius-sm)', fontSize: '12px', marginBottom: '10px',
           background: message.success ? 'var(--success-light)' : 'var(--danger-light)',
-          color: message.success ? 'var(--success)' : 'var(--danger)',
-          border: `1px solid ${message.success ? 'var(--success)' : 'var(--danger)'}`,
+          color:      message.success ? 'var(--success)'       : 'var(--danger)',
+          border:    `1px solid ${message.success ? 'var(--success)' : 'var(--danger)'}`,
         }}>
           {message.text}
         </div>
@@ -478,7 +501,12 @@ function UserManager({ session, roleNames, ROLE_COLORS }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
             <thead>
               <tr style={{ background: 'var(--bg)', borderBottom: '2px solid var(--border)' }}>
-                {[t('admin.users.colStudentNo'), t('admin.users.colRole'), t('admin.users.colLastActive'), t('admin.users.colManage')].map(h => (
+                {[
+                  t('admin.users.colStudentNo'),
+                  t('admin.users.colRole'),
+                  t('admin.users.colLastActive'),
+                  t('admin.users.colManage'),
+                ].map(h => (
                   <th key={h} style={{ padding: '7px 10px', textAlign: 'left', fontWeight: 600, background: 'var(--bg)', color: 'var(--text-secondary)' }}>{h}</th>
                 ))}
               </tr>

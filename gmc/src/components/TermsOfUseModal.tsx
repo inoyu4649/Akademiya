@@ -1,85 +1,90 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type React from 'react'
 
-const GMC_PRIVACY_POLICY_VERSION = 1
+const GMC_TERMS_OF_USE_VERSION = 1
 
-const POLICY_EFFECTIVE_DATE = '2026-06-06'
+const TERMS_EFFECTIVE_DATE = '2026-06-06'
 
-const POLICY_SECTIONS = [
+const TERMS_SECTIONS = [
   {
     id: 'purpose',
-    title: '제1조 (개인정보의 처리 목적)',
-    content: `GMCAuto는 다음의 목적을 위하여 개인정보를 처리합니다. 처리하고 있는 개인정보는 다음의 목적 이외의 용도로는 이용되지 않습니다.
+    title: '제1조 (목적 및 서비스 성격)',
+    content: `① 이 약관은 GMCAuto가 제공하는 Going HAFS 사이트 GMC PASS 자동 신청 서비스의 이용 조건 및 절차, 운영자와 이용자의 권리·의무 및 책임에 관한 사항을 규정함을 목적으로 합니다.
 
-1. 서비스 제공
-Going HAFS 사이트 자동 로그인 및 GMC PASS 자동 신청 서비스 제공을 목적으로 개인정보를 처리합니다.
+② GMCAuto는 용인한국외국어대학교부설고등학교(HAFS)와 공식적인 제휴 관계가 없는 독립 운영 서비스입니다.
 
-2. 스케줄 관리
-GMC PASS 신청 스케줄 등록·실행·관리 및 결과 기록 목적으로 개인정보를 처리합니다.`,
+③ 서비스는 Going HAFS 사이트의 자동 신청 편의를 위해 제공되며, 신청 결과에 대한 보장을 하지 않습니다.`,
   },
   {
-    id: 'items',
-    title: '제2조 (처리하는 개인정보의 항목)',
-    content: `GMCAuto는 다음의 개인정보 항목을 처리합니다.
+    id: 'definitions',
+    title: '제2조 (정의)',
+    content: `1. "서비스": GMCAuto가 제공하는 GMC PASS 자동 신청 및 스케줄 관리 서비스
+2. "이용자": 이 약관에 따라 서비스에 로그인하여 기능을 이용하는 자
+3. "자격증명": Going HAFS 사이트 이용을 위한 학번 및 비밀번호
+4. "스케줄": 자동 신청을 위해 등록한 시간, 날짜, 담당교사 등의 정보`,
+  },
+  {
+    id: 'terms_posting',
+    title: '제3조 (약관의 게시 및 변경)',
+    content: `① 이 약관은 로그인 화면 및 동의 모달에 게시됩니다.
 
-[필수항목]
-- Going HAFS 학번(학생 번호)
-- Going HAFS 비밀번호 (암호화 저장, 자동 신청 전용)
+② 약관 변경 시 적용 7일 이전에 공지합니다. 재동의가 필요한 경우 로그인 후 동의 화면을 통해 진행합니다.`,
+  },
+  {
+    id: 'credentials',
+    title: '제4조 (자격증명 관리 및 책임)',
+    content: `① 이용자는 Going HAFS 학번 및 비밀번호를 안전하게 관리할 책임이 있습니다.
 
-[Akademiya OAuth 연동 시]
-- Akademiya 계정 이메일, 사용자 식별 ID
+② 자격증명은 GMC PASS 자동 신청 목적으로만 사용되며, 이외의 목적으로는 절대 사용되지 않습니다.
 
-[자동 수집]
-- GMC PASS 신청 스케줄 정보 (시간, 날짜, 담당교사)
-- 신청 결과 이력 (성공/실패)
-- 세션 식별자 (로그인 상태 유지용)
+③ 서비스 탈퇴 기능으로 저장된 자격증명을 언제든지 즉시 삭제할 수 있습니다.`,
+  },
+  {
+    id: 'obligations',
+    title: '제5조 (이용자의 의무 및 금지행위)',
+    content: `다음 행위는 금지됩니다.
+1. 타인의 학번·비밀번호를 도용하는 행위
+2. 서버에 과부하를 주거나 시스템을 악용하는 행위
+3. Going HAFS 사이트를 비정상적으로 이용하는 행위
+4. 기술적 보호조치를 우회하거나 리버스 엔지니어링하는 행위
+5. 관계 법령에 위반되는 행위`,
+  },
+  {
+    id: 'service',
+    title: '제6조 (서비스 제공 및 중단)',
+    content: `서비스는 연중무휴 무료 제공을 원칙으로 합니다. 단, 서버 점검, Going HAFS 정책 변경, 불가항력적 사유 등으로 일시 중단될 수 있습니다.`,
+  },
+  {
+    id: 'disclaimer',
+    title: '제7조 (면책사항)',
+    content: `서비스는 다음의 경우 책임을 지지 않습니다.
+1. 이용자의 자격증명 오류로 인한 자동 신청 실패
+2. Going HAFS 정책 변경, 점검, 장애로 인한 신청 실패
+3. 불가항력적 사유로 인한 서비스 중단
+4. 이용자 귀책사유로 인한 이용 장애
 
-※ 비밀번호는 자동 신청 목적으로만 서버에 저장되며, 다른 목적으로 절대 사용되지 않습니다.`,
+※ 본 서비스는 HAFS 공식 서비스가 아닙니다.`,
   },
   {
-    id: 'retention',
-    title: '제3조 (개인정보의 처리 및 보유 기간)',
-    content: `- 계정 정보 (학번, 비밀번호): 서비스 탈퇴 시까지
-- 스케줄 이력: 실행 후 7일 후 자동 삭제
-- 재시도 기록: 신청일 기준 7일 후 자동 삭제`,
+    id: 'dispute',
+    title: '제8조 (분쟁 해결 및 준거법)',
+    content: `서비스와 이용자 간의 분쟁은 대한민국 법원에서 관할합니다.
+문의: lmg1152@naver.com`,
   },
   {
-    id: 'security',
-    title: '제4조 (개인정보의 안전성 확보조치)',
-    content: `1. 비밀번호 암호화 저장 및 자동 신청 외 목적 사용 금지
-2. HTTPS(TLS) 암호화 통신
-3. 데이터베이스 접근 권한 제한`,
-  },
-  {
-    id: 'rights',
-    title: '제5조 (정보주체의 권리 및 행사방법)',
-    content: `이용자는 언제든지 다음의 권리를 행사할 수 있습니다.
-
-1. 개인정보 열람, 정정, 삭제, 처리정지 요구
-2. 서비스 내 탈퇴 기능으로 저장된 자격증명 즉시 삭제 가능
-3. 추가 문의: lmg1152@naver.com`,
-  },
-  {
-    id: 'officer',
-    title: '제6조 (개인정보 보호책임자)',
-    content: `- 성명: 이민기
-- 연락처: lmg1152@naver.com
-- 서비스: https://gmc.akademiya.kr`,
-  },
-  {
-    id: 'remedy',
-    title: '제7조 (권익침해 구제방법)',
-    content: `1. 개인정보 분쟁조정위원회: 1833-6972 (www.kopico.go.kr)
-2. 개인정보침해신고센터: 118 (privacy.kisa.or.kr)`,
-  },
-  {
-    id: 'changes',
-    title: '제8조 (개인정보 처리방침의 변경)',
-    content: `이 처리방침은 ${POLICY_EFFECTIVE_DATE}부터 적용됩니다. 변경 시 모달 팝업으로 안내하고 재동의를 받습니다.`,
+    id: 'supplementary',
+    title: '부칙',
+    content: `이 약관은 ${TERMS_EFFECTIVE_DATE}부터 시행됩니다.`,
   },
 ]
 
-export default function PrivacyPolicyModal({ sessionId, onConsented }) {
+interface TermsOfUseModalProps {
+  sessionId: string
+  onConsented: () => void
+}
+
+export default function TermsOfUseModal({ sessionId, onConsented }: TermsOfUseModalProps) {
   const { t } = useTranslation()
   const [agreed, setAgreed] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -90,19 +95,19 @@ export default function PrivacyPolicyModal({ sessionId, onConsented }) {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/privacy/consent', {
+      const res = await fetch('/api/terms/consent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, version: GMC_PRIVACY_POLICY_VERSION }),
+        body: JSON.stringify({ sessionId, version: GMC_TERMS_OF_USE_VERSION }),
       })
-      const data = await res.json()
+      const data = await res.json() as { success: boolean; message?: string }
       if (data.success) {
         onConsented()
       } else {
-        setError(data.message || t('privacy.consentError', '동의 처리 중 오류가 발생했습니다.'))
+        setError(data.message || t('terms.consentError', '동의 처리 중 오류가 발생했습니다.'))
       }
     } catch {
-      setError(t('privacy.consentError', '서버에 연결할 수 없습니다. 다시 시도해 주세요.'))
+      setError(t('terms.consentError', '서버에 연결할 수 없습니다. 다시 시도해 주세요.'))
     } finally {
       setLoading(false)
     }
@@ -112,17 +117,17 @@ export default function PrivacyPolicyModal({ sessionId, onConsented }) {
     <div style={styles.overlay}>
       <div style={styles.modal}>
         <div style={styles.header}>
-          <h2 style={styles.title}>GMCAuto 개인정보 처리방침</h2>
-          <p style={styles.subtitle}>서비스 이용을 위해 개인정보 처리방침에 동의해 주세요.</p>
-          <span style={styles.version}>v{GMC_PRIVACY_POLICY_VERSION} · {POLICY_EFFECTIVE_DATE}</span>
+          <h2 style={styles.title}>GMCAuto 이용약관</h2>
+          <p style={styles.subtitle}>서비스 이용을 위해 이용약관에 동의해 주세요.</p>
+          <span style={styles.version}>v{GMC_TERMS_OF_USE_VERSION} · {TERMS_EFFECTIVE_DATE}</span>
         </div>
 
         <div style={styles.content}>
           <p style={styles.preamble}>
-            GMCAuto(이하 '서비스')는 정보주체의 자유와 권리 보호를 위해 「개인정보 보호법」 및 관계 법령이
-            정한 바를 준수하여, 적법하게 개인정보를 처리하고 안전하게 관리하고 있습니다.
+            GMCAuto(이하 '서비스')가 제공하는 Going HAFS GMC PASS 자동 신청 서비스의 이용에 관한
+            조건 및 절차, 운영자와 이용자의 권리·의무, 책임에 관한 사항을 규정합니다.
           </p>
-          {POLICY_SECTIONS.map((sec) => (
+          {TERMS_SECTIONS.map((sec) => (
             <div key={sec.id} style={styles.section}>
               <h3 style={styles.sectionTitle}>{sec.title}</h3>
               <div style={styles.sectionBody}>
@@ -143,7 +148,7 @@ export default function PrivacyPolicyModal({ sessionId, onConsented }) {
               checked={agreed}
               onChange={(e) => setAgreed(e.target.checked)}
             />
-            <span>개인정보 처리방침을 읽었으며, 이에 동의합니다.</span>
+            <span>이용약관을 읽었으며, 이에 동의합니다.</span>
           </label>
           <button
             style={{ ...styles.btn, ...((!agreed || loading) ? styles.btnDisabled : {}) }}
@@ -158,7 +163,7 @@ export default function PrivacyPolicyModal({ sessionId, onConsented }) {
   )
 }
 
-const styles = {
+const styles: Record<string, React.CSSProperties> = {
   overlay: {
     position: 'fixed',
     inset: 0,

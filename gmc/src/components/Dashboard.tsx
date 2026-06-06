@@ -2,8 +2,21 @@ import { useState, useCallback, useEffect, lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import PassForm from './PassForm'
 import LogViewer from './LogViewer'
+import type { SessionData, ScheduleInfo, LogEntry, PassRecord } from '../types'
 
 const AdminDashboard = lazy(() => import('./AdminDashboard'))
+
+interface DashboardProps {
+  session: SessionData
+  onLogout: () => void
+  onAccountDelete: () => void
+  theme: string
+  toggleTheme: () => void
+}
+
+interface PassHistoryProps {
+  session: SessionData
+}
 
 const TIME_CODE_OPTIONS = [
   { value: '1', key: 'pass.yaja1' },
@@ -30,45 +43,46 @@ function IconMoon() {
   )
 }
 
-export default function Dashboard({ session, onLogout, onAccountDelete, theme, toggleTheme }) {
+export default function Dashboard({ session, onLogout, onAccountDelete, theme, toggleTheme }: DashboardProps) {
   const { t } = useTranslation()
   const [view, setView] = useState('home')
-  const [logs, setLogs] = useState([])
+  const [logs, setLogs] = useState<LogEntry[]>([])
 
-  // 스케줄 상태
-  const [mySchedule, setMySchedule] = useState(null)
-  const [takenSlots, setTakenSlots] = useState([])
+  const [mySchedule, setMySchedule]         = useState<ScheduleInfo | null>(null)
+  const [takenSlots, setTakenSlots]          = useState<string[]>([])
   const [scheduleLoading, setScheduleLoading] = useState(true)
-  const [targetDate, setTargetDate] = useState('')
-  const [weekend, setWeekend] = useState(false)
+  const [targetDate, setTargetDate]           = useState('')
+  const [weekend, setWeekend]                 = useState(false)
 
-  // 등록 폼
-  const [regTime, setRegTime] = useState('09:00')
+  const [regTime, setRegTime]         = useState('09:00')
   const [regTimeCode, setRegTimeCode] = useState('3')
-  const [regReason, setRegReason] = useState('')
-  const [regLoading, setRegLoading] = useState(false)
-  const [regMessage, setRegMessage] = useState(null)
+  const [regReason, setRegReason]     = useState('')
+  const [regLoading, setRegLoading]   = useState(false)
+  const [regMessage, setRegMessage]   = useState<{ success: boolean; message: string } | null>(null)
 
-  const addLog = useCallback((message, type = 'info') => {
+  const addLog = useCallback((message: string, type: LogEntry['type'] = 'info') => {
     const time = new Date().toLocaleTimeString('ko-KR', { hour12: false })
     setLogs(prev => [...prev, { time, message, type }])
   }, [])
 
   const fetchSchedule = useCallback(async () => {
     try {
-      const res = await fetch(`/api/schedule/status?sessionId=${session.sessionId}`)
-      const data = await res.json()
+      const res  = await fetch(`/api/schedule/status?sessionId=${session.sessionId}`)
+      const data = await res.json() as {
+        success: boolean;
+        mySchedule?: ScheduleInfo;
+        takenSlots?: string[];
+        targetDate?: string;
+        isWeekend?: boolean;
+      }
       if (data.success) {
-        setMySchedule(data.mySchedule)
+        setMySchedule(data.mySchedule ?? null)
         setTakenSlots(data.takenSlots || [])
         setTargetDate(data.targetDate || '')
         setWeekend(data.isWeekend || false)
       }
-    } catch {
-      // 무시
-    } finally {
-      setScheduleLoading(false)
-    }
+    } catch { /* 무시 */ }
+    finally { setScheduleLoading(false) }
   }, [session.sessionId])
 
   useEffect(() => {
@@ -77,23 +91,17 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
     return () => clearInterval(iv)
   }, [fetchSchedule])
 
-  const handleRegister = async (e) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setRegLoading(true)
     setRegMessage(null)
-
     try {
-      const res = await fetch('/api/schedule/register', {
-        method: 'POST',
+      const res  = await fetch('/api/schedule/register', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: session.sessionId,
-          time: regTime,
-          timeCode: regTimeCode,
-          reason: regReason,
-        }),
+        body:    JSON.stringify({ sessionId: session.sessionId, time: regTime, timeCode: regTimeCode, reason: regReason }),
       })
-      const data = await res.json()
+      const data = await res.json() as { success: boolean; message: string }
       setRegMessage(data)
       if (data.success) {
         addLog(`자동 신청 등록: ${regTime}`, 'success')
@@ -111,50 +119,43 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
   const handleCancel = async () => {
     if (!mySchedule) return
     try {
-      const res = await fetch('/api/schedule/cancel', {
-        method: 'POST',
+      const res  = await fetch('/api/schedule/cancel', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: session.sessionId, time: mySchedule.time }),
+        body:    JSON.stringify({ sessionId: session.sessionId, time: mySchedule.time }),
       })
-      const data = await res.json()
+      const data = await res.json() as { success: boolean }
       if (data.success) {
         addLog(`자동 신청 해제: ${mySchedule.time}`, 'info')
         setMySchedule(null)
         fetchSchedule()
       }
-    } catch {
-      // 무시
-    }
+    } catch { /* 무시 */ }
   }
 
-  const isTimeValid = (t) => {
-    if (!/^\d{2}:\d{2}$/.test(t)) return false
-    const [h, m] = t.split(':').map(Number)
+  const isTimeValid = (time: string): boolean => {
+    if (!/^\d{2}:\d{2}$/.test(time)) return false
+    const [h, m] = time.split(':').map(Number)
     const total = h * 60 + m
     return total >= 540 && total <= 1059
   }
 
-  const isSlotTaken = (t) => {
-    return takenSlots.includes(t) && (!mySchedule || mySchedule.time !== t)
+  const isSlotTaken = (time: string): boolean => {
+    return takenSlots.includes(time) && (!mySchedule || mySchedule.time !== time)
   }
 
   const tabs = [
-    { id: 'home',    key: 'nav.home'      },
-    { id: 'apply',   key: 'nav.apply'     },
-    { id: 'history', key: 'nav.history'   },
+    { id: 'home',    key: 'nav.home'    },
+    { id: 'apply',   key: 'nav.apply'   },
+    { id: 'history', key: 'nav.history' },
     ...((session.role ?? 0) >= 1 ? [{ id: 'admin', key: 'nav.dashboard' }] : []),
   ]
 
   return (
     <div className="app" style={{ minHeight: 'unset', flex: 1 }}>
-      {/* ── Header ── */}
       <header className="header">
         <div className="header-left">
-          <img
-            src="/logo_gmc.png"
-            alt="GMCAuto"
-            style={{ height: '30px', objectFit: 'contain' }}
-          />
+          <img src="/logo_gmc.png" alt="GMCAuto" style={{ height: '30px', objectFit: 'contain' }} />
           <h1>GMCAuto 2</h1>
           <span className="version">v2.6</span>
         </div>
@@ -179,7 +180,6 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
         </div>
       </header>
 
-      {/* ── Navigation ── */}
       <nav className="nav-tabs">
         {tabs.map(tab => (
           <button
@@ -192,7 +192,6 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
         ))}
       </nav>
 
-      {/* ── Content ── */}
       <div className="main-content">
         {/* ── 홈 ── */}
         {view === 'home' && (
@@ -203,23 +202,14 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                gridColumn: '1 / -1',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                background: 'rgba(79, 195, 247, 0.08)',
-                border: '1px solid rgba(79, 195, 247, 0.3)',
-                borderRadius: '8px',
-                color: 'var(--primary)',
-                fontSize: '13px',
-                fontWeight: '500',
-                textDecoration: 'none',
-                transition: 'background 0.15s',
+                gridColumn: '1 / -1', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', gap: '8px', padding: '8px 16px',
+                background: 'rgba(79, 195, 247, 0.08)', border: '1px solid rgba(79, 195, 247, 0.3)',
+                borderRadius: '8px', color: 'var(--primary)', fontSize: '13px',
+                fontWeight: '500', textDecoration: 'none', transition: 'background 0.15s',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(79, 195, 247, 0.15)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(79, 195, 247, 0.08)'}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(79, 195, 247, 0.15)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(79, 195, 247, 0.08)')}
             >
               <span>📋</span>
               <span>더 나은 GMCAuto 2를 만들기 위해 설문조사에 참여해주세요! (~7월 6일)</span>
@@ -247,8 +237,10 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
                     </div>
                   </div>
                   {mySchedule.executed ? (
-                    <div className={`alert ${mySchedule.result?.success ? 'alert-success' : 'alert-error'}`}
-                      style={{ marginTop: '12px', marginBottom: 0 }}>
+                    <div
+                      className={`alert ${mySchedule.result?.success ? 'alert-success' : 'alert-error'}`}
+                      style={{ marginTop: '12px', marginBottom: 0 }}
+                    >
                       {mySchedule.result?.success ? t('home.executed_success') : t('home.executed_fail')}: {mySchedule.result?.message}
                     </div>
                   ) : (
@@ -284,13 +276,8 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
                     <div className="form-group">
                       <label htmlFor="regTime">{t('home.timeLabel')}</label>
                       <input
-                        id="regTime"
-                        type="time"
-                        min="09:00"
-                        max="17:39"
-                        value={regTime}
-                        onChange={(e) => setRegTime(e.target.value)}
-                        required
+                        id="regTime" type="time" min="09:00" max="17:39"
+                        value={regTime} onChange={e => setRegTime(e.target.value)} required
                       />
                       {regTime && !isTimeValid(regTime) && (
                         <small style={{ color: 'var(--danger)', fontSize: '11px' }}>{t('home.timeRangeError')}</small>
@@ -299,40 +286,27 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
                         <small style={{ color: 'var(--danger)', fontSize: '11px' }}>{t('home.slotTaken')}</small>
                       )}
                     </div>
-
                     <div className="form-group">
                       <label htmlFor="regTimeCode">{t('home.yajaSelectLabel')}</label>
-                      <select
-                        id="regTimeCode"
-                        value={regTimeCode}
-                        onChange={(e) => setRegTimeCode(e.target.value)}
-                        required
-                      >
+                      <select id="regTimeCode" value={regTimeCode} onChange={e => setRegTimeCode(e.target.value)} required>
                         {TIME_CODE_OPTIONS.map(o => (
                           <option key={o.value} value={o.value}>{t(o.key)}</option>
                         ))}
                       </select>
                     </div>
-
                     <div className="form-group">
                       <label htmlFor="regReason">{t('home.reasonOptLabel')}</label>
                       <textarea
-                        id="regReason"
-                        value={regReason}
-                        onChange={(e) => setRegReason(e.target.value)}
-                        placeholder={t('home.reasonPlaceholder')}
-                        rows={2}
+                        id="regReason" value={regReason}
+                        onChange={e => setRegReason(e.target.value)}
+                        placeholder={t('home.reasonPlaceholder')} rows={2}
                       />
                     </div>
-
                     <button
-                      type="submit"
-                      className="btn btn-primary btn-block btn-lg"
+                      type="submit" className="btn btn-primary btn-block btn-lg"
                       disabled={regLoading || !isTimeValid(regTime) || isSlotTaken(regTime)}
                     >
-                      {regLoading ? (
-                        <><span className="spinner" /> {t('home.registering')}</>
-                      ) : t('home.registerBtn')}
+                      {regLoading ? <><span className="spinner" /> {t('home.registering')}</> : t('home.registerBtn')}
                     </button>
                   </form>
                 </div>
@@ -356,7 +330,7 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
                 <h2>{t('home.slotsTitle')}</h2>
                 <p>
                   {weekend ? t('home.slotsNextWorkday', { date: targetDate }) : t('home.slotsToday')}{' '}
-                  ({takenSlots.length}{t('home.slotsEmpty') ? '' : ''})
+                  ({takenSlots.length})
                   {weekend && <span style={{ marginLeft: '6px', color: 'var(--warning)', fontSize: '11px', fontWeight: '600' }}>{t('home.holidayLabel')}</span>}
                 </p>
               </div>
@@ -371,7 +345,7 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                    {takenSlots.sort().map(slot => (
+                    {[...takenSlots].sort().map(slot => (
                       <span key={slot} style={{
                         padding: '3px 9px', borderRadius: '4px', fontSize: '12px', fontWeight: '500',
                         background: mySchedule?.time === slot ? 'var(--primary)' : 'var(--danger-light)',
@@ -388,9 +362,7 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
 
             {/* 활동 로그 */}
             <div className="card">
-              <div className="card-header">
-                <h2>{t('home.logTitle')}</h2>
-              </div>
+              <div className="card-header"><h2>{t('home.logTitle')}</h2></div>
               <div className="card-body" style={{ padding: '0' }}>
                 <LogViewer logs={logs} />
               </div>
@@ -399,14 +371,10 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
         )}
 
         {/* ── PASS 신청 ── */}
-        {view === 'apply' && (
-          <PassForm session={session} addLog={addLog} />
-        )}
+        {view === 'apply' && <PassForm session={session} addLog={addLog} />}
 
         {/* ── 신청 내역 ── */}
-        {view === 'history' && (
-          <PassHistory session={session} />
-        )}
+        {view === 'history' && <PassHistory session={session} />}
 
         {/* ── 관리자 대시보드 ── */}
         {view === 'admin' && (session.role ?? 0) >= 1 && (
@@ -423,22 +391,22 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
   )
 }
 
-function PassHistory({ session }) {
+function PassHistory({ session }: PassHistoryProps) {
   const { t } = useTranslation()
-  const [records, setRecords] = useState([])
+  const [records, setRecords] = useState<PassRecord[]>([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError]     = useState('')
 
   const fetchHistory = async () => {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`/api/pass/list?sessionId=${session.sessionId}`)
-      const data = await res.json()
+      const res  = await fetch(`/api/pass/list?sessionId=${session.sessionId}`)
+      const data = await res.json() as { success: boolean; records?: PassRecord[]; message?: string }
       if (data.success) {
         setRecords(data.records || [])
       } else {
-        setError(data.message)
+        setError(data.message || '')
       }
     } catch {
       setError('내역을 불러올 수 없습니다.')

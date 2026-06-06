@@ -8,11 +8,15 @@ const LOGIN_URL = 'https://going.hafs.hs.kr/login/login.php';
  * Playwright를 이용해 reCAPTCHA v3 토큰을 생성합니다.
  * 브라우저에서 실제로 grecaptcha.execute()를 호출하여 유효한 토큰을 획득합니다.
  */
-export async function generateRecaptchaToken(executablePath) {
+export async function generateRecaptchaToken(executablePath: string | null): Promise<string> {
   let browser = null;
 
   try {
-    const launchOptions = {
+    const launchOptions: {
+      headless: boolean;
+      args: string[];
+      executablePath?: string;
+    } = {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     };
@@ -29,16 +33,18 @@ export async function generateRecaptchaToken(executablePath) {
     const page = await context.newPage();
     await page.goto(LOGIN_URL, { waitUntil: 'networkidle', timeout: 15000 });
 
-    // reCAPTCHA v3가 로드될 때까지 대기
-    await page.waitForFunction(() => typeof grecaptcha !== 'undefined' && grecaptcha.ready, {
-      timeout: 10000,
-    });
+    await page.waitForFunction(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const g = (globalThis as any).grecaptcha;
+      return typeof g !== 'undefined' && g.ready;
+    }, { timeout: 10000 });
 
-    // grecaptcha.execute()로 토큰 생성
-    const token = await page.evaluate((siteKey) => {
-      return new Promise((resolve, reject) => {
-        grecaptcha.ready(() => {
-          grecaptcha.execute(siteKey, { action: 'login' })
+    const token = await page.evaluate<string, string>((siteKey) => {
+      return new Promise<string>((resolve, reject) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const g = (globalThis as any).grecaptcha;
+        g.ready(() => {
+          g.execute(siteKey, { action: 'login' })
             .then(resolve)
             .catch(reject);
         });
@@ -50,29 +56,26 @@ export async function generateRecaptchaToken(executablePath) {
 
   } catch (error) {
     if (browser) await browser.close().catch(() => {});
-    throw new Error(`reCAPTCHA 토큰 생성 실패: ${error.message}`);
+    const err = error as Error;
+    throw new Error(`reCAPTCHA 토큰 생성 실패: ${err.message}`);
   }
 }
 
 /**
  * 시스템에 설치된 Chrome/Chromium 경로를 자동 탐색합니다.
  */
-export function findChromePath() {
-  // 환경변수 우선
+export function findChromePath(): string | null {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
 
   const possiblePaths = [
-    // Linux (ARM/x86)
     '/usr/bin/chromium-browser',
     '/usr/bin/chromium',
     '/usr/bin/google-chrome',
     '/usr/bin/google-chrome-stable',
     '/snap/bin/chromium',
-    // Windows
     'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
     'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
     (process.env.LOCALAPPDATA || '') + '\\Google\\Chrome\\Application\\chrome.exe',
-    // macOS
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   ];
 

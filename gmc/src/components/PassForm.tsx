@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { SessionData, LogEntry } from '../types'
 
-export default function PassForm({ session, addLog }) {
+interface PassFormProps {
+  session: SessionData
+  addLog: (message: string, type?: LogEntry['type']) => void
+}
+
+export default function PassForm({ session, addLog }: PassFormProps) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [result, setResult] = useState(null)
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
   const [error, setError] = useState('')
-  const [hiddenFields, setHiddenFields] = useState({})
+  const [hiddenFields, setHiddenFields] = useState<Record<string, string>>({})
 
   const [date, setDate] = useState(() => {
     const d = new Date()
@@ -23,12 +29,12 @@ export default function PassForm({ session, addLog }) {
     setError('')
     try {
       const res = await fetch(`/api/pass/form?sessionId=${session.sessionId}`)
-      const data = await res.json()
+      const data = await res.json() as { success: boolean; hiddenFields?: Record<string, string>; message?: string }
       if (data.success) {
         setHiddenFields(data.hiddenFields || {})
         addLog('GMC PASS 신청 폼을 불러왔습니다', 'info')
       } else {
-        setError(data.message)
+        setError(data.message || '')
         addLog(`폼 로드 실패: ${data.message}`, 'error')
       }
     } catch {
@@ -39,7 +45,7 @@ export default function PassForm({ session, addLog }) {
     }
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
     setResult(null)
@@ -51,7 +57,7 @@ export default function PassForm({ session, addLog }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: session.sessionId, date, timeCode, reason }),
       })
-      const data = await res.json()
+      const data = await res.json() as { success: boolean; message: string }
       setResult(data)
 
       if (data.success) {

@@ -51,4 +51,4 @@ ENV PORT=3001 \
     PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser \
     CHROMIUM_FLAGS="--no-sandbox --disable-dev-shm-usage"
 
-CMD ["node", "server/index.js"]
+CMD ["node_modules/.bin/tsx", "server/index.ts"]

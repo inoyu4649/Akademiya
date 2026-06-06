@@ -5,24 +5,24 @@ import LoginPage from './components/LoginPage'
 import Dashboard from './components/Dashboard'
 import PrivacyPolicyModal from './components/PrivacyPolicyModal'
 import TermsOfUseModal from './components/TermsOfUseModal'
+import type { SessionData } from './types'
 
 const SESSION_KEY = 'gmcauto_session'
 const THEME_KEY   = 'gmcauto_theme'
 
-function applyTheme(theme) {
+function applyTheme(theme: string) {
   document.documentElement.setAttribute('data-theme', theme)
 }
 
 function App() {
   const { t } = useTranslation()
-  const [session, setSession]               = useState(null)
+  const [session, setSession]               = useState<SessionData | null>(null)
   const [bootChecked, setBootChecked]       = useState(false)
   const [sessionExpired, setSessionExpired] = useState(false)
   const [showPrivacyModal, setShowPrivacyModal] = useState(false)
   const [showTermsModal, setShowTermsModal] = useState(false)
 
-  // 다크모드 (localStorage 저장, data-theme 속성으로 적용)
-  const [theme, setTheme] = useState(() => {
+  const [theme, setTheme] = useState<string>(() => {
     const saved = localStorage.getItem(THEME_KEY)
     return saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
   })
@@ -36,7 +36,6 @@ function App() {
     setTheme(t => t === 'dark' ? 'light' : 'dark')
   }, [])
 
-  // /auth/callback?code=XXX → /?code=XXX 처리 (Akademiya OAuth 콜백)
   useEffect(() => {
     if (window.location.pathname === '/auth/callback') {
       const params = new URLSearchParams(window.location.search)
@@ -45,15 +44,14 @@ function App() {
     }
   }, [])
 
-  // 페이지 로드 시 세션 복원
   useEffect(() => {
     const saved = localStorage.getItem(SESSION_KEY)
     if (!saved) { setBootChecked(true); return }
     try {
-      const data = JSON.parse(saved)
+      const data = JSON.parse(saved) as SessionData
       fetch(`/api/session/check?sessionId=${encodeURIComponent(data.sessionId)}`)
         .then(r => r.json())
-        .then(check => {
+        .then((check: { valid: boolean; role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean }) => {
           if (check.valid) {
             setSession({ ...data, role: check.role ?? data.role ?? 0 })
             if (check.needsPrivacyConsent) {
@@ -77,7 +75,7 @@ function App() {
     }
   }, [])
 
-  const handleLogin = useCallback((sessionData) => {
+  const handleLogin = useCallback((sessionData: SessionData) => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData))
     setSessionExpired(false)
     setSession(sessionData)
@@ -119,20 +117,17 @@ function App() {
 
   return (
     <>
-      {/* 개인정보 처리방침 동의 모달 — 개인정보 먼저, 이어서 이용약관 */}
       {showPrivacyModal && session && (
         <PrivacyPolicyModal
           sessionId={session.sessionId}
           onConsented={() => {
             setShowPrivacyModal(false)
-            // 개인정보 동의 완료 후 이용약관 확인
             fetch(`/api/terms/version`)
               .then(r => r.json())
               .then(() => {
-                // session check로 needsTermsConsent 재확인
                 return fetch(`/api/session/check?sessionId=${encodeURIComponent(session.sessionId)}`)
                   .then(r => r.json())
-                  .then(check => { if (check.needsTermsConsent) setShowTermsModal(true) })
+                  .then((check: { needsTermsConsent?: boolean }) => { if (check.needsTermsConsent) setShowTermsModal(true) })
               })
               .catch(() => {})
           }}
@@ -145,7 +140,6 @@ function App() {
         />
       )}
 
-      {/* 상단 정보 바 */}
       <div className="top-bar">
         {t('app.contact')} &nbsp;/&nbsp; {t('app.madeWith')}
       </div>
@@ -162,7 +156,6 @@ function App() {
           : <Dashboard session={session} onLogout={handleLogout} onAccountDelete={handleAccountDelete} theme={theme} toggleTheme={toggleTheme} />
       }
 
-      {/* 푸터 */}
       <footer className="footer">
         <a href="https://akademiya.kr" target="_blank" rel="noopener noreferrer" className="powered-by-link">
           <img

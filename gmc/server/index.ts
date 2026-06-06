@@ -1,11 +1,11 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import https from 'https';
 import { readFileSync, existsSync, mkdirSync, readdirSync, unlinkSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import axios from 'axios';
-import setCookieParser from 'set-cookie-parser';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import * as setCookieParser from 'set-cookie-parser';
 import * as cheerio from 'cheerio';
 import iconv from 'iconv-lite';
 import { generateRecaptchaToken, findChromePath } from './recaptcha.js';
@@ -24,7 +24,9 @@ import {
   saveAkademiyaUser, getByAkademiyaUserId, linkGoingHafsCredentials,
   getPrivacyConsent, savePrivacyConsent,
   getTermsConsent, saveTermsConsent,
+  serverDir,
 } from './db.js';
+import type { Session, SubmitPassResult, ScheduleRow } from './types.js';
 
 const GMC_PRIVACY_POLICY_VERSION = 1;
 const GMC_TERMS_OF_USE_VERSION = 1;
@@ -50,20 +52,20 @@ console.log(chromePath ? `Chrome 발견: ${chromePath}` : 'Chrome 미발견');
 initDb().catch(err => console.error('[DB 초기화 실패]', err));
 
 // 공휴일 미리 로드
-preloadHolidays().catch(err => console.error('[공휴일 초기화 실패]', err.message));
+preloadHolidays().catch(err => console.error('[공휴일 초기화 실패]', (err as Error).message));
 
 // 세션 저장소 (메모리)
-const sessions = new Map();
+const sessions = new Map<string, Session>();
 
-function dateStr(d) {
+function dateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function todayStr() {
+function todayStr(): string {
   return dateStr(new Date());
 }
 
-function findNextWorkday(startDate) {
+function findNextWorkday(startDate: Date): string {
   const d = new Date(startDate);
   for (let i = 0; i < 14; i++) {
     const day = d.getDay();
@@ -74,7 +76,7 @@ function findNextWorkday(startDate) {
   return dateStr(d);
 }
 
-function effectiveDate() {
+function effectiveDate(): string {
   const now = new Date();
   const day = now.getDay();
   const today = dateStr(now);
@@ -89,29 +91,26 @@ function effectiveDate() {
   return today;
 }
 
-function isWeekend() {
+function isWeekend(): boolean {
   const now = new Date();
   const d = now.getDay();
   return d === 5 || d === 6 || d === 0 || isHolidayCached(dateStr(now));
 }
 
-function findNextRetryAt(prevAtMs, date, ourStudentNo) {
+function findNextRetryAt(prevAtMs: number, date: string, _ourStudentNo: string): number | null {
   const [Y, M, D] = date.split('-').map(Number);
   const maxAt = new Date(Y, M - 1, D, 17, 40, 0, 0).getTime();
-  // 동기 함수 — 호출자가 async이면 await 필요 없음 (단순 계산이므로)
-  // 하지만 getScheduleAt 이 async가 되어 동기 계산 불가
-  // → 이 함수는 최적 슬롯을 근사치로 계산 (DB 충돌 체크 없이)
-  let candidate = prevAtMs + 30_000;
+  const candidate = prevAtMs + 30_000;
   if (candidate <= maxAt) return candidate;
   return null;
 }
 
-function formatTimeMs(ms) {
+function formatTimeMs(ms: number): string {
   const d = new Date(ms);
   return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
 }
 
-function createClient() {
+function createClient(): AxiosInstance {
   return axios.create({
     baseURL: BASE_URL,
     maxRedirects: 0,
@@ -126,23 +125,23 @@ function createClient() {
   });
 }
 
-function decodeResponse(response) {
-  const ct = response.headers['content-type'] || '';
-  const buf = Buffer.from(response.data);
+function decodeResponse(response: AxiosResponse): string {
+  const ct = (response.headers['content-type'] as string) || '';
+  const buf = Buffer.from(response.data as ArrayBuffer);
   if (ct.includes('utf-8') || ct.includes('utf8')) return buf.toString('utf-8');
   return new TextDecoder('euc-kr').decode(buf);
 }
 
-function extractCookies(response) {
-  const h = response.headers['set-cookie'];
-  return h ? setCookieParser.parse(h) : [];
+function extractCookies(response: AxiosResponse): setCookieParser.Cookie[] {
+  const h = response.headers['set-cookie'] as string[] | string | undefined;
+  return h ? setCookieParser.parse(Array.isArray(h) ? h : [h]) : [];
 }
 
-function cookieStr(cookies) {
+function cookieStr(cookies: Record<string, string>): string {
   return Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join('; ');
 }
 
-function eucKrPercentEncode(str) {
+function eucKrPercentEncode(str: string): string {
   const buf = iconv.encode(str, 'euc-kr');
   let result = '';
   for (const byte of buf) {
@@ -157,36 +156,36 @@ function eucKrPercentEncode(str) {
   return result;
 }
 
-function buildEucKrBody(params) {
+function buildEucKrBody(params: Record<string, string | number | null | undefined>): string {
   return Object.entries(params)
     .map(([k, v]) => `${eucKrPercentEncode(k)}=${eucKrPercentEncode(String(v ?? ''))}`)
     .join('&');
 }
 
-function isLoginRedirect(body) {
+function isLoginRedirect(body: string): boolean {
   return body.includes("location.href='/mobile/login") ||
          body.includes("/login/login") ||
          body.includes("location.href='/'");
 }
 
-function extractAlert(body) {
+function extractAlert(body: string): string | null {
   const m = body.match(/alert\s*\(\s*['"](.+?)['"]\s*\)/s);
   return m ? m[1].trim() : null;
 }
 
 // ========== 자동 로그인 ==========
-async function autoLogin(studentNo) {
+async function autoLogin(studentNo: string): Promise<{ client: AxiosInstance; cookies: Record<string, string> } | null> {
   const cred = await getCredentials(studentNo);
   if (!cred) return null;
 
   const client = createClient();
-  const cookies = {};
+  const cookies: Record<string, string> = {};
 
-  let recaptchaToken;
+  let recaptchaToken: string;
   try {
     recaptchaToken = await generateRecaptchaToken(chromePath);
   } catch (err) {
-    console.error(`[자동로그인 ${studentNo}] reCAPTCHA 실패: ${err.message}`);
+    console.error(`[자동로그인 ${studentNo}] reCAPTCHA 실패: ${(err as Error).message}`);
     return null;
   }
 
@@ -234,7 +233,7 @@ async function autoLogin(studentNo) {
 }
 
 // ========== PASS 제출 ==========
-async function submitPassWithLogin(studentNo, applyDate, timeCode, reason) {
+async function submitPassWithLogin(studentNo: string, applyDate: string, timeCode: string, reason: string): Promise<SubmitPassResult> {
   const loginResult = await autoLogin(studentNo);
   if (!loginResult) {
     return { ok: false, msg: '자동 로그인 실패 (저장된 비밀번호 확인 필요)', loginFailed: true };
@@ -254,7 +253,7 @@ async function submitPassWithLogin(studentNo, applyDate, timeCode, reason) {
     }
 
     const $ = cheerio.load(formBody);
-    const formParams = {};
+    const formParams: Record<string, string> = {};
     $('input[type="hidden"]').each((_, el) => {
       const name = $(el).attr('name');
       if (name) formParams[name] = $(el).attr('value') || '';
@@ -321,16 +320,16 @@ setInterval(async () => {
     const entry = await getPendingSchedule(key, today);
     if (entry) await processSchedule(entry, key, today);
   } catch (err) {
-    console.error('[스케줄러] 예외:', err.message);
+    console.error('[스케줄러] 예외:', (err as Error).message);
   } finally {
     schedulerBusy = false;
   }
 }, 5000);
 
-async function processSchedule(entry, key, today) {
+async function processSchedule(entry: ScheduleRow, key: string, today: string): Promise<void> {
   console.log(`[스케줄 ${key}] 자동 신청 시작 - ${entry.student_no}`);
   try {
-    const result = await submitPassWithLogin(entry.student_no, today, entry.time_code, entry.reason);
+    const result = await submitPassWithLogin(entry.student_no, today, entry.time_code, entry.reason || '');
 
     if (result.loginFailed) {
       const nextAt = findNextRetryAt(Date.now(), today, entry.student_no);
@@ -351,19 +350,21 @@ async function processSchedule(entry, key, today) {
     await recordUsage(entry.student_no, 'gmcauto', entry.time_code, key, today, result.ok, result.msg);
     console.log(`[스케줄 ${key}] ${entry.student_no}: ${result.msg}`);
   } catch (err) {
-    await markScheduleExecuted(key, today, false, err.message);
-    await recordUsage(entry.student_no, 'gmcauto', entry.time_code, key, today, false, err.message);
-    console.error(`[스케줄 ${key}] ${entry.student_no}: 오류 -`, err.message);
+    const error = err as Error;
+    await markScheduleExecuted(key, today, false, error.message);
+    await recordUsage(entry.student_no, 'gmcauto', entry.time_code, key, today, false, error.message);
+    console.error(`[스케줄 ${key}] ${entry.student_no}: 오류 -`, error.message);
   }
 }
 
-async function processRetry(retry) {
+async function processRetry(retry: Awaited<ReturnType<typeof getDueRetry>> & object): Promise<void> {
+  if (!retry) return;
   const label = `[재시도#${retry.attempt} ${formatTimeMs(retry.retry_at)}]`;
   console.log(`${label} 처리 시작 - ${retry.student_no} (origin ${retry.origin_time})`);
   await deleteRetry(retry.id);
 
   try {
-    const result = await submitPassWithLogin(retry.student_no, retry.apply_date, retry.time_code, retry.reason);
+    const result = await submitPassWithLogin(retry.student_no, retry.apply_date, retry.time_code, retry.reason || '');
 
     if (result.loginFailed) {
       if (retry.attempt >= 5) {
@@ -374,7 +375,7 @@ async function processRetry(retry) {
       }
       const nextAt = findNextRetryAt(retry.retry_at, retry.apply_date, retry.student_no);
       if (nextAt) {
-        await addRetry(nextAt, retry.student_no, retry.time_code, retry.reason, retry.apply_date, retry.origin_time, retry.attempt + 1);
+        await addRetry(nextAt, retry.student_no, retry.time_code, retry.reason || '', retry.apply_date, retry.origin_time, retry.attempt + 1);
         const note = ` → ${formatTimeMs(nextAt)} 재시도 예약 (${retry.attempt + 1}/5)`;
         await markScheduleExecuted(retry.origin_time, retry.apply_date, false, result.msg + note);
         await recordUsage(retry.student_no, 'gmcauto', retry.time_code, retry.origin_time, retry.apply_date, false, result.msg + note);
@@ -390,9 +391,10 @@ async function processRetry(retry) {
     await recordUsage(retry.student_no, 'gmcauto', retry.time_code, retry.origin_time, retry.apply_date, result.ok, result.msg);
     console.log(`${label} ${retry.student_no}: ${result.msg}`);
   } catch (err) {
-    await markScheduleExecuted(retry.origin_time, retry.apply_date, false, err.message);
-    await recordUsage(retry.student_no, 'gmcauto', retry.time_code, retry.origin_time, retry.apply_date, false, err.message);
-    console.error(`${label} 오류 -`, err.message);
+    const error = err as Error;
+    await markScheduleExecuted(retry.origin_time, retry.apply_date, false, error.message);
+    await recordUsage(retry.student_no, 'gmcauto', retry.time_code, retry.origin_time, retry.apply_date, false, error.message);
+    console.error(`${label} 오류 -`, error.message);
   }
 }
 
@@ -426,7 +428,7 @@ setInterval(async () => {
     if (entry.session_id === 'auto_retry') continue;
     const existing = await getScheduleAt(entry.time, targetStr);
     if (existing) continue;
-    await registerSchedule(entry.time, targetStr, 'auto_copy', entry.student_no, entry.time_code, 'gmcauto', entry.reason);
+    await registerSchedule(entry.time, targetStr, 'auto_copy', entry.student_no, entry.time_code, 'gmcauto', entry.reason || '');
     copied++;
   }
   console.log(`[자정 복사] ${yesterdayStr} → ${targetStr}: ${copied}개 복사됨`);
@@ -436,7 +438,7 @@ setInterval(async () => {
 }, 15000);
 
 // ========== 매일 08:00 DB 백업 ==========
-const BACKUP_DIR = join(__dirname, '..', 'backup');
+const BACKUP_DIR = join(serverDir, '..', 'backup');
 mkdirSync(BACKUP_DIR, { recursive: true });
 
 let lastBackupDate = '';
@@ -454,11 +456,11 @@ setInterval(async () => {
     console.log(`[백업] ${filename} 생성 완료`);
     cleanupOldBackups();
   } catch (err) {
-    console.error(`[백업] 실패: ${err.message}`);
+    console.error(`[백업] 실패: ${(err as Error).message}`);
   }
 }, 30000);
 
-function cleanupOldBackups() {
+function cleanupOldBackups(): void {
   const cutoffMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
   let removed = 0;
   for (const f of readdirSync(BACKUP_DIR)) {
@@ -470,13 +472,13 @@ function cleanupOldBackups() {
 cleanupOldBackups();
 
 // ========== 헬스체크 ==========
-app.get('/api/health', (_req, res) => {
+app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // ========== 로그인 (GMCAuto 계정) ==========
-app.post('/api/login', async (req, res) => {
-  const { studentNo, password } = req.body;
+app.post('/api/login', async (req: Request, res: Response) => {
+  const { studentNo, password } = req.body as { studentNo: string; password: string };
 
   if (!studentNo || !password) {
     return res.status(400).json({ success: false, message: '학번과 비밀번호를 입력하세요.' });
@@ -488,16 +490,16 @@ app.post('/api/login', async (req, res) => {
 
   try {
     const client = createClient();
-    const cookies = {};
+    const cookies: Record<string, string> = {};
 
     console.log(`[${studentNo}] 로그인 시도 - reCAPTCHA v3 토큰 생성 중...`);
 
-    let recaptchaToken;
+    let recaptchaToken: string;
     try {
       recaptchaToken = await generateRecaptchaToken(chromePath);
       console.log(`[${studentNo}] reCAPTCHA 토큰 OK (${recaptchaToken.length}자)`);
     } catch (err) {
-      return res.json({ success: false, message: `reCAPTCHA 토큰 생성 실패: ${err.message}` });
+      return res.json({ success: false, message: `reCAPTCHA 토큰 생성 실패: ${(err as Error).message}` });
     }
 
     const pageRes = await client.get('/mobile/login/login.html');
@@ -567,58 +569,46 @@ app.post('/api/login', async (req, res) => {
     const needsPrivacyConsent = privacyConsentedVersion < GMC_PRIVACY_POLICY_VERSION;
     const needsTermsConsent   = termsConsentedVersion   < GMC_TERMS_OF_USE_VERSION;
     console.log(`[${studentNo}] 로그인 성공 ${studentName ? `(${studentName})` : ''} (권한 ${role})`);
-    res.json({ success: true, message: '로그인 성공', sessionId, studentName, studentNo, role, needsPrivacyConsent, needsTermsConsent });
+    return res.json({ success: true, message: '로그인 성공', sessionId, studentName, studentNo, role, needsPrivacyConsent, needsTermsConsent });
 
   } catch (error) {
-    console.error('Login error:', error.message);
-    res.status(500).json({ success: false, message: `서버 오류: ${error.message}` });
+    console.error('Login error:', (error as Error).message);
+    return res.status(500).json({ success: false, message: `서버 오류: ${(error as Error).message}` });
   }
 });
 
 // ========== Akademiya OAuth 연동 ==========
 
-/**
- * POST /api/akademiya/verify
- * Akademiya에서 발급한 code를 검증하고 사용자 정보를 반환.
- * - linked: false → 프론트엔드에서 Going HAFS 자격증명 수집 UI 표시
- * - linked: true  → 세션 발급 (autoLogin으로 Going HAFS 세션 생성)
- */
-app.post('/api/akademiya/verify', async (req, res) => {
-  const { code } = req.body;
+app.post('/api/akademiya/verify', async (req: Request, res: Response) => {
+  const { code } = req.body as { code: string };
   if (!code) return res.status(400).json({ success: false, message: 'code 파라미터 필요' });
 
   try {
-    // Akademiya API에서 code 검증 → 사용자 정보 획득
     const verifyRes = await axios.post(
       `${AKADEMIYA_API_URL}/oauth/gmcauto-verify`,
       { code },
       { timeout: 10000 }
     );
-    const { userId, displayName, email, hafsOrgPerm } = verifyRes.data;
+    const { userId, displayName, email, hafsOrgPerm } = verifyRes.data as {
+      userId: number; displayName: string; email: string; hafsOrgPerm: number;
+    };
 
     if (!userId) {
       return res.status(401).json({ success: false, message: '유효하지 않은 코드입니다.' });
     }
 
-    // role 결정 (HAFS org perm → GMCAuto role)
-    // perm 3(관리자) → role 3, perm 1(반장) → role 1, 그 외 → role 0
     const gmcRole = hafsOrgPerm >= 3 ? 3 : hafsOrgPerm >= 1 ? 1 : 0;
-
-    // 기존 연동 계정 확인
     const gmcUser = await getByAkademiyaUserId(userId);
 
     if (gmcUser && gmcUser.student_no && gmcUser.password) {
-      // 연동 완료 → 자동 로그인 시도
       console.log(`[Akademiya OAuth] 기존 연동 사용자: ${email} → ${gmcUser.student_no}`);
 
-      // role 업데이트 (perm 변경 반영)
       if (gmcUser.role !== gmcRole) {
         await setUserRole(gmcUser.student_no, gmcRole);
       }
 
       const loginResult = await autoLogin(gmcUser.student_no);
       if (!loginResult) {
-        // 자동 로그인 실패 → 재연동 요청
         return res.json({
           success: true,
           linked: true,
@@ -652,9 +642,7 @@ app.post('/api/akademiya/verify', async (req, res) => {
       });
     }
 
-    // 신규 연동 or Going HAFS 자격증명 없음 → 프론트에서 자격증명 수집
     if (!gmcUser) {
-      // 연동 정보 선등록 (student_no, password는 나중에 채움)
       await saveAkademiyaUser({ akademiyaUserId: userId, akademiyaEmail: email, studentNo: null, password: null, role: gmcRole });
     }
 
@@ -665,20 +653,18 @@ app.post('/api/akademiya/verify', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('[Akademiya OAuth 검증 오류]', err.message);
-    if (err.response?.status === 401 || err.response?.status === 400) {
+    console.error('[Akademiya OAuth 검증 오류]', (err as Error).message);
+    if (axios.isAxiosError(err) && (err.response?.status === 401 || err.response?.status === 400)) {
       return res.status(401).json({ success: false, message: '코드가 만료되었거나 유효하지 않습니다.' });
     }
-    res.status(500).json({ success: false, message: `서버 오류: ${err.message}` });
+    return res.status(500).json({ success: false, message: `서버 오류: ${(err as Error).message}` });
   }
 });
 
-/**
- * POST /api/akademiya/link
- * 신규 Akademiya 연동: Going HAFS 자격증명을 검증하고 연동 완료.
- */
-app.post('/api/akademiya/link', async (req, res) => {
-  const { akademiyaUserId, akademiyaEmail, studentNo, password, gmcRole } = req.body;
+app.post('/api/akademiya/link', async (req: Request, res: Response) => {
+  const { akademiyaUserId, akademiyaEmail, studentNo, password, gmcRole } = req.body as {
+    akademiyaUserId: number; akademiyaEmail: string; studentNo: string; password: string; gmcRole?: number;
+  };
 
   if (!akademiyaUserId || !studentNo || !password) {
     return res.status(400).json({ success: false, message: '필수 파라미터 누락' });
@@ -689,15 +675,14 @@ app.post('/api/akademiya/link', async (req, res) => {
   }
 
   try {
-    // Going HAFS 로그인 검증
     const client = createClient();
-    const cookies = {};
+    const cookies: Record<string, string> = {};
 
-    let recaptchaToken;
+    let recaptchaToken: string;
     try {
       recaptchaToken = await generateRecaptchaToken(chromePath);
     } catch (err) {
-      return res.json({ success: false, message: `reCAPTCHA 토큰 생성 실패: ${err.message}` });
+      return res.json({ success: false, message: `reCAPTCHA 토큰 생성 실패: ${(err as Error).message}` });
     }
 
     const pageRes = await client.get('/mobile/login/login.html');
@@ -735,12 +720,10 @@ app.post('/api/akademiya/link', async (req, res) => {
       return res.json({ success: false, message: '학번 또는 비밀번호가 올바르지 않습니다.' });
     }
 
-    // 학생 이름 추출
     let studentName = '';
     const nameMatch = loginBody.match(/([가-힣]{2,4})\s*학생/);
     if (nameMatch) studentName = nameMatch[1];
 
-    // DB 저장 (연동)
     await saveAkademiyaUser({
       akademiyaUserId,
       akademiyaEmail,
@@ -749,23 +732,21 @@ app.post('/api/akademiya/link', async (req, res) => {
       role: gmcRole ?? 0,
     });
 
-    // 세션 생성
     const sessionId = `ak_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     sessions.set(sessionId, { cookies, studentNo, loginTime: new Date().toISOString() });
 
     console.log(`[Akademiya 연동 완료] ${akademiyaEmail} → ${studentNo} (role ${gmcRole ?? 0})`);
-    // 신규 연동은 항상 개인정보 처리방침 및 이용약관 미동의 상태
-    res.json({ success: true, sessionId, studentNo, studentName, role: gmcRole ?? 0, needsPrivacyConsent: true, needsTermsConsent: true });
+    return res.json({ success: true, sessionId, studentNo, studentName, role: gmcRole ?? 0, needsPrivacyConsent: true, needsTermsConsent: true });
 
   } catch (err) {
-    console.error('[Akademiya 연동 오류]', err.message);
-    res.status(500).json({ success: false, message: `서버 오류: ${err.message}` });
+    console.error('[Akademiya 연동 오류]', (err as Error).message);
+    return res.status(500).json({ success: false, message: `서버 오류: ${(err as Error).message}` });
   }
 });
 
 // ========== GMC PASS 신청 폼 ==========
-app.get('/api/pass/form', async (req, res) => {
-  const session = sessions.get(req.query.sessionId);
+app.get('/api/pass/form', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
 
   try {
@@ -777,17 +758,17 @@ app.get('/api/pass/form', async (req, res) => {
     const body = decodeResponse(formRes);
 
     if (isLoginRedirect(body)) {
-      sessions.delete(req.query.sessionId);
+      sessions.delete(req.query.sessionId as string);
       return res.json({ success: false, message: '세션 만료' });
     }
 
     const $ = cheerio.load(body);
-    const hiddenFields = {};
+    const hiddenFields: Record<string, string> = {};
     $('input[type="hidden"]').each((_, el) => {
       const name = $(el).attr('name');
       if (name) hiddenFields[name] = $(el).attr('value') || '';
     });
-    const selectFields = {};
+    const selectFields: Record<string, { value: string; label: string }[]> = {};
     $('select').each((_, el) => {
       const name = $(el).attr('name') || $(el).attr('id');
       if (name) {
@@ -800,22 +781,24 @@ app.get('/api/pass/form', async (req, res) => {
         });
       }
     });
-    const textareas = {};
+    const textareas: Record<string, string> = {};
     $('textarea').each((_, el) => {
       const name = $(el).attr('name');
       if (name) textareas[name] = $(el).text().trim();
     });
 
-    res.json({ success: true, hiddenFields, selectFields, textareas, formAction: $('form').attr('action') || '' });
+    return res.json({ success: true, hiddenFields, selectFields, textareas, formAction: $('form').attr('action') || '' });
 
   } catch (error) {
-    res.status(500).json({ success: false, message: `폼 로드 실패: ${error.message}` });
+    return res.status(500).json({ success: false, message: `폼 로드 실패: ${(error as Error).message}` });
   }
 });
 
 // ========== GMC PASS 즉시 신청 ==========
-app.post('/api/pass/apply', async (req, res) => {
-  const { sessionId, date, timeCode, reason } = req.body;
+app.post('/api/pass/apply', async (req: Request, res: Response) => {
+  const { sessionId, date, timeCode, reason } = req.body as {
+    sessionId: string; date?: string; timeCode?: string; reason?: string;
+  };
   const session = sessions.get(sessionId);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
 
@@ -833,7 +816,7 @@ app.post('/api/pass/apply', async (req, res) => {
     }
 
     const $ = cheerio.load(formBody);
-    const formParams = {};
+    const formParams: Record<string, string> = {};
     $('input[type="hidden"]').each((_, el) => {
       const name = $(el).attr('name');
       if (name) formParams[name] = $(el).attr('value') || '';
@@ -876,16 +859,16 @@ app.post('/api/pass/apply', async (req, res) => {
       msg = 'GMC PASS 신청 완료';
     }
     await recordUsage(session.studentNo, 'gmcauto', timeCode || '', hhmm, applyDate, ok, msg);
-    res.json({ success: ok, message: msg });
+    return res.json({ success: ok, message: msg });
 
   } catch (error) {
-    res.status(500).json({ success: false, message: `신청 실패: ${error.message}` });
+    return res.status(500).json({ success: false, message: `신청 실패: ${(error as Error).message}` });
   }
 });
 
 // ========== GMC PASS 내역 ==========
-app.get('/api/pass/list', async (req, res) => {
-  const session = sessions.get(req.query.sessionId);
+app.get('/api/pass/list', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
 
   try {
@@ -895,30 +878,32 @@ app.get('/api/pass/list', async (req, res) => {
     });
     const body = decodeResponse(listRes);
     if (isLoginRedirect(body)) {
-      sessions.delete(req.query.sessionId);
+      sessions.delete(req.query.sessionId as string);
       return res.json({ success: false, message: '세션 만료' });
     }
 
     const $ = cheerio.load(body);
-    const records = [];
+    const records: { date: string; type: string; time: string; confirmed: string; teacher: string }[] = [];
     $('table tr').each((i, el) => {
       if (i === 0) return;
-      const cells = [];
-      $(el).find('td').each((_, td) => cells.push($(td).text().trim()));
+      const cells: string[] = [];
+      $(el).find('td').each((_, td) => { cells.push($(td).text().trim()) });
       if (cells.length >= 3) {
         records.push({ date: cells[0], type: cells[1], time: cells[2], confirmed: cells[3] || '', teacher: cells[4] || '' });
       }
     });
-    res.json({ success: true, records });
+    return res.json({ success: true, records });
 
   } catch (error) {
-    res.status(500).json({ success: false, message: `내역 조회 실패: ${error.message}` });
+    return res.status(500).json({ success: false, message: `내역 조회 실패: ${(error as Error).message}` });
   }
 });
 
 // ========== 자동 신청 스케줄 ==========
-app.post('/api/schedule/register', async (req, res) => {
-  const { sessionId, time, timeCode, reason } = req.body;
+app.post('/api/schedule/register', async (req: Request, res: Response) => {
+  const { sessionId, time, timeCode, reason } = req.body as {
+    sessionId: string; time: string; timeCode: string; reason?: string;
+  };
   const session = sessions.get(sessionId);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
 
@@ -942,20 +927,21 @@ app.post('/api/schedule/register', async (req, res) => {
   await registerSchedule(time, targetDate, sessionId, session.studentNo, timeCode, 'gmcauto', reason || '');
   console.log(`[스케줄] ${session.studentNo} → ${time} 등록 (${targetDate})`);
   const suffix = isNonWorkday ? ` (다음 평일: ${targetDate})` : '';
-  res.json({ success: true, message: `${time}에 자동 신청이 등록되었습니다${suffix}.` });
+  return res.json({ success: true, message: `${time}에 자동 신청이 등록되었습니다${suffix}.` });
 });
 
-app.post('/api/schedule/cancel', async (req, res) => {
-  const session = sessions.get(req.body.sessionId);
+app.post('/api/schedule/cancel', async (req: Request, res: Response) => {
+  const { sessionId, time } = req.body as { sessionId: string; time: string };
+  const session = sessions.get(sessionId);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
 
-  const result = await cancelSchedule(req.body.time, effectiveDate(), session.studentNo);
+  const result = await cancelSchedule(time, effectiveDate(), session.studentNo);
   if (result.changes === 0) return res.json({ success: false, message: '스케줄을 찾을 수 없습니다.' });
-  res.json({ success: true, message: `${req.body.time} 해제 완료` });
+  return res.json({ success: true, message: `${time} 해제 완료` });
 });
 
-app.get('/api/schedule/status', async (req, res) => {
-  const session = sessions.get(req.query.sessionId);
+app.get('/api/schedule/status', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
 
   const target = effectiveDate();
@@ -976,53 +962,55 @@ app.get('/api/schedule/status', async (req, res) => {
     };
   }
 
-  res.json({ success: true, mySchedule, takenSlots, targetDate: target, isWeekend: weekend });
+  return res.json({ success: true, mySchedule, takenSlots, targetDate: target, isWeekend: weekend });
 });
 
 // ========== 관리자 API ==========
 
-app.get('/api/admin/stats', async (req, res) => {
-  const session = sessions.get(req.query.sessionId);
+app.get('/api/admin/stats', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
   const role = await getUserRole(session.studentNo);
   if (role < 1) return res.status(403).json({ success: false, message: '권한 없음' });
 
-  const { grade, cls, dateFrom, dateTo } = req.query;
+  const { grade, cls, dateFrom, dateTo } = req.query as Record<string, string | undefined>;
   const records = await getAdminStats({ grade: grade||null, cls: cls||null, dateFrom: dateFrom||null, dateTo: dateTo||null });
-  res.json({ success: true, records, role });
+  return res.json({ success: true, records, role });
 });
 
-app.post('/api/admin/stats/delete-failures', async (req, res) => {
-  const session = sessions.get(req.body.sessionId);
+app.post('/api/admin/stats/delete-failures', async (req: Request, res: Response) => {
+  const { sessionId, grade, cls, dateFrom, dateTo } = req.body as {
+    sessionId: string; grade?: string; cls?: string; dateFrom?: string; dateTo?: string;
+  };
+  const session = sessions.get(sessionId);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
   const role = await getUserRole(session.studentNo);
   if (role < 3) return res.status(403).json({ success: false, message: '권한 없음 (권한 3 필요)' });
 
-  const { grade, cls, dateFrom, dateTo } = req.body;
   const deleted = await deleteFailedStats({ grade:grade||null, cls:cls||null, dateFrom:dateFrom||null, dateTo:dateTo||null });
   console.log(`[관리자] ${session.studentNo} 실패 기록 ${deleted}건 삭제`);
-  res.json({ success: true, deleted });
+  return res.json({ success: true, deleted });
 });
 
-app.get('/api/admin/users', async (req, res) => {
-  const session = sessions.get(req.query.sessionId);
+app.get('/api/admin/users', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
   const role = await getUserRole(session.studentNo);
   if (role < 3) return res.status(403).json({ success: false, message: '권한 없음' });
 
   const users = await getAllCredentials();
-  res.json({ success: true, users });
+  return res.json({ success: true, users });
 });
 
-app.post('/api/admin/users/role', async (req, res) => {
-  const session = sessions.get(req.body.sessionId);
+app.post('/api/admin/users/role', async (req: Request, res: Response) => {
+  const { sessionId, studentNo, role } = req.body as { sessionId: string; studentNo: string; role: number };
+  const session = sessions.get(sessionId);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
   const myRole = await getUserRole(session.studentNo);
   if (myRole < 3) return res.status(403).json({ success: false, message: '권한 없음' });
 
-  const { studentNo, role } = req.body;
   if (!studentNo) return res.json({ success: false, message: '학번을 입력하세요.' });
-  const newRole = parseInt(role, 10);
+  const newRole = parseInt(String(role), 10);
   if (isNaN(newRole) || newRole < 0 || newRole > 3) {
     return res.json({ success: false, message: '유효하지 않은 권한 값입니다.' });
   }
@@ -1032,26 +1020,26 @@ app.post('/api/admin/users/role', async (req, res) => {
 
   await setUserRole(studentNo, newRole);
   console.log(`[관리자] ${session.studentNo} → ${studentNo} 권한 ${newRole} 설정`);
-  res.json({ success: true, message: `${studentNo} 권한이 ${newRole}으로 설정되었습니다.` });
+  return res.json({ success: true, message: `${studentNo} 권한이 ${newRole}으로 설정되었습니다.` });
 });
 
 // ========== 통계 API ==========
-app.get('/api/stats', async (req, res) => {
-  const { date, limit } = req.query;
+app.get('/api/stats', async (req: Request, res: Response) => {
+  const { date, limit } = req.query as Record<string, string | undefined>;
   if (date) {
-    res.json({ success: true, records: await getUsageStatsByDate(date) });
+    return res.json({ success: true, records: await getUsageStatsByDate(date) });
   } else {
-    res.json({ success: true, records: await getUsageStats(Number(limit) || 100) });
+    return res.json({ success: true, records: await getUsageStats(Number(limit) || 100) });
   }
 });
 
-app.get('/api/stats/summary', async (req, res) => {
-  res.json({ success: true, summary: await getUsageStatsSummary() });
+app.get('/api/stats/summary', async (_req: Request, res: Response) => {
+  return res.json({ success: true, summary: await getUsageStatsSummary() });
 });
 
 // ========== 세션 관련 ==========
-app.get('/api/session/check', async (req, res) => {
-  const sessionId = req.query.sessionId;
+app.get('/api/session/check', async (req: Request, res: Response) => {
+  const sessionId = req.query.sessionId as string;
   const session = sessions.get(sessionId);
   if (!session) return res.json({ valid: false });
 
@@ -1073,39 +1061,40 @@ app.get('/api/session/check', async (req, res) => {
     const dbUser = await getCredentials(session.studentNo);
     const privacyVer = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
     const termsVer   = dbUser ? await getTermsConsent(dbUser.id)   : 0;
-    res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role,
+    return res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role,
       needsPrivacyConsent: privacyVer < GMC_PRIVACY_POLICY_VERSION,
       needsTermsConsent:   termsVer   < GMC_TERMS_OF_USE_VERSION });
   } catch (err) {
-    console.warn(`[세션 확인] 네트워크 오류 (skip deep check): ${err.message}`);
+    console.warn(`[세션 확인] 네트워크 오류 (skip deep check): ${(err as Error).message}`);
     const role = await getUserRole(session.studentNo);
     const dbUser = await getCredentials(session.studentNo);
     const privacyVer = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
     const termsVer   = dbUser ? await getTermsConsent(dbUser.id)   : 0;
-    res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role,
+    return res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role,
       needsPrivacyConsent: privacyVer < GMC_PRIVACY_POLICY_VERSION,
       needsTermsConsent:   termsVer   < GMC_TERMS_OF_USE_VERSION });
   }
 });
 
-app.post('/api/logout', (req, res) => {
-  sessions.delete(req.body.sessionId);
-  res.json({ success: true });
+app.post('/api/logout', (req: Request, res: Response) => {
+  const { sessionId } = req.body as { sessionId: string };
+  sessions.delete(sessionId);
+  return res.json({ success: true });
 });
 
-// ── 개인정보 처리방침 버전 확인 ────────────────────────────────────────────
-app.get('/api/privacy/version', (_req, res) => {
-  res.json({ version: GMC_PRIVACY_POLICY_VERSION });
+// ── 개인정보 처리방침 버전 확인
+app.get('/api/privacy/version', (_req: Request, res: Response) => {
+  return res.json({ version: GMC_PRIVACY_POLICY_VERSION });
 });
 
-// ── 이용약관 버전 확인 ──────────────────────────────────────────────────────
-app.get('/api/terms/version', (_req, res) => {
-  res.json({ version: GMC_TERMS_OF_USE_VERSION });
+// ── 이용약관 버전 확인
+app.get('/api/terms/version', (_req: Request, res: Response) => {
+  return res.json({ version: GMC_TERMS_OF_USE_VERSION });
 });
 
-// ── 개인정보 처리방침 동의 저장 ────────────────────────────────────────────
-app.post('/api/privacy/consent', async (req, res) => {
-  const { sessionId, version } = req.body;
+// ── 개인정보 처리방침 동의 저장
+app.post('/api/privacy/consent', async (req: Request, res: Response) => {
+  const { sessionId, version } = req.body as { sessionId: string; version: number };
   const session = sessions.get(sessionId);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
   if (version !== GMC_PRIVACY_POLICY_VERSION) {
@@ -1116,16 +1105,16 @@ app.post('/api/privacy/consent', async (req, res) => {
       || await getCredentials(session.studentNo);
     if (!user) return res.status(404).json({ success: false, message: '사용자 없음' });
     await savePrivacyConsent(user.id, version);
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
     console.error('[privacy/consent]', err);
-    res.status(500).json({ success: false, message: 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'SERVER_ERROR' });
   }
 });
 
-// ── 이용약관 동의 저장 ──────────────────────────────────────────────────────
-app.post('/api/terms/consent', async (req, res) => {
-  const { sessionId, version } = req.body;
+// ── 이용약관 동의 저장
+app.post('/api/terms/consent', async (req: Request, res: Response) => {
+  const { sessionId, version } = req.body as { sessionId: string; version: number };
   const session = sessions.get(sessionId);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
   if (version !== GMC_TERMS_OF_USE_VERSION) {
@@ -1136,48 +1125,49 @@ app.post('/api/terms/consent', async (req, res) => {
       || await getCredentials(session.studentNo);
     if (!user) return res.status(404).json({ success: false, message: '사용자 없음' });
     await saveTermsConsent(user.id, version);
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
     console.error('[terms/consent]', err);
-    res.status(500).json({ success: false, message: 'SERVER_ERROR' });
+    return res.status(500).json({ success: false, message: 'SERVER_ERROR' });
   }
 });
 
-app.post('/api/account/delete', async (req, res) => {
-  const session = sessions.get(req.body.sessionId);
+app.post('/api/account/delete', async (req: Request, res: Response) => {
+  const { sessionId } = req.body as { sessionId: string };
+  const session = sessions.get(sessionId);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
 
   await deleteCredentials(session.studentNo);
-  sessions.delete(req.body.sessionId);
+  sessions.delete(sessionId);
   console.log(`[${session.studentNo}] 계정 탈퇴 (credentials 삭제)`);
-  res.json({ success: true, message: '저장된 인증 정보가 삭제되었습니다.' });
+  return res.json({ success: true, message: '저장된 인증 정보가 삭제되었습니다.' });
 });
 
-app.get('/api/debug/page', async (req, res) => {
-  const session = sessions.get(req.query.sessionId);
+app.get('/api/debug/page', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
   if (!session) return res.status(401).json({ error: '세션 없음' });
   try {
     const client = createClient();
-    const r = await client.get(req.query.path, { headers: { 'Cookie': cookieStr(session.cookies) } });
+    const r = await client.get(req.query.path as string, { headers: { 'Cookie': cookieStr(session.cookies) } });
     extractCookies(r).forEach(c => { session.cookies[c.name] = c.value; });
-    res.type('html').send(decodeResponse(r));
-  } catch (e) { res.status(500).send(e.message); }
+    return res.type('html').send(decodeResponse(r));
+  } catch (e) { return res.status(500).send((e as Error).message); }
 });
 
 // SPA fallback
 if (existsSync(distPath)) {
-  app.get('/{*splat}', (req, res) => {
+  app.get('/{*splat}', (_req: Request, res: Response) => {
     res.sendFile(join(distPath, 'index.html'));
   });
 }
 
-app.use((err, req, res, next) => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof URIError) return res.status(400).end('Bad Request');
-  next(err);
+  _next(err);
 });
 
 // HTTPS or HTTP
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT) || 3001;
 const SSL_KEY  = process.env.SSL_KEY  || '/etc/letsencrypt/live/gmc.akademiya.kr/privkey.pem';
 const SSL_CERT = process.env.SSL_CERT || '/etc/letsencrypt/live/gmc.akademiya.kr/fullchain.pem';
 
@@ -1190,3 +1180,6 @@ if (existsSync(SSL_KEY) && existsSync(SSL_CERT)) {
     console.log(`   SSL 인증서 없음 → HTTP 모드\n`);
   });
 }
+
+// linkGoingHafsCredentials is imported but only used in future API; keep the import to avoid tree-shaking
+void linkGoingHafsCredentials;
