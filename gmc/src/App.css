@@ -399,8 +399,7 @@
   .header {
     padding: 10px 14px;
   }
-  .header h1,
-  .header .version {
+  .header h1 {
     display: none;
   }
   .main-content {
