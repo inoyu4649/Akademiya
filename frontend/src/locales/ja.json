@@ -563,7 +563,8 @@
     "addOtherOption": "その他（自由記入）を追加",
     "otherOption": "その他（自由記入）",
     "otherInputPlaceholder": "内容を入力してください",
-    "otherTextRequired": "「その他」の内容を入力してください。"
+    "otherTextRequired": "「その他」の内容を入力してください。",
+    "publicDisclaimer": "このアンケートはAkademiyaのユーザーが作成したものです。個人情報などの機密情報は入力しないでください。本アンケートへの回答によって生じた一切の損害について、Akademiyaは責任を負いません。"
   },
   "stats": {
     "classTitle": "クラス統計",

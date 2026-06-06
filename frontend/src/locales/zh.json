@@ -563,7 +563,8 @@
     "addOtherOption": "添加其他（自填）",
     "otherOption": "其他（自填）",
     "otherInputPlaceholder": "请输入内容",
-    "otherTextRequired": "请填写「其他」项内容。"
+    "otherTextRequired": "请填写「其他」项内容。",
+    "publicDisclaimer": "本问卷由Akademiya用户创建，请勿输入个人信息等敏感内容。因回答本问卷而产生的一切损失，Akademiya概不负责。"
   },
   "stats": {
     "classTitle": "班级统计",

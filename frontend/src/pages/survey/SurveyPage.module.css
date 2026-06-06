@@ -1006,6 +1006,14 @@
   border-top: 1px solid var(--border);
 }
 
+.publicDisclaimer {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  opacity: 0.75;
+}
+
 @media (max-width: 768px) {
   .page { padding: 16px; }
   .ratingRow { flex-wrap: wrap; }

@@ -563,7 +563,8 @@
     "addOtherOption": "기타(직접 입력) 추가",
     "otherOption": "기타(직접 입력)",
     "otherInputPlaceholder": "기타 내용을 입력하세요",
-    "otherTextRequired": "'기타' 항목에 내용을 입력해주세요."
+    "otherTextRequired": "'기타' 항목에 내용을 입력해주세요.",
+    "publicDisclaimer": "본 설문은 Akademiya 이용자에 의해 제작되었으며, 민감정보 등을 입력해서는 안 됩니다. 본 설문의 응답으로 인해 발생하는 모든 피해는 Akademiya가 책임지지 않습니다."
   },
   "stats": {
     "classTitle": "반 통계",

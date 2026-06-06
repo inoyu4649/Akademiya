@@ -320,6 +320,7 @@ export default function SurveyPublicPage() {
 
         <div className={styles.publicFooter}>
           Powered by <strong>Akademiya</strong>
+          <p className={styles.publicDisclaimer}>{t("survey.publicDisclaimer")}</p>
         </div>
       </div>
     </div>

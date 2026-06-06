@@ -563,7 +563,8 @@
     "addOtherOption": "Add Other (write-in)",
     "otherOption": "Other (write-in)",
     "otherInputPlaceholder": "Enter your answer",
-    "otherTextRequired": "Please fill in the 'Other' field."
+    "otherTextRequired": "Please fill in the 'Other' field.",
+    "publicDisclaimer": "This survey was created by an Akademiya user. Do not enter sensitive or personal information. Akademiya is not responsible for any damages arising from your responses to this survey."
   },
   "stats": {
     "classTitle": "Class Stats",
