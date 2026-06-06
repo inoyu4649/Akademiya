@@ -361,7 +361,8 @@ router.get("/og/:id", async (req, res) => {
     s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   const host = (req.headers["x-forwarded-host"] as string) ?? req.headers.host ?? "akademiya.kr";
-  const pageUrl = `https://${host}/surveys/public/${surveyId}`;
+  // _bot_bypass=1 파라미터: nginx 봇 감지를 우회하여 무한 리다이렉트 루프 방지
+  const pageUrl = `https://${host}/surveys/public/${surveyId}?_bot_bypass=1`;
   const imageUrl = `https://${host}/logo.png`;
 
   const html = `<!DOCTYPE html>
