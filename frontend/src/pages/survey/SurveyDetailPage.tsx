@@ -359,6 +359,9 @@ export default function SurveyDetailPage() {
             <span>· {t("survey.expiresAt")}: {new Date(survey.expires_at).toLocaleString()}</span>
           )}
         </div>
+        {!survey.allow_anonymous && (
+          <p className={styles.hint} style={{ marginTop: 4 }}>{t("survey.namedResponseHint")}</p>
+        )}
 
         {/* 크리에이터 액션 */}
         {isCreator && (
