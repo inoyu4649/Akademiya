@@ -642,6 +642,8 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
   ) as any[];
   const total = (totalRow as any).cnt;
 
+  const isNamed = !survey.allow_anonymous;
+
   for (const q of questions) {
     if (["single", "multiple"].includes(q.type)) {
       const [opts] = await pool.execute(
@@ -653,6 +655,22 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
         [q.id]
       ) as any[];
       q.options = opts;
+
+      // 기명 설문: 선택지별 응답자 목록
+      if (isNamed) {
+        for (const opt of q.options as any[]) {
+          const [voters] = await pool.execute(
+            `SELECT u.id, u.display_name, u.email
+             FROM survey_response_items sri
+             JOIN survey_responses sr ON sr.id = sri.response_id
+             JOIN users u ON u.id = sr.user_id
+             WHERE sri.option_id = ?`,
+            [opt.id]
+          ) as any[];
+          opt.voters = voters;
+        }
+      }
+
       // 기타(직접 입력) 통계
       if (q.has_other) {
         const [[otherRow]] = await pool.execute(
@@ -665,6 +683,19 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
           [q.id]
         ) as any[];
         q.other_answers = (otherTexts as any[]).map((r: any) => r.text_answer);
+
+        // 기명 설문: 기타 응답 응답자 정보
+        if (isNamed) {
+          const [otherWithUsers] = await pool.execute(
+            `SELECT sri.text_answer, u.id AS user_id, u.display_name, u.email
+             FROM survey_response_items sri
+             JOIN survey_responses sr ON sr.id = sri.response_id
+             LEFT JOIN users u ON u.id = sr.user_id
+             WHERE sri.question_id = ? AND sri.is_other = 1 AND sri.text_answer IS NOT NULL`,
+            [q.id]
+          ) as any[];
+          q.other_answers_with_users = otherWithUsers;
+        }
       }
     } else if (q.type === "text") {
       const [texts] = await pool.execute(
@@ -672,6 +703,19 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
         [q.id]
       ) as any[];
       q.text_answers = (texts as any[]).map((r: any) => r.text_answer);
+
+      // 기명 설문: 응답자 정보 포함
+      if (isNamed) {
+        const [textsWithUsers] = await pool.execute(
+          `SELECT sri.text_answer, u.id AS user_id, u.display_name, u.email
+           FROM survey_response_items sri
+           JOIN survey_responses sr ON sr.id = sri.response_id
+           LEFT JOIN users u ON u.id = sr.user_id
+           WHERE sri.question_id = ? AND sri.text_answer IS NOT NULL`,
+          [q.id]
+        ) as any[];
+        q.text_answers_with_users = textsWithUsers;
+      }
     } else if (q.type === "rating") {
       const [[ratingRow]] = await pool.execute(
         "SELECT AVG(CAST(sri.text_answer AS DECIMAL(5,2))) AS avg_rating, COUNT(*) AS count FROM survey_response_items sri WHERE sri.question_id = ?",
@@ -686,6 +730,20 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
         [q.id]
       ) as any[];
       q.rating_distribution = dist;
+
+      // 기명 설문: 응답자별 평점
+      if (isNamed) {
+        const [ratingWithUsers] = await pool.execute(
+          `SELECT CAST(sri.text_answer AS UNSIGNED) AS rating, u.id AS user_id, u.display_name, u.email
+           FROM survey_response_items sri
+           JOIN survey_responses sr ON sr.id = sri.response_id
+           LEFT JOIN users u ON u.id = sr.user_id
+           WHERE sri.question_id = ? AND sri.text_answer IS NOT NULL
+           ORDER BY u.display_name`,
+          [q.id]
+        ) as any[];
+        q.rating_answers = ratingWithUsers;
+      }
     }
   }
 

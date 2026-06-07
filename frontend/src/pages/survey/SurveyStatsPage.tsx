@@ -7,13 +7,14 @@ import sStyles from "../stats/StatsPage.module.css";
 
 /** 단일 문항 통계 렌더링 */
 function QuestionStats({
-  q, label, total, t, indent,
+  q, label, total, t, indent, isAnonymous,
 }: {
   q: any;
   label: string;
   total: number;
   t: (key: string, opts?: any) => string;
   indent?: boolean;
+  isAnonymous: boolean;
 }) {
   return (
     <div className={`${sStyles.chartCard} ${indent ? styles.statCardIndent : ""}`}>
@@ -28,37 +29,46 @@ function QuestionStats({
 
       {/* 단일/복수 선택 */}
       {(q.type === "single" || q.type === "multiple") && (() => {
-        const rows = [
-          ...(q.options ?? []).map((opt: any) => ({
-            name: opt.label,
-            count: Number(opt.count),
-            pct: total > 0 ? Math.round((Number(opt.count) / total) * 100) : 0,
-            isOther: false,
-          })),
-          ...(q.has_other ? [{
-            name: t("survey.otherOption"),
-            count: Number(q.other_count ?? 0),
-            pct: total > 0 ? Math.round((Number(q.other_count ?? 0) / total) * 100) : 0,
-            isOther: true,
-          }] : []),
-        ];
         return (
           <>
             <div className={styles.optionStats}>
-              {rows.map((opt: any, i: number) => (
-                <div key={opt.isOther ? "other" : i} className={styles.optionStat}>
-                  <div className={styles.optionStatHeader}>
-                    <span className={styles.optionLabel}>{opt.name}</span>
-                    <span className={styles.optionCount}>{opt.count}명 ({opt.pct}%)</span>
+              {(q.options ?? []).map((opt: any, i: number) => {
+                const count = Number(opt.count);
+                const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                return (
+                  <div key={i} className={styles.optionStat}>
+                    <div className={styles.optionStatHeader}>
+                      <span className={styles.optionLabel}>{opt.label}</span>
+                      <span className={styles.optionCount}>{count}명 ({pct}%)</span>
+                    </div>
+                    <div className={styles.barTrack}>
+                      <div className={styles.barFill} style={{ width: `${pct}%` }} />
+                    </div>
+                    {!isAnonymous && (opt.voters ?? []).length > 0 && (
+                      <div className={styles.voterList}>
+                        {(opt.voters as any[]).map((v: any) => (
+                          <span key={v.id} className={styles.voterChip}>{v.display_name}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className={styles.barTrack}>
-                    <div
-                      className={styles.barFill}
-                      style={{ width: `${opt.pct}%`, background: opt.isOther ? "#9ca3af" : undefined }}
-                    />
+                );
+              })}
+              {q.has_other && (() => {
+                const count = Number(q.other_count ?? 0);
+                const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                return (
+                  <div className={styles.optionStat}>
+                    <div className={styles.optionStatHeader}>
+                      <span className={styles.optionLabel}>{t("survey.otherOption")}</span>
+                      <span className={styles.optionCount}>{count}명 ({pct}%)</span>
+                    </div>
+                    <div className={styles.barTrack}>
+                      <div className={styles.barFill} style={{ width: `${pct}%`, background: "#9ca3af" }} />
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })()}
             </div>
             {q.has_other && (q.other_answers ?? []).length > 0 && (
               <div style={{ marginTop: 12 }}>
@@ -66,9 +76,17 @@ function QuestionStats({
                   {t("survey.otherOption")}:
                 </p>
                 <div className={styles.textAnswers}>
-                  {(q.other_answers as string[]).map((ans: string, i: number) => (
-                    <div key={i} className={styles.textAnswer}>{ans}</div>
-                  ))}
+                  {!isAnonymous && (q.other_answers_with_users ?? []).length > 0
+                    ? (q.other_answers_with_users as any[]).map((ans: any, i: number) => (
+                        <div key={i} className={styles.textAnswer}>
+                          <span className={styles.answerAuthor}>{ans.display_name}</span>
+                          {ans.text_answer}
+                        </div>
+                      ))
+                    : (q.other_answers as string[]).map((ans: string, i: number) => (
+                        <div key={i} className={styles.textAnswer}>{ans}</div>
+                      ))
+                  }
                 </div>
               </div>
             )}
@@ -81,6 +99,13 @@ function QuestionStats({
         <div className={styles.textAnswers}>
           {(q.text_answers ?? []).length === 0 ? (
             <p className={sStyles.empty}>{t("survey.noTextAnswers")}</p>
+          ) : !isAnonymous && (q.text_answers_with_users ?? []).length > 0 ? (
+            (q.text_answers_with_users as any[]).map((ans: any, i: number) => (
+              <div key={i} className={styles.textAnswer}>
+                <span className={styles.answerAuthor}>{ans.display_name}</span>
+                {ans.text_answer}
+              </div>
+            ))
           ) : (
             (q.text_answers as string[]).map((ans, i) => (
               <div key={i} className={styles.textAnswer}>{ans}</div>
@@ -91,12 +116,24 @@ function QuestionStats({
 
       {/* 평점 */}
       {q.type === "rating" && q.rating_stats && (
-        <div className={styles.ratingStats}>
-          <span className={styles.avgRating}>
-            ⭐ {t("survey.avgRating")}: {Number(q.rating_stats.avg_rating ?? 0).toFixed(1)} / 5
-          </span>
-          <span className={styles.ratingCount}>({q.rating_stats.count}명)</span>
-        </div>
+        <>
+          <div className={styles.ratingStats}>
+            <span className={styles.avgRating}>
+              ⭐ {t("survey.avgRating")}: {Number(q.rating_stats.avg_rating ?? 0).toFixed(1)} / 5
+            </span>
+            <span className={styles.ratingCount}>({q.rating_stats.count}명)</span>
+          </div>
+          {!isAnonymous && (q.rating_answers ?? []).length > 0 && (
+            <div className={styles.ratingAnswerList}>
+              {(q.rating_answers as any[]).map((r: any, i: number) => (
+                <div key={i} className={styles.ratingAnswerRow}>
+                  <span className={styles.ratingAnswerName}>{r.display_name}</span>
+                  <span className={styles.ratingValue}>{"⭐".repeat(r.rating)} ({r.rating})</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -157,6 +194,8 @@ export default function SurveyStatsPage() {
     } catch { showToast(t("common.error")); }
   }
 
+  const isAnonymous = !!survey?.allow_anonymous;
+
   function downloadCSV() {
     if (!survey) return;
     const lines: string[] = [];
@@ -173,20 +212,41 @@ export default function SurveyStatsPage() {
         for (const opt of q.options ?? []) {
           const pct = total > 0 ? ((opt.count / total) * 100).toFixed(1) : "0.0";
           lines.push([esc(opt.label), opt.count, `${pct}%`].join(","));
+          if (!isAnonymous && (opt.voters ?? []).length > 0) {
+            lines.push(esc(`  → ${(opt.voters as any[]).map((v: any) => v.display_name).join(", ")}`));
+          }
         }
         if (q.has_other) {
           const otherCount = Number(q.other_count ?? 0);
           const pct = total > 0 ? ((otherCount / total) * 100).toFixed(1) : "0.0";
           lines.push([esc(t("survey.otherOption")), otherCount, `${pct}%`].join(","));
-          for (const ans of q.other_answers ?? []) lines.push(esc(`  ${ans}`));
+          if (!isAnonymous && (q.other_answers_with_users ?? []).length > 0) {
+            for (const ans of q.other_answers_with_users as any[]) {
+              lines.push([esc(ans.display_name ?? ""), esc(ans.text_answer ?? "")].join(","));
+            }
+          } else {
+            for (const ans of q.other_answers ?? []) lines.push(esc(`  ${ans}`));
+          }
         }
       } else if (q.type === "text") {
-        lines.push(esc(t("survey.textAnswerPlaceholder")));
-        for (const ans of q.text_answers ?? []) lines.push(esc(ans));
+        if (!isAnonymous && (q.text_answers_with_users ?? []).length > 0) {
+          lines.push([esc(t("survey.by")), esc(t("survey.textAnswerPlaceholder"))].join(","));
+          for (const ans of q.text_answers_with_users as any[]) {
+            lines.push([esc(ans.display_name ?? ""), esc(ans.text_answer ?? "")].join(","));
+          }
+        } else {
+          lines.push(esc(t("survey.textAnswerPlaceholder")));
+          for (const ans of q.text_answers ?? []) lines.push(esc(ans));
+        }
       } else if (q.type === "rating") {
         lines.push(`${esc(t("survey.avgRating"))},${Number(q.rating_stats?.avg_rating ?? 0).toFixed(2)}`);
         lines.push(`${esc(t("survey.responseCount", { count: "" })).replace(/ $/, "")},${q.rating_stats?.count ?? 0}`);
-        if (q.rating_distribution?.length) {
+        if (!isAnonymous && (q.rating_answers ?? []).length > 0) {
+          lines.push([esc(t("survey.by")), esc(t("survey.avgRating"))].join(","));
+          for (const r of q.rating_answers as any[]) {
+            lines.push([esc(r.display_name ?? ""), r.rating].join(","));
+          }
+        } else if (q.rating_distribution?.length) {
           lines.push([esc(t("survey.ratingHint")), esc(t("stats.submitted"))].join(","));
           for (const d of q.rating_distribution) lines.push(`${d.rating},${d.count}`);
         }
@@ -247,6 +307,7 @@ export default function SurveyStatsPage() {
               label={`${qi + 1}`}
               total={total}
               t={t}
+              isAnonymous={isAnonymous}
             />
             {/* 부속 질문 통계 */}
             {(q.children ?? []).map((sq: any, sqi: number) => (
@@ -257,6 +318,7 @@ export default function SurveyStatsPage() {
                 total={total}
                 t={t}
                 indent
+                isAnonymous={isAnonymous}
               />
             ))}
           </div>
