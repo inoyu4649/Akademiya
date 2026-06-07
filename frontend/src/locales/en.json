@@ -21,6 +21,7 @@
       "noAccount": "Don't have an account?",
       "registerLink": "Sign up",
       "googleButton": "Continue with Google",
+      "googleHint": "School Google account recommended",
       "divider": "or",
       "invalidCredentials": "Invalid email or password.",
       "googleOnlyAccount": "This account can only be accessed via Google login.",

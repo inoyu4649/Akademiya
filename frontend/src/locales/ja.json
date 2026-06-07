@@ -21,6 +21,7 @@
       "noAccount": "アカウントをお持ちでない方は",
       "registerLink": "新規登録",
       "googleButton": "Google でログイン",
+      "googleHint": "学校の Google アカウントを推奨",
       "divider": "または",
       "invalidCredentials": "メールアドレスまたはパスワードが正しくありません。",
       "googleOnlyAccount": "このアカウントは Google ログインでのみご利用いただけます。",

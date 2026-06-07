@@ -21,6 +21,7 @@
       "noAccount": "还没有账户？",
       "registerLink": "注册",
       "googleButton": "使用 Google 登录",
+      "googleHint": "推荐使用学校 Google 账户",
       "divider": "或",
       "invalidCredentials": "邮箱或密码不正确。",
       "googleOnlyAccount": "此账户只能通过 Google 登录。",

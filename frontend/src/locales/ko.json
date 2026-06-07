@@ -21,6 +21,7 @@
       "noAccount": "계정이 없으신가요?",
       "registerLink": "회원가입",
       "googleButton": "Google로 로그인",
+      "googleHint": "학교 Google 계정 권장",
       "divider": "또는",
       "invalidCredentials": "이메일 또는 비밀번호가 올바르지 않습니다.",
       "googleOnlyAccount": "이 계정은 Google 로그인으로만 사용할 수 있습니다.",

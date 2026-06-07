@@ -132,6 +132,14 @@
   background: var(--bg-hover);
 }
 
+.googleHint {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
 .divider {
   display: flex;
   align-items: center;
