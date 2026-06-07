@@ -539,6 +539,7 @@
     "allowMultiple": "允许多次回答",
     "publicAnonymousNote": "公开问卷始终以匿名方式回答。",
     "namedResponseHint": "如果不允许匿名回答，回答者的姓名和邮箱将对问卷创建者可见。",
+    "namedResponseNotice": "提交本问卷后，您的姓名和邮箱将对问卷创建者可见。",
     "editResponse": "修改回答",
     "editingResponse": "正在修改回答。",
     "updateResponse": "更新回答",

@@ -360,7 +360,7 @@ export default function SurveyDetailPage() {
           )}
         </div>
         {!survey.allow_anonymous && (
-          <p className={styles.hint} style={{ marginTop: 4 }}>{t("survey.namedResponseHint")}</p>
+          <p className={styles.hint} style={{ marginTop: 4, marginBottom: 12 }}>{t("survey.namedResponseNotice")}</p>
         )}
 
         {/* 크리에이터 액션 */}

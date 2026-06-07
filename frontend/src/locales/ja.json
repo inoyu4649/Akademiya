@@ -539,6 +539,7 @@
     "allowMultiple": "複数回答を許可",
     "publicAnonymousNote": "公開アンケートは常に匿名で回答されます。",
     "namedResponseHint": "匿名回答を許可しない場合、回答者の名前とメールアドレスがアンケート作成者に公開されます。",
+    "namedResponseNotice": "このアンケートに回答すると、あなたの名前とメールアドレスがアンケート作成者に公開されます。",
     "editResponse": "回答を修正",
     "editingResponse": "回答を修正中です。",
     "updateResponse": "回答を更新",

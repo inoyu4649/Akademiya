@@ -539,6 +539,7 @@
     "allowMultiple": "복수 응답 허용",
     "publicAnonymousNote": "공개 설문은 항상 익명으로 응답됩니다.",
     "namedResponseHint": "익명 응답을 허용하지 않으면 응답자의 이름과 이메일이 설문 작성자에게 공개됩니다.",
+    "namedResponseNotice": "이 설문에 응답하면 응답자의 이름과 이메일이 설문 작성자에게 공개됩니다.",
     "editResponse": "응답 수정",
     "editingResponse": "응답을 수정하는 중입니다.",
     "updateResponse": "응답 업데이트",
