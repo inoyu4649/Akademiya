@@ -108,6 +108,8 @@ export default function SurveyEditPage() {
   const [allowEdit,     setAllowEdit]     = useState(false);
   const [allowMultiple, setAllowMultiple] = useState(false);
   const [expiresAt,     setExpiresAt]     = useState("");
+  const [allowPublicNamed,       setAllowPublicNamed]       = useState(false);
+  const [publicIdentityQuestion, setPublicIdentityQuestion] = useState("");
   const [questions, setQuestions]     = useState<QuestionDraft[]>([]);
   const [loading, setLoading]         = useState(true);
   const [saving, setSaving]           = useState(false);
@@ -126,6 +128,10 @@ export default function SurveyEditPage() {
         setAllowMultiple(!!s.allow_multiple);
         setExpiresAt(s.expires_at ? utcToLocalDatetime(s.expires_at) : "");
         setScopeType(s.scope_type);
+        if (s.public_identity_question) {
+          setAllowPublicNamed(true);
+          setPublicIdentityQuestion(s.public_identity_question);
+        }
         setQuestions(questionsToDrafts(qs));
         setResponseCount(rc ?? 0);
       })
@@ -240,6 +246,10 @@ export default function SurveyEditPage() {
       }
     }
 
+    if (scopeType === "public" && allowPublicNamed && !publicIdentityQuestion.trim()) {
+      setError(t("survey.publicIdentityQuestionRequired")); return;
+    }
+
     if (responseCount > 0) {
       if (!confirm(t("survey.editWillDeleteResponses", { count: responseCount }))) return;
     }
@@ -249,7 +259,8 @@ export default function SurveyEditPage() {
       await surveyApi.updateFull(surveyId, {
         title: title.trim(),
         description: description.trim() || undefined,
-        allow_anonymous: scopeType === "public" ? true : allowAnon,
+        allow_anonymous: scopeType === "public" ? !allowPublicNamed : allowAnon,
+        public_identity_question: scopeType === "public" && allowPublicNamed ? publicIdentityQuestion.trim() : null,
         allow_edit: allowEdit,
         allow_multiple: allowMultiple,
         expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
@@ -325,7 +336,27 @@ export default function SurveyEditPage() {
 
           <div className={styles.optionGroup}>
             {scopeType === "public" ? (
-              <p className={styles.infoText}>🔒 {t("survey.publicAnonymousNote")}</p>
+              <>
+                <label className={styles.checkLabel}>
+                  <input type="checkbox" checked={allowPublicNamed} onChange={(e) => setAllowPublicNamed(e.target.checked)} />
+                  {t("survey.publicNamedOption")}
+                </label>
+                {allowPublicNamed ? (
+                  <>
+                    <label className={styles.label}>{t("survey.publicIdentityQuestionLabel")}</label>
+                    <input
+                      className={styles.input}
+                      value={publicIdentityQuestion}
+                      onChange={(e) => setPublicIdentityQuestion(e.target.value)}
+                      placeholder={t("survey.publicIdentityQuestionPlaceholder")}
+                      maxLength={500}
+                    />
+                    <p className={styles.hint}>{t("survey.publicNamedNotice")}</p>
+                  </>
+                ) : (
+                  <p className={styles.infoText}>🔒 {t("survey.publicAnonymousNote")}</p>
+                )}
+              </>
             ) : (
               <>
                 <label className={styles.checkLabel}>

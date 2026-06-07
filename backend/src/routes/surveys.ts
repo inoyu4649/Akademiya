@@ -161,7 +161,7 @@ router.post("/", requireAuth, async (req, res) => {
   const {
     title, description, scope_type, scope_id,
     allow_anonymous, allow_edit, allow_multiple,
-    expires_at, questions,
+    expires_at, questions, public_identity_question,
   } = req.body as any;
 
   if (!title?.trim() || !scope_type || !questions?.length) {
@@ -173,8 +173,9 @@ router.post("/", requireAuth, async (req, res) => {
     return;
   }
 
-  const isPublic   = scope_type === "public";
-  const storeAnon  = isPublic ? 1 : (allow_anonymous ? 1 : 0);
+  const isPublic      = scope_type === "public";
+  const identityQ     = isPublic ? (public_identity_question?.trim() || null) : null;
+  const storeAnon     = isPublic ? (identityQ ? 0 : 1) : (allow_anonymous ? 1 : 0);
   const storeEdit  = allow_edit    ? 1 : 0;
   const storeMulti = allow_multiple ? 1 : 0;
   const sid        = scope_id ? Number(scope_id) : null;
@@ -207,10 +208,10 @@ router.post("/", requireAuth, async (req, res) => {
     const [ins] = await conn.execute(
       `INSERT INTO surveys
          (creator_id, title, description, scope_type, scope_id,
-          allow_anonymous, allow_edit, allow_multiple, expires_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          allow_anonymous, allow_edit, allow_multiple, expires_at, public_identity_question)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [userId, title.trim(), description?.trim() || null, scope_type, sid,
-       storeAnon, storeEdit, storeMulti, toMysqlDatetime(expires_at)]
+       storeAnon, storeEdit, storeMulti, toMysqlDatetime(expires_at), identityQ]
     ) as any[];
     const surveyId = (ins as any).insertId;
 
@@ -417,8 +418,9 @@ router.get("/public/:id", async (req, res) => {
 // ── POST /api/surveys/public/:id/respond — 공개 설문 응답 (비로그인) ──────────
 router.post("/public/:id/respond", async (req, res) => {
   const surveyId = Number(req.params.id);
-  const { answers } = req.body as {
+  const { answers, respondent_name } = req.body as {
     answers: Array<{ question_id: number; option_ids?: number[]; text_answer?: string }>;
+    respondent_name?: string;
   };
 
   const [rows] = await pool.execute(
@@ -433,12 +435,19 @@ router.post("/public/:id/respond", async (req, res) => {
     return;
   }
 
+  if (survey.public_identity_question && !respondent_name?.trim()) {
+    res.status(400).json({ error: "survey.identityRequired" });
+    return;
+  }
+
+  const storedName = survey.public_identity_question ? (respondent_name!.trim()) : null;
+
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
     const [respIns] = await conn.execute(
-      "INSERT INTO survey_responses (survey_id, user_id) VALUES (?, NULL)",
-      [surveyId]
+      "INSERT INTO survey_responses (survey_id, user_id, respondent_name) VALUES (?, NULL, ?)",
+      [surveyId, storedName]
     ) as any[];
     const responseId = (respIns as any).insertId;
     await insertAnswers(conn, responseId, answers ?? []);
@@ -663,10 +672,10 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
       if (isNamed) {
         for (const opt of q.options as any[]) {
           const [voters] = await pool.execute(
-            `SELECT u.id, u.display_name, u.email
+            `SELECT u.id, COALESCE(u.display_name, sr.respondent_name) AS display_name, u.email
              FROM survey_response_items sri
              JOIN survey_responses sr ON sr.id = sri.response_id
-             JOIN users u ON u.id = sr.user_id
+             LEFT JOIN users u ON u.id = sr.user_id
              WHERE sri.option_id = ?`,
             [opt.id]
           ) as any[];
@@ -690,7 +699,8 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
         // 기명 설문: 기타 응답 응답자 정보
         if (isNamed) {
           const [otherWithUsers] = await pool.execute(
-            `SELECT sri.text_answer, u.id AS user_id, u.display_name, u.email
+            `SELECT sri.text_answer, u.id AS user_id,
+                    COALESCE(u.display_name, sr.respondent_name) AS display_name, u.email
              FROM survey_response_items sri
              JOIN survey_responses sr ON sr.id = sri.response_id
              LEFT JOIN users u ON u.id = sr.user_id
@@ -710,7 +720,8 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
       // 기명 설문: 응답자 정보 포함
       if (isNamed) {
         const [textsWithUsers] = await pool.execute(
-          `SELECT sri.text_answer, u.id AS user_id, u.display_name, u.email
+          `SELECT sri.text_answer, u.id AS user_id,
+                  COALESCE(u.display_name, sr.respondent_name) AS display_name, u.email
            FROM survey_response_items sri
            JOIN survey_responses sr ON sr.id = sri.response_id
            LEFT JOIN users u ON u.id = sr.user_id
@@ -737,12 +748,13 @@ router.get("/:id/stats", requireAuth, async (req, res) => {
       // 기명 설문: 응답자별 평점
       if (isNamed) {
         const [ratingWithUsers] = await pool.execute(
-          `SELECT CAST(sri.text_answer AS UNSIGNED) AS rating, u.id AS user_id, u.display_name, u.email
+          `SELECT CAST(sri.text_answer AS UNSIGNED) AS rating, u.id AS user_id,
+                  COALESCE(u.display_name, sr.respondent_name) AS display_name, u.email
            FROM survey_response_items sri
            JOIN survey_responses sr ON sr.id = sri.response_id
            LEFT JOIN users u ON u.id = sr.user_id
            WHERE sri.question_id = ? AND sri.text_answer IS NOT NULL
-           ORDER BY u.display_name`,
+           ORDER BY display_name`,
           [q.id]
         ) as any[];
         q.rating_answers = ratingWithUsers;
@@ -846,7 +858,7 @@ router.put("/:id", requireAuth, async (req, res) => {
   const {
     title, description,
     allow_anonymous, allow_edit, allow_multiple,
-    expires_at, questions,
+    expires_at, questions, public_identity_question,
   } = req.body as any;
 
   if (!title?.trim()) {
@@ -863,7 +875,8 @@ router.put("/:id", requireAuth, async (req, res) => {
   if (creator_id !== userId) { res.status(403).json({ error: "forbidden" }); return; }
 
   const isPublic   = scope_type === "public";
-  const storeAnon  = isPublic ? 1 : (allow_anonymous ? 1 : 0);
+  const identityQ  = isPublic ? (public_identity_question?.trim() || null) : null;
+  const storeAnon  = isPublic ? (identityQ ? 0 : 1) : (allow_anonymous ? 1 : 0);
   const storeEdit  = allow_edit    ? 1 : 0;
   const storeMulti = allow_multiple ? 1 : 0;
 
@@ -881,10 +894,11 @@ router.put("/:id", requireAuth, async (req, res) => {
     // surveys 기본 정보 업데이트
     await conn.execute(
       `UPDATE surveys SET title = ?, description = ?,
-        allow_anonymous = ?, allow_edit = ?, allow_multiple = ?, expires_at = ?
+        allow_anonymous = ?, allow_edit = ?, allow_multiple = ?, expires_at = ?,
+        public_identity_question = ?
        WHERE id = ?`,
       [title.trim(), description?.trim() || null,
-       storeAnon, storeEdit, storeMulti, toMysqlDatetime(expires_at), surveyId]
+       storeAnon, storeEdit, storeMulti, toMysqlDatetime(expires_at), identityQ, surveyId]
     );
 
     // 문항 재삽입

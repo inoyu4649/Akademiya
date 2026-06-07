@@ -17,6 +17,7 @@ export default function SurveyPublicPage() {
   const [submitted,  setSubmitted]  = useState(false);
   const [toast,      setToast]      = useState("");
   const [answers,    setAnswers]    = useState<Record<number, SurveyAnswer>>({});
+  const [respondentName, setRespondentName] = useState("");
 
   const storageKey = `akademiya_survey_${surveyId}_responded`;
   const alreadyResponded =
@@ -131,9 +132,14 @@ export default function SurveyPublicPage() {
       }
     }
 
+    if (survey.public_identity_question && !respondentName.trim()) {
+      showToast(t("survey.publicIdentityQuestionRequired")); return;
+    }
+
     setSubmitting(true);
     try {
-      await surveyApi.publicRespond(surveyId, Object.values(answers));
+      await surveyApi.publicRespond(surveyId, Object.values(answers),
+        survey.public_identity_question ? respondentName.trim() : undefined);
       if (!survey?.allow_multiple) localStorage.setItem(storageKey, "1");
       setSubmitted(true);
       setAnswers({});
@@ -215,6 +221,27 @@ export default function SurveyPublicPage() {
 
         {canRespond && (
           <form onSubmit={handleSubmit} className={styles.respondForm}>
+            {survey.public_identity_question && (
+              <>
+                <p className={styles.hint} style={{ marginBottom: 4 }}>
+                  {t("survey.publicNamedNotice")}
+                </p>
+                <div className={styles.questionBlock}>
+                  <div className={styles.questionLabel}>
+                    <span className={styles.questionNum}>0.</span>
+                    {survey.public_identity_question}
+                    <span className={styles.requiredMark}>*</span>
+                  </div>
+                  <input
+                    className={styles.input}
+                    value={respondentName}
+                    onChange={(e) => setRespondentName(e.target.value)}
+                    placeholder={t("survey.publicIdentityQuestionPlaceholder")}
+                    maxLength={500}
+                  />
+                </div>
+              </>
+            )}
             {visibleQuestions.map(({ q, label, indent }) => (
               <div key={q.id} className={`${styles.questionBlock} ${indent ? styles.questionBlockIndent : ""}`}>
                 <div className={styles.questionLabel}>

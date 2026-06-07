@@ -77,6 +77,8 @@ export default function SurveyCreatePage() {
   const [allowEdit,     setAllowEdit]     = useState(false);
   const [allowMultiple, setAllowMultiple] = useState(false);
   const [expiresAt,     setExpiresAt]     = useState("");
+  const [allowPublicNamed,       setAllowPublicNamed]       = useState(false);
+  const [publicIdentityQuestion, setPublicIdentityQuestion] = useState("");
   const [questions, setQuestions]     = useState<QuestionDraft[]>([defaultQuestion()]);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
@@ -242,6 +244,9 @@ export default function SurveyCreatePage() {
     if ((scopeType === "class" || scopeType === "org") && !scopeId) {
       setError(t("survey.scopeRequired")); return;
     }
+    if (scopeType === "public" && allowPublicNamed && !publicIdentityQuestion.trim()) {
+      setError(t("survey.publicIdentityQuestionRequired")); return;
+    }
 
     setLoading(true);
     try {
@@ -250,7 +255,8 @@ export default function SurveyCreatePage() {
         description: description.trim() || undefined,
         scope_type: scopeType,
         scope_id: scopeId,
-        allow_anonymous: scopeType === "public" ? true : allowAnon,
+        allow_anonymous: scopeType === "public" ? !allowPublicNamed : allowAnon,
+        public_identity_question: scopeType === "public" && allowPublicNamed ? publicIdentityQuestion.trim() : null,
         allow_edit: allowEdit,
         allow_multiple: allowMultiple,
         expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
@@ -358,7 +364,27 @@ export default function SurveyCreatePage() {
 
           <div className={styles.optionGroup}>
             {scopeType === "public" ? (
-              <p className={styles.infoText}>🔒 {t("survey.publicAnonymousNote")}</p>
+              <>
+                <label className={styles.checkLabel}>
+                  <input type="checkbox" checked={allowPublicNamed} onChange={(e) => setAllowPublicNamed(e.target.checked)} />
+                  {t("survey.publicNamedOption")}
+                </label>
+                {allowPublicNamed ? (
+                  <>
+                    <label className={styles.label}>{t("survey.publicIdentityQuestionLabel")}</label>
+                    <input
+                      className={styles.input}
+                      value={publicIdentityQuestion}
+                      onChange={(e) => setPublicIdentityQuestion(e.target.value)}
+                      placeholder={t("survey.publicIdentityQuestionPlaceholder")}
+                      maxLength={500}
+                    />
+                    <p className={styles.hint}>{t("survey.publicNamedNotice")}</p>
+                  </>
+                ) : (
+                  <p className={styles.infoText}>🔒 {t("survey.publicAnonymousNote")}</p>
+                )}
+              </>
             ) : (
               <>
                 <label className={styles.checkLabel}>

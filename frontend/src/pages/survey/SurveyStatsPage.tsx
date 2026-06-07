@@ -46,8 +46,8 @@ function QuestionStats({
                     </div>
                     {!isAnonymous && (opt.voters ?? []).length > 0 && (
                       <div className={styles.voterList}>
-                        {(opt.voters as any[]).map((v: any) => (
-                          <span key={v.id} className={styles.voterChip}>{v.display_name}</span>
+                        {(opt.voters as any[]).map((v: any, vi: number) => (
+                          <span key={v.id ?? `anon-${vi}`} className={styles.voterChip}>{v.display_name}</span>
                         ))}
                       </div>
                     )}

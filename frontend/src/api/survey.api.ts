@@ -36,6 +36,7 @@ export interface Survey {
   allow_multiple:  number;
   expires_at:      string | null;
   created_at:      string;
+  public_identity_question?: string | null;
   // extra fields in feed/list
   scope_name?:     string;
   response_count?: number;
@@ -91,6 +92,7 @@ export const surveyApi = {
     allow_edit?: boolean;
     allow_multiple?: boolean;
     expires_at?: string | null;
+    public_identity_question?: string | null;
     questions: QuestionPayload[];
   }) => client.post<{ surveyId: number }>("/surveys", data),
 
@@ -131,8 +133,8 @@ export const surveyApi = {
     client.post(`/surveys/${id}/respond`, { answers }),
 
   // 공개 설문 응답 제출 (비로그인)
-  publicRespond: (id: number, answers: SurveyAnswer[]) =>
-    client.post(`/surveys/public/${id}/respond`, { answers }),
+  publicRespond: (id: number, answers: SurveyAnswer[], respondent_name?: string | null) =>
+    client.post(`/surveys/public/${id}/respond`, { answers, respondent_name }),
 
   // 응답 수정 (allow_edit)
   editResponse: (id: number, answers: SurveyAnswer[]) =>
@@ -167,6 +169,7 @@ export const surveyApi = {
     allow_edit?: boolean;
     allow_multiple?: boolean;
     expires_at?: string | null;
+    public_identity_question?: string | null;
     questions: QuestionPayload[];
   }) => client.put(`/surveys/${id}`, data),
 
