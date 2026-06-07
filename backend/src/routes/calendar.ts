@@ -50,38 +50,44 @@ router.get("/events", requireAuth, async (req, res) => {
   const lastDay  = new Date(year, month, 0).getDate();
   const endStr   = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
-  // 반 이벤트 (가입한 반)
-  // DATE_FORMAT: mysql2가 DATE 타입을 Date 객체로 변환해 ISO 직렬화하는 현상 방지
-  const [classEvents] = await pool.execute(
-    `SELECT ce.id, ce.scope_type, ce.scope_id, ce.title,
-            DATE_FORMAT(ce.event_date, '%Y-%m-%d') AS event_date,
-            ce.description, ce.color,
-            c.name AS scope_name, u.display_name AS creator_name
-     FROM calendar_events ce
-     JOIN classes c ON c.id = ce.scope_id
-     JOIN class_members cm ON cm.class_id = ce.scope_id AND cm.user_id = ?
-     LEFT JOIN users u ON u.id = ce.creator_id
-     WHERE ce.scope_type = 'class' AND ce.event_date BETWEEN ? AND ?
-     ORDER BY ce.event_date ASC`,
-    [userId, startStr, endStr]
-  ) as any[];
+  try {
+    // 반 이벤트 (가입한 반)
+    const [classEventsRaw] = await pool.execute(
+      `SELECT ce.id, ce.scope_type, ce.scope_id, ce.title,
+              DATE_FORMAT(ce.event_date, '%Y-%m-%d') AS event_date,
+              ce.description, ce.color,
+              c.name AS scope_name, u.display_name AS creator_name
+       FROM calendar_events ce
+       JOIN classes c ON c.id = ce.scope_id AND ce.scope_type = 'class'
+       JOIN class_members cm ON cm.class_id = ce.scope_id AND cm.user_id = ?
+       LEFT JOIN users u ON u.id = ce.creator_id
+       WHERE ce.event_date BETWEEN ? AND ?
+       ORDER BY ce.event_date ASC`,
+      [userId, startStr, endStr]
+    ) as any[];
 
-  // 조직 이벤트 (가입한 조직)
-  const [orgEvents] = await pool.execute(
-    `SELECT ce.id, ce.scope_type, ce.scope_id, ce.title,
-            DATE_FORMAT(ce.event_date, '%Y-%m-%d') AS event_date,
-            ce.description, ce.color,
-            o.name AS scope_name, u.display_name AS creator_name
-     FROM calendar_events ce
-     JOIN organizations o ON o.id = ce.scope_id
-     JOIN org_members om ON om.org_id = ce.scope_id AND om.user_id = ?
-     LEFT JOIN users u ON u.id = ce.creator_id
-     WHERE ce.scope_type = 'org' AND ce.event_date BETWEEN ? AND ?
-     ORDER BY ce.event_date ASC`,
-    [userId, startStr, endStr]
-  ) as any[];
+    // 조직 이벤트 (가입한 조직)
+    const [orgEventsRaw] = await pool.execute(
+      `SELECT ce.id, ce.scope_type, ce.scope_id, ce.title,
+              DATE_FORMAT(ce.event_date, '%Y-%m-%d') AS event_date,
+              ce.description, ce.color,
+              o.name AS scope_name, u.display_name AS creator_name
+       FROM calendar_events ce
+       JOIN organizations o ON o.id = ce.scope_id AND ce.scope_type = 'org'
+       JOIN org_members om ON om.org_id = ce.scope_id AND om.user_id = ?
+       LEFT JOIN users u ON u.id = ce.creator_id
+       WHERE ce.event_date BETWEEN ? AND ?
+       ORDER BY ce.event_date ASC`,
+      [userId, startStr, endStr]
+    ) as any[];
 
-  res.json({ events: [...(classEvents as any[]), ...(orgEvents as any[])] });
+    const classEvents = classEventsRaw as any[];
+    const orgEvents   = orgEventsRaw   as any[];
+    res.json({ events: [...classEvents, ...orgEvents] });
+  } catch (err) {
+    console.error("[calendar] GET /events 오류:", err);
+    res.status(500).json({ error: "server_error" });
+  }
 });
 
 // ── POST /api/calendar/events ─────────────────────────────────────────────────
@@ -102,42 +108,47 @@ router.post("/events", requireAuth, async (req, res) => {
 
   const sid = Number(scope_id);
 
-  // 권한 확인
-  if (scope_type === "class") {
-    const [rows] = await pool.execute(
-      "SELECT permission FROM class_members WHERE class_id = ? AND user_id = ?",
-      [sid, userId]
-    ) as any[];
-    if (!(rows as any[]).length || (rows as any[])[0].permission < 1) {
-      res.status(403).json({ error: "forbidden" });
-      return;
+  try {
+    // 권한 확인
+    if (scope_type === "class") {
+      const [rows] = await pool.execute(
+        "SELECT permission FROM class_members WHERE class_id = ? AND user_id = ?",
+        [sid, userId]
+      ) as any[];
+      if (!(rows as any[]).length || (rows as any[])[0].permission < 1) {
+        res.status(403).json({ error: "forbidden" });
+        return;
+      }
+    } else {
+      const [rows] = await pool.execute(
+        "SELECT permission FROM org_members WHERE org_id = ? AND user_id = ?",
+        [sid, userId]
+      ) as any[];
+      if (!(rows as any[]).length || (rows as any[])[0].permission < 3) {
+        res.status(403).json({ error: "forbidden" });
+        return;
+      }
     }
-  } else {
-    const [rows] = await pool.execute(
-      "SELECT permission FROM org_members WHERE org_id = ? AND user_id = ?",
-      [sid, userId]
-    ) as any[];
-    if (!(rows as any[]).length || (rows as any[])[0].permission < 3) {
-      res.status(403).json({ error: "forbidden" });
-      return;
-    }
+
+    await pool.execute(
+      `INSERT INTO calendar_events (scope_type, scope_id, creator_id, title, event_date, description, color)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        scope_type,
+        sid,
+        userId,
+        title.trim(),
+        event_date,
+        description?.trim() || null,
+        color?.trim() || "#4f7cff",
+      ]
+    );
+
+    res.status(201).json({ message: "created" });
+  } catch (err) {
+    console.error("[calendar] POST /events 오류:", err);
+    res.status(500).json({ error: "server_error" });
   }
-
-  await pool.execute(
-    `INSERT INTO calendar_events (scope_type, scope_id, creator_id, title, event_date, description, color)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [
-      scope_type,
-      sid,
-      userId,
-      title.trim(),
-      event_date,
-      description?.trim() || null,
-      color?.trim() || "#4f7cff",
-    ]
-  );
-
-  res.status(201).json({ message: "created" });
 });
 
 // ── DELETE /api/calendar/events/:id ──────────────────────────────────────────

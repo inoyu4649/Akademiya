@@ -9,7 +9,13 @@ import {
 } from "../../api/calendar.api";
 import styles from "./CalendarPage.module.css";
 
-const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// i18n 언어 → BCP-47 로케일 매핑
+const LOCALE_MAP: Record<string, string> = {
+  ko: "ko-KR",
+  en: "en-US",
+  ja: "ja-JP",
+  zh: "zh-CN",
+};
 
 function isSameDay(a: Date, b: Date) {
   return (
@@ -144,8 +150,9 @@ function AddEventModal({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function CalendarPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const locale = LOCALE_MAP[i18n.language] ?? i18n.language;
 
   const today = new Date();
   const [year,  setYear]  = useState(today.getFullYear());
@@ -229,7 +236,16 @@ export default function CalendarPage() {
   const selectedCustom      = selected ? customEventsForDay(selected.getDate()) : [];
   const selectedIsHoliday   = selected ? isHoliday(selected.getDate()) : false;
 
-  const monthLabel = new Date(year, month - 1, 1).toLocaleString("default", {
+  // 요일 이름: 언어에 따라 동적 생성 (2024-01-07 = 일요일 기준)
+  const WEEKDAYS = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, i) =>
+        new Date(2024, 0, 7 + i).toLocaleString(locale, { weekday: "short" })
+      ),
+    [locale]
+  );
+
+  const monthLabel = new Date(year, month - 1, 1).toLocaleString(locale, {
     year: "numeric", month: "long",
   });
 
@@ -280,9 +296,9 @@ export default function CalendarPage() {
           </div>
 
           <div className={styles.weekRow}>
-            {WEEKDAYS_EN.map((w, i) => (
+            {WEEKDAYS.map((w, i) => (
               <div
-                key={w}
+                key={i}
                 className={`${styles.weekCell} ${i === 0 ? styles.sunLabel : i === 6 ? styles.satLabel : ""}`}
               >
                 {w}
@@ -355,7 +371,7 @@ export default function CalendarPage() {
           {selected ? (
             <>
               <h2 className={styles.sideTitle}>
-                {selected.toLocaleDateString("default", { month: "long", day: "numeric" })}
+                {selected.toLocaleDateString(locale, { month: "long", day: "numeric" })}
                 {selectedIsHoliday && (
                   <span className={styles.holidayBadge}>{t("calendar.holiday")}</span>
                 )}
@@ -400,7 +416,7 @@ export default function CalendarPage() {
                         <div className={styles.eventTitle}>{ev.title}</div>
                         <div className={styles.eventClass}>{ev.class_name}</div>
                         <div className={styles.eventTime}>
-                          {new Date(ev.due_at).toLocaleTimeString("default", {
+                          {new Date(ev.due_at).toLocaleTimeString(locale, {
                             hour: "2-digit", minute: "2-digit",
                           })}
                         </div>
