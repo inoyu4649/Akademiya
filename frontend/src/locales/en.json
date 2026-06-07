@@ -538,6 +538,7 @@
     "allowEdit": "Allow response editing",
     "allowMultiple": "Allow multiple responses",
     "publicAnonymousNote": "Public surveys are always anonymous.",
+    "namedResponseHint": "If anonymous responses are not allowed, respondents' names and emails will be visible to the survey creator.",
     "editResponse": "Edit Response",
     "editingResponse": "You are editing your response.",
     "updateResponse": "Update Response",

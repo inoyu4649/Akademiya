@@ -1,8 +1,8 @@
-import { Router } from "express";
+import { Router, type IRouter } from "express";
 import { pool } from "../db/pool.js";
 import { requireAuth } from "../middleware/auth.js";
 
-const router = Router();
+const router: IRouter = Router();
 
 export const TERMS_OF_USE_VERSION = 1;
 

@@ -300,10 +300,15 @@ export default function SurveyEditPage() {
             {scopeType === "public" ? (
               <p className={styles.infoText}>🔒 {t("survey.publicAnonymousNote")}</p>
             ) : (
-              <label className={styles.checkLabel}>
-                <input type="checkbox" checked={allowAnon} onChange={(e) => setAllowAnon(e.target.checked)} />
-                {t("survey.allowAnonymous")}
-              </label>
+              <>
+                <label className={styles.checkLabel}>
+                  <input type="checkbox" checked={allowAnon} onChange={(e) => setAllowAnon(e.target.checked)} />
+                  {t("survey.allowAnonymous")}
+                </label>
+                {!allowAnon && (
+                  <p className={styles.hint}>{t("survey.namedResponseHint")}</p>
+                )}
+              </>
             )}
             <label className={styles.checkLabel}>
               <input type="checkbox" checked={allowEdit} onChange={(e) => setAllowEdit(e.target.checked)} />
