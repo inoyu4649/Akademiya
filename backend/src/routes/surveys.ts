@@ -46,7 +46,8 @@ async function canViewStats(
 async function loadQuestions(surveyId: number): Promise<any[]> {
   const [questions] = await pool.execute(
     `SELECT q.id, q.order_num, q.type, q.title, q.description, q.required, q.has_other,
-            q.parent_question_id, q.trigger_option_id
+            q.parent_question_id, q.trigger_option_id,
+            q.trigger_rating_min, q.trigger_rating_max
      FROM survey_questions q
      WHERE q.survey_id = ?
      ORDER BY (q.parent_question_id IS NOT NULL), q.order_num`,
@@ -85,7 +86,8 @@ async function loadQuestions(surveyId: number): Promise<any[]> {
 async function loadQuestionsFlat(surveyId: number): Promise<any[]> {
   const [questions] = await pool.execute(
     `SELECT q.id, q.order_num, q.type, q.title, q.description, q.required, q.has_other,
-            q.parent_question_id, q.trigger_option_id
+            q.parent_question_id, q.trigger_option_id,
+            q.trigger_rating_min, q.trigger_rating_max
      FROM survey_questions q
      WHERE q.survey_id = ?
      ORDER BY (q.parent_question_id IS NOT NULL), q.order_num`,
@@ -133,10 +135,11 @@ async function insertQuestions(conn: any, surveyId: number, questions: any[]) {
       const [sqIns] = await conn.execute(
         `INSERT INTO survey_questions
            (survey_id, order_num, type, title, description, required, has_other,
-            parent_question_id, trigger_option_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            parent_question_id, trigger_option_id, trigger_rating_min, trigger_rating_max)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [surveyId, si, sq.type, sq.title?.trim(), sq.description?.trim() || null,
-         sq.required ? 1 : 0, sq.has_other ? 1 : 0, qId, triggerOptId]
+         sq.required ? 1 : 0, sq.has_other ? 1 : 0, qId, triggerOptId,
+         sq.trigger_rating_min ?? null, sq.trigger_rating_max ?? null]
       ) as any[];
       const sqId = (sqIns as any).insertId;
 

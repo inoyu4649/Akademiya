@@ -17,6 +17,8 @@ export interface SurveyQuestion {
   options?:           SurveyOption[];
   parent_question_id: number | null;
   trigger_option_id:  number | null;
+  trigger_rating_min: number | null;
+  trigger_rating_max: number | null;
   children?:          SurveyQuestion[];
 }
 
@@ -63,7 +65,9 @@ export interface SubQuestionPayload {
   required?:         boolean;
   has_other?:        boolean;
   options?:          string[];
-  trigger_option_idx: number | null;
+  trigger_option_idx:  number | null;
+  trigger_rating_min?: number | null;
+  trigger_rating_max?: number | null;
 }
 
 export interface QuestionPayload {

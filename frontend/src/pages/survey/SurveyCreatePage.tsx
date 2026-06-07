@@ -15,6 +15,17 @@ interface SubQuestionDraft {
   has_other: boolean;
   options: string[];
   triggerOptionIdx: number | null;
+  triggerRating: string; // "always" | "1"~"5" | "1-2" | "1-3" | "3-5" | "4-5"
+}
+
+function serializeRatingTrigger(v: string): { min: number | null; max: number | null } {
+  if (v === "always") return { min: null, max: null };
+  if (v.includes("-")) {
+    const [a, b] = v.split("-").map(Number);
+    return { min: a, max: b };
+  }
+  const n = Number(v);
+  return { min: n, max: n };
 }
 
 interface QuestionDraft {
@@ -51,6 +62,7 @@ const defaultSubQuestion = (): SubQuestionDraft => ({
   has_other: false,
   options: ["", ""],
   triggerOptionIdx: null,
+  triggerRating: "always",
 });
 
 export default function SurveyCreatePage() {
@@ -249,15 +261,22 @@ export default function SurveyCreatePage() {
           required: q.required,
           has_other: ["single", "multiple"].includes(q.type) ? q.has_other : false,
           options: ["single", "multiple"].includes(q.type) ? q.options.filter((o) => o.trim()) : undefined,
-          sub_questions: q.children.map((sq) => ({
-            type: sq.type,
-            title: sq.title.trim(),
-            description: sq.description.trim() || undefined,
-            required: sq.required,
-            has_other: ["single", "multiple"].includes(sq.type) ? sq.has_other : false,
-            options: ["single", "multiple"].includes(sq.type) ? sq.options.filter((o) => o.trim()) : undefined,
-            trigger_option_idx: sq.triggerOptionIdx,
-          })),
+          sub_questions: q.children.map((sq) => {
+            const { min: rMin, max: rMax } = q.type === "rating"
+              ? serializeRatingTrigger(sq.triggerRating)
+              : { min: null, max: null };
+            return {
+              type: sq.type,
+              title: sq.title.trim(),
+              description: sq.description.trim() || undefined,
+              required: sq.required,
+              has_other: ["single", "multiple"].includes(sq.type) ? sq.has_other : false,
+              options: ["single", "multiple"].includes(sq.type) ? sq.options.filter((o) => o.trim()) : undefined,
+              trigger_option_idx: q.type !== "rating" ? sq.triggerOptionIdx : null,
+              trigger_rating_min: rMin,
+              trigger_rating_max: rMax,
+            };
+          }),
         })),
       });
       navigate(`/surveys/${res.data.surveyId}`);
@@ -500,7 +519,7 @@ export default function SurveyCreatePage() {
                           {t("survey.required")}
                         </label>
 
-                        {/* 조건 트리거 */}
+                        {/* 조건 트리거 — 선택형 */}
                         {["single", "multiple"].includes(q.type) && q.options.some((o) => o.trim()) && (
                           <select
                             className={styles.typeSelect}
@@ -518,6 +537,26 @@ export default function SurveyCreatePage() {
                                 </option>
                               ) : null
                             )}
+                          </select>
+                        )}
+                        {/* 조건 트리거 — 평점형 */}
+                        {q.type === "rating" && (
+                          <select
+                            className={styles.typeSelect}
+                            value={sq.triggerRating}
+                            onChange={(e) => updateSubQuestion(q._key, sq._key, { triggerRating: e.target.value })}
+                            title={t("survey.subTriggerLabel")}
+                          >
+                            <option value="always">{t("survey.triggerAlways")}</option>
+                            <option value="1">{t("survey.triggerRating_1")}</option>
+                            <option value="2">{t("survey.triggerRating_2")}</option>
+                            <option value="3">{t("survey.triggerRating_3")}</option>
+                            <option value="4">{t("survey.triggerRating_4")}</option>
+                            <option value="5">{t("survey.triggerRating_5")}</option>
+                            <option value="1-2">{t("survey.triggerRatingLow")}</option>
+                            <option value="1-3">{t("survey.triggerRatingMidLow")}</option>
+                            <option value="3-5">{t("survey.triggerRatingMidHigh")}</option>
+                            <option value="4-5">{t("survey.triggerRatingHigh")}</option>
                           </select>
                         )}
 

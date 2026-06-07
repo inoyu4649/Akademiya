@@ -229,14 +229,23 @@ export default function SurveyDetailPage() {
     const result: Array<{ q: SurveyQuestion; label: string; indent: boolean }> = [];
     questions.forEach((q, qi) => {
       result.push({ q, label: `${qi + 1}`, indent: false });
-      const selectedOptionIds = answers[q.id]?.option_ids ?? [];
       (q.children ?? []).forEach((sq, sqi) => {
-        const show =
-          sq.trigger_option_id == null ||
-          selectedOptionIds.includes(sq.trigger_option_id);
-        if (show) {
-          result.push({ q: sq, label: `${qi + 1}-${sqi + 1}`, indent: true });
+        let show: boolean;
+        if (sq.trigger_option_id != null) {
+          show = (answers[q.id]?.option_ids ?? []).includes(sq.trigger_option_id);
+        } else if (sq.trigger_rating_min != null || sq.trigger_rating_max != null) {
+          const rating = Number(answers[q.id]?.text_answer ?? 0);
+          if (!rating) {
+            show = false;
+          } else {
+            const meetsMin = sq.trigger_rating_min == null || rating >= sq.trigger_rating_min;
+            const meetsMax = sq.trigger_rating_max == null || rating <= sq.trigger_rating_max;
+            show = meetsMin && meetsMax;
+          }
+        } else {
+          show = true;
         }
+        if (show) result.push({ q: sq, label: `${qi + 1}-${sqi + 1}`, indent: true });
       });
     });
     return result;

@@ -13,6 +13,23 @@ interface SubQuestionDraft {
   has_other: boolean;
   options: string[];
   triggerOptionIdx: number | null;
+  triggerRating: string;
+}
+
+function parseRatingTrigger(min: number | null, max: number | null): string {
+  if (min == null && max == null) return "always";
+  if (min === max) return String(min ?? 0);
+  return `${min ?? 1}-${max ?? 5}`;
+}
+
+function serializeRatingTrigger(v: string): { min: number | null; max: number | null } {
+  if (v === "always") return { min: null, max: null };
+  if (v.includes("-")) {
+    const [a, b] = v.split("-").map(Number);
+    return { min: a, max: b };
+  }
+  const n = Number(v);
+  return { min: n, max: n };
 }
 
 interface QuestionDraft {
@@ -38,7 +55,7 @@ function utcToLocalDatetime(utcStr: string): string {
 
 const defaultSubQuestion = (): SubQuestionDraft => ({
   _key: nextKey(), type: "text", title: "", description: "", required: false,
-  has_other: false, options: ["", ""], triggerOptionIdx: null,
+  has_other: false, options: ["", ""], triggerOptionIdx: null, triggerRating: "always",
 });
 
 /** 서버에서 받은 SurveyQuestion 트리를 편집용 draft 형식으로 변환 */
@@ -70,6 +87,9 @@ function questionsToDrafts(serverQuestions: SurveyQuestion[]): QuestionDraft[] {
               ? sq.options.map((o) => o.label)
               : ["", ""],
           triggerOptionIdx: triggerIdx === -1 ? null : triggerIdx,
+          triggerRating: q.type === "rating"
+            ? parseRatingTrigger(sq.trigger_rating_min, sq.trigger_rating_max)
+            : "always",
         };
       }),
     };
@@ -240,15 +260,22 @@ export default function SurveyEditPage() {
           required: q.required,
           has_other: ["single", "multiple"].includes(q.type) ? q.has_other : false,
           options: ["single", "multiple"].includes(q.type) ? q.options.filter((o) => o.trim()) : undefined,
-          sub_questions: q.children.map((sq) => ({
-            type: sq.type,
-            title: sq.title.trim(),
-            description: sq.description.trim() || undefined,
-            required: sq.required,
-            has_other: ["single", "multiple"].includes(sq.type) ? sq.has_other : false,
-            options: ["single", "multiple"].includes(sq.type) ? sq.options.filter((o) => o.trim()) : undefined,
-            trigger_option_idx: sq.triggerOptionIdx,
-          })),
+          sub_questions: q.children.map((sq) => {
+            const { min: rMin, max: rMax } = q.type === "rating"
+              ? serializeRatingTrigger(sq.triggerRating)
+              : { min: null, max: null };
+            return {
+              type: sq.type,
+              title: sq.title.trim(),
+              description: sq.description.trim() || undefined,
+              required: sq.required,
+              has_other: ["single", "multiple"].includes(sq.type) ? sq.has_other : false,
+              options: ["single", "multiple"].includes(sq.type) ? sq.options.filter((o) => o.trim()) : undefined,
+              trigger_option_idx: q.type !== "rating" ? sq.triggerOptionIdx : null,
+              trigger_rating_min: rMin,
+              trigger_rating_max: rMax,
+            };
+          }),
         })),
       });
       navigate(`/surveys/${surveyId}`);
@@ -453,6 +480,25 @@ export default function SurveyEditPage() {
                                 </option>
                               ) : null
                             )}
+                          </select>
+                        )}
+                        {q.type === "rating" && (
+                          <select
+                            className={styles.typeSelect}
+                            value={sq.triggerRating}
+                            onChange={(e) => updateSubQuestion(q._key, sq._key, { triggerRating: e.target.value })}
+                            title={t("survey.subTriggerLabel")}
+                          >
+                            <option value="always">{t("survey.triggerAlways")}</option>
+                            <option value="1">{t("survey.triggerRating_1")}</option>
+                            <option value="2">{t("survey.triggerRating_2")}</option>
+                            <option value="3">{t("survey.triggerRating_3")}</option>
+                            <option value="4">{t("survey.triggerRating_4")}</option>
+                            <option value="5">{t("survey.triggerRating_5")}</option>
+                            <option value="1-2">{t("survey.triggerRatingLow")}</option>
+                            <option value="1-3">{t("survey.triggerRatingMidLow")}</option>
+                            <option value="3-5">{t("survey.triggerRatingMidHigh")}</option>
+                            <option value="4-5">{t("survey.triggerRatingHigh")}</option>
                           </select>
                         )}
                         <button type="button" className={styles.removeQBtn} onClick={() => removeSubQuestion(q._key, sq._key)}>×</button>
