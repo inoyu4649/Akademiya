@@ -164,17 +164,17 @@ export default function CalendarPage() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([
+    // Promise.allSettled: 공휴일 API 등 일부 실패해도 나머지 데이터는 정상 표시
+    Promise.allSettled([
       calendarApi.events(year, month),
       calendarApi.holidays(year, month),
       calendarApi.customEvents(year, month),
     ])
-      .then(([ev, hol, cev]) => {
-        setEvents(ev.events);
-        setHolidays(hol.holidays);
-        setCustomEvs(cev.events);
+      .then(([evResult, holResult, cevResult]) => {
+        if (evResult.status  === "fulfilled") setEvents(evResult.value.events);
+        if (holResult.status === "fulfilled") setHolidays(holResult.value.holidays);
+        if (cevResult.status === "fulfilled") setCustomEvs(cevResult.value.events);
       })
-      .catch(() => {})
       .finally(() => setLoading(false));
     setSelected(null);
   }, [year, month]);
@@ -214,7 +214,8 @@ export default function CalendarPage() {
   }
   function customEventsForDay(day: number) {
     const ds = dateStr(day);
-    return customEvs.filter((e) => e.event_date === ds);
+    // slice(0, 10): mysql2가 DATE를 Date객체로 직렬화한 경우("2026-06-07T00:00:00.000Z")에도 안전하게 비교
+    return customEvs.filter((e) => String(e.event_date).slice(0, 10) === ds);
   }
   function isHoliday(day: number) {
     return holidays.includes(dateStr(day));

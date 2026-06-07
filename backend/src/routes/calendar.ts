@@ -51,8 +51,11 @@ router.get("/events", requireAuth, async (req, res) => {
   const endStr   = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
   // 반 이벤트 (가입한 반)
+  // DATE_FORMAT: mysql2가 DATE 타입을 Date 객체로 변환해 ISO 직렬화하는 현상 방지
   const [classEvents] = await pool.execute(
-    `SELECT ce.id, ce.scope_type, ce.scope_id, ce.title, ce.event_date, ce.description, ce.color,
+    `SELECT ce.id, ce.scope_type, ce.scope_id, ce.title,
+            DATE_FORMAT(ce.event_date, '%Y-%m-%d') AS event_date,
+            ce.description, ce.color,
             c.name AS scope_name, u.display_name AS creator_name
      FROM calendar_events ce
      JOIN classes c ON c.id = ce.scope_id
@@ -65,7 +68,9 @@ router.get("/events", requireAuth, async (req, res) => {
 
   // 조직 이벤트 (가입한 조직)
   const [orgEvents] = await pool.execute(
-    `SELECT ce.id, ce.scope_type, ce.scope_id, ce.title, ce.event_date, ce.description, ce.color,
+    `SELECT ce.id, ce.scope_type, ce.scope_id, ce.title,
+            DATE_FORMAT(ce.event_date, '%Y-%m-%d') AS event_date,
+            ce.description, ce.color,
             o.name AS scope_name, u.display_name AS creator_name
      FROM calendar_events ce
      JOIN organizations o ON o.id = ce.scope_id
