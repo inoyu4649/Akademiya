@@ -1,1 +1,0 @@
--- Phase 4: code_resize (no-op — migration applied manually)

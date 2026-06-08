@@ -36,31 +36,22 @@ async function migrate() {
   );
   const applied = new Set((rows as mysql.RowDataPacket[]).map((r) => r.filename));
 
-  // 부트스트랩: 추적 테이블이 새로 만들어졌지만 DB에 이미 스키마가 있는 경우
-  // (추적 시스템 도입 이전에 수동 또는 이전 방식으로 실행된 마이그레이션 자동 등록)
+  // 부트스트랩: schema_migrations가 비어 있고 users 테이블이 이미 존재하면
+  // 현재 서버에 스키마가 이미 적용된 것이므로 000_full_schema.sql을 실행 없이 등록
   if (applied.size === 0) {
-    const [colCheck] = await conn.query<mysql.RowDataPacket[]>(
+    const [tableCheck] = await conn.query<mysql.RowDataPacket[]>(
       `SELECT COUNT(*) AS cnt
-       FROM INFORMATION_SCHEMA.COLUMNS
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'is_banned'`,
+       FROM INFORMATION_SCHEMA.TABLES
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users'`,
       [db]
     );
-    if ((colCheck[0] as any).cnt > 0) {
-      // is_banned 컬럼이 있으면 001~004가 이미 적용된 것
-      const toSeed = [
-        "001_init.sql",
-        "002_oauth_nullable.sql",
-        "003_user_reports.sql",
-        "004_code_resize.sql",
-      ];
-      for (const f of toSeed) {
-        await conn.query(
-          "INSERT IGNORE INTO schema_migrations (filename) VALUES (?)",
-          [f]
-        );
-        applied.add(f);
-      }
-      console.log("Bootstrap: 001~004 이미 적용됨으로 등록.");
+    if ((tableCheck[0] as any).cnt > 0) {
+      await conn.query(
+        "INSERT IGNORE INTO schema_migrations (filename) VALUES (?)",
+        ["000_full_schema.sql"]
+      );
+      applied.add("000_full_schema.sql");
+      console.log("Bootstrap: 기존 DB 감지 — 000_full_schema.sql 실행 없이 적용됨으로 등록.");
     }
   }
 
