@@ -277,6 +277,33 @@
       "serverError": "操作失败，请稍后再试。"
     }
   },
+  "resource": {
+    "nav": "资料室",
+    "title": "班级资料",
+    "empty": "暂无资料。",
+    "upload": "上传资料",
+    "uploadBtn": "上传",
+    "titleLabel": "标题",
+    "titlePlaceholder": "请输入资料标题",
+    "titleRequired": "请输入标题。",
+    "descLabel": "说明（可选）",
+    "descPlaceholder": "请输入资料说明",
+    "tabFile": "上传文件",
+    "tabLink": "链接",
+    "fileLabel": "文件（总计最大20MB）",
+    "linkLabel": "链接URL",
+    "linkPlaceholder": "https://...",
+    "noContent": "请上传文件或输入链接。",
+    "fileTooLarge": "文件总大小超过20MB限制。",
+    "fileTooLargeServer": "文件过大，请上传20MB以下的文件。",
+    "deleteConfirm": "确定要删除此资料吗？",
+    "deleteBtn": "删除",
+    "deleteSuccess": "资料已删除。",
+    "uploadSuccess": "资料已上传。",
+    "serverError": "发生错误，请稍后重试。",
+    "files": "附件",
+    "linkBtn": "打开链接"
+  },
   "report": {
     "reportBtn": "举报",
     "modalTitle": "举报用户",

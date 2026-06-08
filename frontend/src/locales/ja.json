@@ -277,6 +277,33 @@
       "serverError": "エラーが発生しました。しばらくしてからもう一度お試しください。"
     }
   },
+  "resource": {
+    "nav": "資料室",
+    "title": "資料室",
+    "empty": "登録された資料はありません。",
+    "upload": "資料アップロード",
+    "uploadBtn": "アップロード",
+    "titleLabel": "タイトル",
+    "titlePlaceholder": "資料のタイトルを入力してください",
+    "titleRequired": "タイトルを入力してください。",
+    "descLabel": "説明（任意）",
+    "descPlaceholder": "資料の説明を入力してください",
+    "tabFile": "ファイルアップロード",
+    "tabLink": "リンク",
+    "fileLabel": "ファイル（合計最大20MB）",
+    "linkLabel": "リンクURL",
+    "linkPlaceholder": "https://...",
+    "noContent": "ファイルまたはリンクを入力してください。",
+    "fileTooLarge": "ファイルの合計サイズが20MBを超えています。",
+    "fileTooLargeServer": "ファイルが大きすぎます。20MB以下のファイルをアップロードしてください。",
+    "deleteConfirm": "この資料を削除しますか？",
+    "deleteBtn": "削除",
+    "deleteSuccess": "資料を削除しました。",
+    "uploadSuccess": "資料をアップロードしました。",
+    "serverError": "エラーが発生しました。後でもう一度お試しください。",
+    "files": "添付ファイル",
+    "linkBtn": "リンクを開く"
+  },
   "report": {
     "reportBtn": "通報",
     "modalTitle": "ユーザーを通報",

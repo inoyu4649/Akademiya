@@ -277,6 +277,33 @@
       "serverError": "오류가 발생했습니다. 잠시 후 다시 시도해주세요."
     }
   },
+  "resource": {
+    "nav": "자료실",
+    "title": "자료실",
+    "empty": "등록된 자료가 없습니다.",
+    "upload": "자료 업로드",
+    "uploadBtn": "업로드",
+    "titleLabel": "제목",
+    "titlePlaceholder": "자료 제목을 입력하세요",
+    "titleRequired": "제목을 입력해주세요.",
+    "descLabel": "설명 (선택)",
+    "descPlaceholder": "자료에 대한 설명을 입력하세요",
+    "tabFile": "파일 업로드",
+    "tabLink": "링크",
+    "fileLabel": "파일 (최대 20MB)",
+    "linkLabel": "링크 URL",
+    "linkPlaceholder": "https://...",
+    "noContent": "파일 또는 링크를 입력해주세요.",
+    "fileTooLarge": "파일 크기 합계가 최대 20MB를 초과합니다.",
+    "fileTooLargeServer": "파일이 너무 큽니다. 20MB 이하로 올려주세요.",
+    "deleteConfirm": "이 자료를 삭제하시겠습니까?",
+    "deleteBtn": "삭제",
+    "deleteSuccess": "자료가 삭제되었습니다.",
+    "uploadSuccess": "자료가 업로드되었습니다.",
+    "serverError": "오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+    "files": "첨부파일",
+    "linkBtn": "링크 열기"
+  },
   "report": {
     "reportBtn": "신고",
     "modalTitle": "사용자 신고",

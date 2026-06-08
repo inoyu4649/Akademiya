@@ -212,6 +212,12 @@ export default function ClassDetailPage() {
         <div className={styles.headerRight}>
           <button
             className={styles.btnAssignments}
+            onClick={() => navigate(`/classes/${classId}/resources`)}
+          >
+            📁 {t("resource.nav")}
+          </button>
+          <button
+            className={styles.btnAssignments}
             onClick={() => navigate(`/classes/${classId}/assignments`)}
           >
             📋 {t("assignment.list.title")}

@@ -277,6 +277,33 @@
       "serverError": "An error occurred. Please try again."
     }
   },
+  "resource": {
+    "nav": "Resources",
+    "title": "Class Resources",
+    "empty": "No resources have been posted yet.",
+    "upload": "Upload Resource",
+    "uploadBtn": "Upload",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Enter resource title",
+    "titleRequired": "Please enter a title.",
+    "descLabel": "Description (optional)",
+    "descPlaceholder": "Enter a description",
+    "tabFile": "File Upload",
+    "tabLink": "Link",
+    "fileLabel": "File (max 20MB total)",
+    "linkLabel": "Link URL",
+    "linkPlaceholder": "https://...",
+    "noContent": "Please attach a file or enter a link.",
+    "fileTooLarge": "Total file size exceeds the 20MB limit.",
+    "fileTooLargeServer": "File is too large. Please upload files under 20MB.",
+    "deleteConfirm": "Delete this resource?",
+    "deleteBtn": "Delete",
+    "deleteSuccess": "Resource deleted.",
+    "uploadSuccess": "Resource uploaded.",
+    "serverError": "An error occurred. Please try again.",
+    "files": "Attachments",
+    "linkBtn": "Open Link"
+  },
   "report": {
     "reportBtn": "Report",
     "modalTitle": "Report User",
