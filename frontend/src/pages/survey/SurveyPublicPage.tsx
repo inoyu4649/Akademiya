@@ -132,14 +132,14 @@ export default function SurveyPublicPage() {
       }
     }
 
-    if (survey.public_identity_question && !respondentName.trim()) {
+    if (survey?.public_identity_question && !respondentName.trim()) {
       showToast(t("survey.publicIdentityQuestionRequired")); return;
     }
 
     setSubmitting(true);
     try {
       await surveyApi.publicRespond(surveyId, Object.values(answers),
-        survey.public_identity_question ? respondentName.trim() : undefined);
+        survey?.public_identity_question ? respondentName.trim() : undefined);
       if (!survey?.allow_multiple) localStorage.setItem(storageKey, "1");
       setSubmitted(true);
       setAnswers({});
