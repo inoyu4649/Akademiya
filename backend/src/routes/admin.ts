@@ -290,4 +290,107 @@ router.post("/limit-requests/:id/reject", requireAuth, requireAdmin, async (req,
   res.json({ message: "rejected" });
 });
 
+// ── GET /api/admin/resource-limit-requests — 자료 한도 확장 요청 목록 ─────────
+router.get("/resource-limit-requests", requireAuth, requireAdmin, async (req, res) => {
+  const status = (req.query.status as string) || "pending";
+  const [rows] = await pool.execute(
+    `SELECT rlr.id, rlr.class_id, rlr.requested_max_files, rlr.requested_max_size_mb,
+            rlr.reason, rlr.status, rlr.admin_note, rlr.created_at,
+            c.name AS class_name,
+            c.max_resource_files  AS current_max_files,
+            c.max_resource_size_mb AS current_max_size_mb,
+            u.display_name AS requester_name, u.email AS requester_email
+     FROM resource_limit_requests rlr
+     JOIN classes c  ON c.id  = rlr.class_id
+     LEFT JOIN users u ON u.id = rlr.requester_id
+     WHERE rlr.status = ?
+     ORDER BY rlr.created_at DESC`,
+    [status]
+  ) as any[];
+  res.json({ requests: rows });
+});
+
+// ── POST /api/admin/resource-limit-requests/:id/approve ──────────────────────
+router.post("/resource-limit-requests/:id/approve", requireAuth, requireAdmin, async (req, res) => {
+  const reqId   = Number(req.params.id);
+  const adminId = req.user!.id;
+  const { admin_note } = req.body as { admin_note?: string };
+
+  const [rows] = await pool.execute(
+    "SELECT * FROM resource_limit_requests WHERE id = ? AND status = 'pending'",
+    [reqId]
+  ) as any[];
+  if (!(rows as any[]).length) { res.status(404).json({ error: "notFound" }); return; }
+
+  const r = (rows as any[])[0];
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    // 반 기본 한도 업데이트
+    await conn.execute(
+      "UPDATE classes SET max_resource_files = ?, max_resource_size_mb = ? WHERE id = ?",
+      [r.requested_max_files, r.requested_max_size_mb, r.class_id]
+    );
+    await conn.execute(
+      `UPDATE resource_limit_requests
+       SET status = 'approved', admin_note = ?, reviewed_by = ?, updated_at = NOW()
+       WHERE id = ?`,
+      [admin_note?.trim() || null, adminId, reqId]
+    );
+    if (r.requester_id) {
+      await conn.execute(
+        `INSERT INTO notifications (user_id, type, title, body, link)
+         VALUES (?, 'broadcast', ?, ?, ?)`,
+        [
+          r.requester_id,
+          "자료 파일 한도 확장 요청이 승인되었습니다",
+          `최대 ${r.requested_max_files}개, ${r.requested_max_size_mb}MB로 확장되었습니다.`,
+          `/classes/${r.class_id}/resources/create`,
+        ]
+      );
+    }
+    await conn.commit();
+    res.json({ message: "approved" });
+  } catch (e) {
+    try { await conn.rollback(); } catch { /* ignore */ }
+    throw e;
+  } finally {
+    try { conn.release(); } catch { /* ignore */ }
+  }
+});
+
+// ── POST /api/admin/resource-limit-requests/:id/reject ───────────────────────
+router.post("/resource-limit-requests/:id/reject", requireAuth, requireAdmin, async (req, res) => {
+  const reqId   = Number(req.params.id);
+  const adminId = req.user!.id;
+  const { admin_note } = req.body as { admin_note?: string };
+
+  const [rows] = await pool.execute(
+    "SELECT requester_id, class_id FROM resource_limit_requests WHERE id = ? AND status = 'pending'",
+    [reqId]
+  ) as any[];
+  if (!(rows as any[]).length) { res.status(404).json({ error: "notFound" }); return; }
+
+  const r = (rows as any[])[0];
+  await pool.execute(
+    `UPDATE resource_limit_requests
+     SET status = 'rejected', admin_note = ?, reviewed_by = ?, updated_at = NOW()
+     WHERE id = ?`,
+    [admin_note?.trim() || null, adminId, reqId]
+  );
+  if (r.requester_id) {
+    await pool.execute(
+      `INSERT INTO notifications (user_id, type, title, body, link)
+       VALUES (?, 'broadcast', ?, ?, ?)`,
+      [
+        r.requester_id,
+        "자료 파일 한도 확장 요청이 거절되었습니다",
+        admin_note?.trim() || "Akademiya 관리자가 자료 파일 한도 확장 요청을 거절했습니다.",
+        `/classes/${r.class_id}/resources/create`,
+      ]
+    );
+  }
+  res.json({ message: "rejected" });
+});
+
 export default router;

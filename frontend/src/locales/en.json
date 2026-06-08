@@ -290,19 +290,33 @@
     "descPlaceholder": "Enter a description",
     "tabFile": "File Upload",
     "tabLink": "Link",
-    "fileLabel": "File (max 20MB total)",
+    "fileLabel": "File (max total)",
     "linkLabel": "Link URL",
     "linkPlaceholder": "https://...",
     "noContent": "Please attach a file or enter a link.",
-    "fileTooLarge": "Total file size exceeds the 20MB limit.",
-    "fileTooLargeServer": "File is too large. Please upload files under 20MB.",
+    "fileTooLarge": "Total file size exceeds the limit.",
+    "fileTooLargeServer": "File is too large. Please stay within the limit.",
+    "leaderOnly": "Only class leaders can upload resources.",
     "deleteConfirm": "Delete this resource?",
     "deleteBtn": "Delete",
     "deleteSuccess": "Resource deleted.",
     "uploadSuccess": "Resource uploaded.",
     "serverError": "An error occurred. Please try again.",
     "files": "Attachments",
-    "linkBtn": "Open Link"
+    "linkBtn": "Open Link",
+    "create": {
+      "title": "Upload Resource",
+      "fileHint": "Up to {{files}} files, {{mb}}MB total",
+      "limitSectionTitle": "File Limit",
+      "currentLimits": "Current limit: up to {{files}} files, {{mb}}MB",
+      "requestLimitExpand": "Request Limit Expansion",
+      "reqMaxFiles": "Max file count",
+      "reqMaxSizeMb": "Max size (MB)",
+      "reqReason": "Reason (optional)",
+      "reqReasonPlaceholder": "Explain why you need a higher limit",
+      "submitRequest": "Submit Request",
+      "limitRequested": "Limit expansion request submitted."
+    }
   },
   "report": {
     "reportBtn": "Report",
@@ -665,6 +679,9 @@
       "reject": "Reject",
       "approveSuccess": "Approved.",
       "rejectSuccess": "Rejected."
+    },
+    "resourceLimitRequests": {
+      "title": "Resource File Limit Requests"
     },
     "orgs": {
       "title": "Organization Applications",

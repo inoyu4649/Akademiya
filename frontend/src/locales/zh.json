@@ -290,19 +290,33 @@
     "descPlaceholder": "请输入资料说明",
     "tabFile": "上传文件",
     "tabLink": "链接",
-    "fileLabel": "文件（总计最大20MB）",
+    "fileLabel": "文件（总计上限）",
     "linkLabel": "链接URL",
     "linkPlaceholder": "https://...",
     "noContent": "请上传文件或输入链接。",
-    "fileTooLarge": "文件总大小超过20MB限制。",
-    "fileTooLargeServer": "文件过大，请上传20MB以下的文件。",
+    "fileTooLarge": "文件总大小超过限制。",
+    "fileTooLargeServer": "文件过大，请控制在限制内。",
+    "leaderOnly": "仅班长可上传资料。",
     "deleteConfirm": "确定要删除此资料吗？",
     "deleteBtn": "删除",
     "deleteSuccess": "资料已删除。",
     "uploadSuccess": "资料已上传。",
     "serverError": "发生错误，请稍后重试。",
     "files": "附件",
-    "linkBtn": "打开链接"
+    "linkBtn": "打开链接",
+    "create": {
+      "title": "上传资料",
+      "fileHint": "最多{{files}}个文件，总计{{mb}}MB以内",
+      "limitSectionTitle": "文件上限",
+      "currentLimits": "当前上限：最多{{files}}个，{{mb}}MB",
+      "requestLimitExpand": "申请扩大上限",
+      "reqMaxFiles": "最大文件数",
+      "reqMaxSizeMb": "最大容量（MB）",
+      "reqReason": "申请理由（可选）",
+      "reqReasonPlaceholder": "请说明需要扩大上限的原因",
+      "submitRequest": "提交申请",
+      "limitRequested": "上限扩大申请已提交。"
+    }
   },
   "report": {
     "reportBtn": "举报",
@@ -665,6 +679,9 @@
       "reject": "拒绝",
       "approveSuccess": "已通过。",
       "rejectSuccess": "已拒绝。"
+    },
+    "resourceLimitRequests": {
+      "title": "资料室文件上限扩大申请"
     },
     "orgs": {
       "title": "组织创建申请",

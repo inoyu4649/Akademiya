@@ -21,14 +21,13 @@ const storage = multer.diskStorage({
   },
 });
 
-// 파일당 최대 100MB (총합 20MB는 라우터에서 검사)
+// 파일당 최대 100MB (총합은 클래스 한도에서 검사)
 const upload = multer({
   storage,
   limits: { fileSize: 100 * 1024 * 1024 },
 });
 
-const MAX_RESOURCE_SIZE_MB = 20;
-
+// ── helpers ──────────────────────────────────────────────────────────────────
 async function getClassPermission(userId: number, classId: number): Promise<number | null> {
   const [rows] = await pool.execute(
     "SELECT permission FROM class_members WHERE class_id = ? AND user_id = ?",
@@ -38,13 +37,41 @@ async function getClassPermission(userId: number, classId: number): Promise<numb
   return (rows as any[])[0].permission as number;
 }
 
+async function getClassLimits(classId: number): Promise<{ maxFiles: number; maxSizeMb: number } | null> {
+  const [rows] = await pool.execute(
+    "SELECT max_resource_files, max_resource_size_mb FROM classes WHERE id = ?",
+    [classId]
+  ) as any[];
+  if (!(rows as any[]).length) return null;
+  const r = (rows as any[])[0];
+  return {
+    maxFiles:  r.max_resource_files  ?? 20,
+    maxSizeMb: r.max_resource_size_mb ?? 20,
+  };
+}
+
 function deleteUploadedFiles(files: Express.Multer.File[]) {
   for (const f of files) {
     try { fs.unlinkSync(f.path); } catch { /* ignore */ }
   }
 }
 
-// ── GET /api/resources/class/:classId — 자료 목록 ───────────────────────────
+// ── GET /api/resources/class/:classId/limits — 업로드 한도 조회 ───────────────
+router.get("/class/:classId/limits", requireAuth, async (req, res) => {
+  const classId = Number(req.params.classId);
+  const userId  = req.user!.id;
+
+  const perm = await getClassPermission(userId, classId);
+  if (perm === null) { res.status(403).json({ error: "forbidden" }); return; }
+  if (perm < 1)      { res.status(403).json({ error: "resource.leaderOnly" }); return; }
+
+  const limits = await getClassLimits(classId);
+  if (!limits) { res.status(404).json({ error: "notFound" }); return; }
+
+  res.json(limits);
+});
+
+// ── GET /api/resources/class/:classId — 자료 목록 ────────────────────────────
 router.get("/class/:classId", requireAuth, async (req, res) => {
   const classId = Number(req.params.classId);
   const userId  = req.user!.id;
@@ -73,12 +100,12 @@ router.get("/class/:classId", requireAuth, async (req, res) => {
   res.json({ resources: rows, isLeader: perm >= 1 });
 });
 
-// ── POST /api/resources — 자료 업로드 (반장만) ───────────────────────────────
+// ── POST /api/resources — 자료 업로드 (반장만) ────────────────────────────────
 router.post(
   "/",
   requireAuth,
   (req, res, next) => {
-    upload.array("files", 10)(req, res, (err) => {
+    upload.array("files", 20)(req, res, (err) => {
       if (err instanceof multer.MulterError) {
         res.status(400).json({ error: "resource.fileTooLarge" });
         return;
@@ -100,7 +127,6 @@ router.post(
       res.status(400).json({ error: "resource.missingFields" });
       return;
     }
-
     if (files.length === 0 && !linkTrim) {
       res.status(400).json({ error: "resource.noContent" });
       return;
@@ -118,11 +144,24 @@ router.post(
       return;
     }
 
-    // 총 파일 크기 20MB 확인
-    const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
-    if (totalBytes > MAX_RESOURCE_SIZE_MB * 1024 * 1024) {
+    // 클래스 한도 확인
+    const limits = await getClassLimits(classId);
+    if (!limits) {
       deleteUploadedFiles(files);
-      res.status(400).json({ error: "resource.totalTooLarge", maxSizeMb: MAX_RESOURCE_SIZE_MB });
+      res.status(404).json({ error: "notFound" });
+      return;
+    }
+
+    if (files.length > limits.maxFiles) {
+      deleteUploadedFiles(files);
+      res.status(400).json({ error: "resource.tooManyFiles", maxFiles: limits.maxFiles });
+      return;
+    }
+
+    const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+    if (totalBytes > limits.maxSizeMb * 1024 * 1024) {
+      deleteUploadedFiles(files);
+      res.status(400).json({ error: "resource.totalTooLarge", maxSizeMb: limits.maxSizeMb });
       return;
     }
 
@@ -156,7 +195,40 @@ router.post(
   }
 );
 
-// ── DELETE /api/resources/:id — 자료 삭제 (반장만) ──────────────────────────
+// ── POST /api/resources/limit-request — 한도 확장 요청 ───────────────────────
+router.post("/limit-request", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
+  const { class_id, requested_max_files, requested_max_size_mb, reason } = req.body as any;
+
+  if (!class_id || !requested_max_files || !requested_max_size_mb) {
+    res.status(400).json({ error: "resource.missingFields" });
+    return;
+  }
+
+  const classId = Number(class_id);
+  const perm = await getClassPermission(userId, classId);
+  if (perm === null || perm < 1) {
+    res.status(403).json({ error: "forbidden" });
+    return;
+  }
+
+  await pool.execute(
+    `INSERT INTO resource_limit_requests
+       (class_id, requester_id, requested_max_files, requested_max_size_mb, reason)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      classId,
+      userId,
+      Number(requested_max_files),
+      Number(requested_max_size_mb),
+      reason?.trim() || null,
+    ]
+  );
+
+  res.status(201).json({ message: "requested" });
+});
+
+// ── DELETE /api/resources/:id — 자료 삭제 (반장만) ───────────────────────────
 router.delete("/:id", requireAuth, async (req, res) => {
   const resourceId = Number(req.params.id);
   const userId     = req.user!.id;

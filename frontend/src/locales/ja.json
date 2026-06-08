@@ -290,19 +290,33 @@
     "descPlaceholder": "資料の説明を入力してください",
     "tabFile": "ファイルアップロード",
     "tabLink": "リンク",
-    "fileLabel": "ファイル（合計最大20MB）",
+    "fileLabel": "ファイル（合計上限）",
     "linkLabel": "リンクURL",
     "linkPlaceholder": "https://...",
     "noContent": "ファイルまたはリンクを入力してください。",
-    "fileTooLarge": "ファイルの合計サイズが20MBを超えています。",
-    "fileTooLargeServer": "ファイルが大きすぎます。20MB以下のファイルをアップロードしてください。",
+    "fileTooLarge": "ファイルの合計サイズが上限を超えています。",
+    "fileTooLargeServer": "ファイルが大きすぎます。上限以内に収めてください。",
+    "leaderOnly": "班長のみ資料をアップロードできます。",
     "deleteConfirm": "この資料を削除しますか？",
     "deleteBtn": "削除",
     "deleteSuccess": "資料を削除しました。",
     "uploadSuccess": "資料をアップロードしました。",
     "serverError": "エラーが発生しました。後でもう一度お試しください。",
     "files": "添付ファイル",
-    "linkBtn": "リンクを開く"
+    "linkBtn": "リンクを開く",
+    "create": {
+      "title": "資料アップロード",
+      "fileHint": "最大{{files}}個、合計{{mb}}MB以内",
+      "limitSectionTitle": "ファイル上限",
+      "currentLimits": "現在の上限: 最大{{files}}個、{{mb}}MB",
+      "requestLimitExpand": "上限拡張申請",
+      "reqMaxFiles": "最大ファイル数",
+      "reqMaxSizeMb": "最大サイズ（MB）",
+      "reqReason": "申請理由（任意）",
+      "reqReasonPlaceholder": "上限拡張が必要な理由を入力してください",
+      "submitRequest": "申請",
+      "limitRequested": "上限拡張申請が受け付けられました。"
+    }
   },
   "report": {
     "reportBtn": "通報",
@@ -665,6 +679,9 @@
       "reject": "却下",
       "approveSuccess": "承認しました。",
       "rejectSuccess": "却下しました。"
+    },
+    "resourceLimitRequests": {
+      "title": "資料室ファイル上限拡張申請"
     },
     "orgs": {
       "title": "組織作成申請",

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/auth.store";
-import { adminApi, type PendingOrg, type LimitRequest } from "../../api/admin.api";
+import { adminApi, type PendingOrg, type LimitRequest, type ResourceLimitRequest } from "../../api/admin.api";
 import { bugReportApi, type BugReport } from "../../api/bugReport.api";
 import styles from "./AdminPage.module.css";
 
@@ -41,8 +41,10 @@ export default function AdminPage() {
   const [savingId,      setSavingId]      = useState<number | null>(null);
 
   // ── Limit requests tab ──
-  const [limitReqs,     setLimitReqs]     = useState<LimitRequest[]>([]);
-  const [limitNotes,    setLimitNotes]    = useState<Record<number, string>>({});
+  const [limitReqs,         setLimitReqs]         = useState<LimitRequest[]>([]);
+  const [limitNotes,        setLimitNotes]         = useState<Record<number, string>>({});
+  const [resourceLimitReqs, setResourceLimitReqs] = useState<ResourceLimitRequest[]>([]);
+  const [resLimitNotes,     setResLimitNotes]      = useState<Record<number, string>>({});
 
   const [toast, setToast] = useState("");
 
@@ -63,6 +65,9 @@ export default function AdminPage() {
     if (tab !== "limitRequests") return;
     adminApi.getLimitRequests("pending")
       .then((r) => setLimitReqs(r.data.requests))
+      .catch(() => {});
+    adminApi.getResourceLimitRequests("pending")
+      .then((r) => setResourceLimitReqs(r.data.requests))
       .catch(() => {});
   }, [tab]);
 
@@ -296,6 +301,10 @@ export default function AdminPage() {
       {/* ── Limit requests tab ── */}
       {tab === "limitRequests" && (
         <section className={styles.section}>
+          {/* ── 과제 제출 한도 확장 요청 ── */}
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 12 }}>
+            {t("admin.limitRequests.title")}
+          </h3>
           {limitReqs.length === 0 ? (
             <p className={styles.empty}>{t("admin.limitRequests.noRequests")}</p>
           ) : (
@@ -353,6 +362,74 @@ export default function AdminPage() {
                       onClick={async () => {
                         await adminApi.rejectLimitRequest(r.id, limitNotes[r.id]);
                         setLimitReqs((prev) => prev.filter((x) => x.id !== r.id));
+                        showToast(t("admin.limitRequests.rejectSuccess"));
+                      }}
+                    >
+                      {t("admin.limitRequests.reject")}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── 자료실 파일 한도 확장 요청 ── */}
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 12, marginTop: 28 }}>
+            {t("admin.resourceLimitRequests.title")}
+          </h3>
+          {resourceLimitReqs.length === 0 ? (
+            <p className={styles.empty}>{t("admin.limitRequests.noRequests")}</p>
+          ) : (
+            <div className={styles.list}>
+              {resourceLimitReqs.map((r) => (
+                <div key={r.id} className={styles.card}>
+                  <div className={styles.cardMain}>
+                    <div className={styles.orgName}>{r.class_name}</div>
+                    <div className={styles.orgMeta}>
+                      <span>
+                        <span className={styles.metaLabel}>{t("admin.limitRequests.requester")}:</span>
+                        {" "}{r.requester_name} ({r.requester_email})
+                      </span>
+                      <span>
+                        <span className={styles.metaLabel}>{t("admin.limitRequests.current")}:</span>
+                        {" "}{r.current_max_files}개 / {r.current_max_size_mb}MB
+                      </span>
+                      <span>
+                        <span className={styles.metaLabel}>{t("admin.limitRequests.requested")}:</span>
+                        {" "}{r.requested_max_files}개 / {r.requested_max_size_mb}MB
+                      </span>
+                      {r.reason && (
+                        <span>
+                          <span className={styles.metaLabel}>{t("admin.limitRequests.reason")}:</span>
+                          {" "}{r.reason}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
+                      <input
+                        className={styles.noteInput}
+                        placeholder={t("admin.limitRequests.notePlaceholder")}
+                        value={resLimitNotes[r.id] ?? ""}
+                        onChange={(e) => setResLimitNotes((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className={styles.cardActions}>
+                    <button
+                      className={styles.btnApprove}
+                      onClick={async () => {
+                        await adminApi.approveResourceLimitRequest(r.id, resLimitNotes[r.id]);
+                        setResourceLimitReqs((prev) => prev.filter((x) => x.id !== r.id));
+                        showToast(t("admin.limitRequests.approveSuccess"));
+                      }}
+                    >
+                      {t("admin.limitRequests.approve")}
+                    </button>
+                    <button
+                      className={styles.btnReject}
+                      onClick={async () => {
+                        await adminApi.rejectResourceLimitRequest(r.id, resLimitNotes[r.id]);
+                        setResourceLimitReqs((prev) => prev.filter((x) => x.id !== r.id));
                         showToast(t("admin.limitRequests.rejectSuccess"));
                       }}
                     >

@@ -32,6 +32,12 @@ export const resourceApi = {
       { headers: authHeaders(), withCredentials: true }
     ),
 
+  getLimits: (classId: number) =>
+    axios.get<{ maxFiles: number; maxSizeMb: number }>(
+      `${API}/api/resources/class/${classId}/limits`,
+      { headers: authHeaders(), withCredentials: true }
+    ),
+
   upload: (formData: FormData) =>
     axios.post<{ id: number }>(`${API}/api/resources`, formData, {
       headers: { ...authHeaders() },

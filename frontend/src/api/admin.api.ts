@@ -30,6 +30,22 @@ export interface LimitRequest {
   created_at: string;
 }
 
+export interface ResourceLimitRequest {
+  id: number;
+  class_id: number;
+  class_name: string;
+  requester_name: string;
+  requester_email: string;
+  requested_max_files: number;
+  requested_max_size_mb: number;
+  current_max_files: number;
+  current_max_size_mb: number;
+  reason: string | null;
+  status: string;
+  admin_note: string | null;
+  created_at: string;
+}
+
 export const adminApi = {
   getOrgs: () => client.get<{ orgs: PendingOrg[] }>("/admin/orgs"),
   approveOrg: (id: number) => client.post(`/admin/orgs/${id}/approve`),
@@ -41,4 +57,11 @@ export const adminApi = {
     client.post(`/admin/limit-requests/${id}/approve`, { admin_note }),
   rejectLimitRequest: (id: number, admin_note?: string) =>
     client.post(`/admin/limit-requests/${id}/reject`, { admin_note }),
+
+  getResourceLimitRequests: (status = "pending") =>
+    client.get<{ requests: ResourceLimitRequest[] }>("/admin/resource-limit-requests", { params: { status } }),
+  approveResourceLimitRequest: (id: number, admin_note?: string) =>
+    client.post(`/admin/resource-limit-requests/${id}/approve`, { admin_note }),
+  rejectResourceLimitRequest: (id: number, admin_note?: string) =>
+    client.post(`/admin/resource-limit-requests/${id}/reject`, { admin_note }),
 };

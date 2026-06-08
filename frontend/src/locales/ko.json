@@ -294,15 +294,29 @@
     "linkLabel": "링크 URL",
     "linkPlaceholder": "https://...",
     "noContent": "파일 또는 링크를 입력해주세요.",
-    "fileTooLarge": "파일 크기 합계가 최대 20MB를 초과합니다.",
-    "fileTooLargeServer": "파일이 너무 큽니다. 20MB 이하로 올려주세요.",
+    "fileTooLarge": "파일 크기 합계가 한도를 초과합니다.",
+    "fileTooLargeServer": "파일이 너무 큽니다. 한도 이하로 올려주세요.",
+    "leaderOnly": "반장만 자료를 업로드할 수 있습니다.",
     "deleteConfirm": "이 자료를 삭제하시겠습니까?",
     "deleteBtn": "삭제",
     "deleteSuccess": "자료가 삭제되었습니다.",
     "uploadSuccess": "자료가 업로드되었습니다.",
     "serverError": "오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
     "files": "첨부파일",
-    "linkBtn": "링크 열기"
+    "linkBtn": "링크 열기",
+    "create": {
+      "title": "자료 업로드",
+      "fileHint": "최대 {{files}}개, 합계 {{mb}}MB 이하",
+      "limitSectionTitle": "파일 한도",
+      "currentLimits": "현재 한도: 최대 {{files}}개, {{mb}}MB",
+      "requestLimitExpand": "한도 확장 요청",
+      "reqMaxFiles": "최대 파일 수",
+      "reqMaxSizeMb": "최대 크기 (MB)",
+      "reqReason": "요청 사유 (선택)",
+      "reqReasonPlaceholder": "한도 확장이 필요한 이유를 입력하세요",
+      "submitRequest": "확장 요청",
+      "limitRequested": "한도 확장 요청이 접수되었습니다."
+    }
   },
   "report": {
     "reportBtn": "신고",
@@ -665,6 +679,9 @@
       "reject": "거절",
       "approveSuccess": "승인되었습니다.",
       "rejectSuccess": "거절되었습니다."
+    },
+    "resourceLimitRequests": {
+      "title": "자료실 파일 한도 확장 요청"
     },
     "orgs": {
       "title": "조직 생성 신청",

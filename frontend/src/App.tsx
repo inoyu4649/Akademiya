@@ -21,6 +21,7 @@ import ClassApplyPage from "./pages/class/ClassApplyPage";
 import ClassJoinPage from "./pages/class/ClassJoinPage";
 import ClassDetailPage from "./pages/class/ClassDetailPage";
 import ClassResourcesPage from "./pages/class/ClassResourcesPage";
+import ClassResourceCreatePage from "./pages/class/ClassResourceCreatePage";
 import AssignmentListPage from "./pages/assignment/AssignmentListPage";
 import AssignmentCreatePage from "./pages/assignment/AssignmentCreatePage";
 import AssignmentDetailPage from "./pages/assignment/AssignmentDetailPage";
@@ -70,7 +71,8 @@ const router = createBrowserRouter([
       { path: "classes/apply", element: <ClassApplyPage /> },
       { path: "classes/join", element: <ClassJoinPage /> },
       { path: "classes/:id", element: <ClassDetailPage /> },
-      { path: "classes/:classId/resources",   element: <ClassResourcesPage /> },
+      { path: "classes/:classId/resources",        element: <ClassResourcesPage /> },
+      { path: "classes/:classId/resources/create", element: <ClassResourceCreatePage /> },
       { path: "classes/:classId/assignments", element: <AssignmentListPage /> },
       { path: "classes/:classId/assignments/create", element: <AssignmentCreatePage /> },
       { path: "assignments/:id", element: <AssignmentDetailPage /> },
