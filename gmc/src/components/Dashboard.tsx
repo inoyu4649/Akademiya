@@ -157,7 +157,7 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
         <div className="header-left">
           <img src="/logo_gmc.png" alt="GMCAuto" style={{ height: '30px', objectFit: 'contain' }} />
           <h1>GMCAuto 2</h1>
-          <span className="version">v2.6</span>
+          <span className="version">v2.6.1</span>
         </div>
         <div className="header-right">
           <button
