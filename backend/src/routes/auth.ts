@@ -267,7 +267,7 @@ router.post("/forgot-password", async (req, res) => {
       [userId, hashToken(code), expiresAt]
     );
 
-    const lang: "ko" | "en" = language === "ko" ? "ko" : "en";
+    const lang = language || "en";
     await sendPasswordResetEmail(email.toLowerCase(), code, lang);
   } catch (err) {
     console.error("[forgot-password]", err);
