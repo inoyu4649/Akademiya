@@ -4,7 +4,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS 自动申请程序",
-    "version": "v2.5",
+    "version": "v2.6.1",
     "contact": "联系方式: 022207@hafs.hs.kr",
     "madeWith": "由 Claude Code 制作",
     "loading": "正在验证登录信息...",
@@ -28,7 +28,11 @@
     "ak": {
       "desc": "使用 Akademiya 账户登录",
       "descSub": "关联 going.hafs.hs.kr 凭据一次后，将自动登录。",
+      "descSub2": "已有 GMCAuto 账户的用户在通过 Akademiya 关联时，输入学号即可自动保留申请时间。",
       "loginBtn": "使用 Akademiya 登录",
+      "warningTitle": "Akademiya 登录须知",
+      "hafsGoogleWarning": "在 Akademiya 上必须使用学校 Google 账户（@hafs.hs.kr）登录，才能正常使用 GMCAuto。",
+      "confirmProceed": "确认并继续",
       "hafsOnly": "仅限已加入 Akademiya HAFS 组织的账户使用。",
       "verifying": "正在验证 Akademiya 身份...",
       "verifyFailed": "代码验证失败，请重试。",

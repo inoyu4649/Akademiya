@@ -9,7 +9,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS 자동신청 프로그램",
-    "version": "v2.5",
+    "version": "v2.6.1",
     "contact": "문의: 022207@hafs.hs.kr",
     "madeWith": "Claude Code로 제작됨",
     "loading": "로그인 정보 확인 중...",
@@ -33,7 +33,11 @@
     "ak": {
       "desc": "Akademiya 계정으로 로그인",
       "descSub": "최초 1회 going.hafs.hs.kr 비밀번호 연동 후 자동 로그인됩니다.",
+      "descSub2": "기존 GMCAuto 계정 사용자는 Akademiya 연동 시 학번 입력으로 자동으로 신청 시간이 유지됩니다.",
       "loginBtn": "Akademiya로 로그인",
+      "warningTitle": "Akademiya 로그인 안내",
+      "hafsGoogleWarning": "Akademiya에서 무조건 학교 Google 계정(@hafs.hs.kr)으로 로그인해야 GMCAuto를 원활하게 사용할 수 있습니다.",
+      "confirmProceed": "확인 후 계속",
       "hafsOnly": "Akademiya에 HAFS 조직으로 가입된 계정만 사용 가능합니다.",
       "verifying": "Akademiya 인증 확인 중...",
       "verifyFailed": "코드 검증 실패. 다시 시도해주세요.",

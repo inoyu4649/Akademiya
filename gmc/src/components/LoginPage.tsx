@@ -40,12 +40,13 @@ interface AkUserInfo {
 
 export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme }: LoginPageProps) {
   const { t } = useTranslation()
-  const [tab, setTab]           = useState<'gmc' | 'akademiya'>('gmc')
+  const [tab, setTab]           = useState<'gmc' | 'akademiya'>('akademiya')
   const [studentNo, setStudentNo] = useState('')
   const [password, setPassword]   = useState('')
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState('')
 
+  const [showAkWarning, setShowAkWarning] = useState(false)
   const [akStep, setAkStep]         = useState<AkStep>('idle')
   const [akUserInfo, setAkUserInfo]  = useState<AkUserInfo | null>(null)
   const [akStudentNo, setAkStudentNo] = useState('')
@@ -214,8 +215,8 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
 
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
           {[
-            { id: 'gmc' as const,       label: t('auth.tabGmc',       'GMCAuto 계정') },
             { id: 'akademiya' as const, label: t('auth.tabAkademiya', 'Akademiya 로그인') },
+            { id: 'gmc' as const,       label: t('auth.tabGmc',       'GMCAuto 계정') },
           ].map(tb => (
             <button
               key={tb.id}
@@ -234,7 +235,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
         </div>
 
         <div className="card-body">
-          {sessionExpired && tab === 'gmc' && !error && (
+          {sessionExpired && tab === 'akademiya' && !akError && (
             <div className="alert alert-warning">{t('auth.sessionExpired')}</div>
           )}
 
@@ -281,8 +282,12 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
                       {t('auth.ak.desc')}
                     </strong>
                     {t('auth.ak.descSub')}
+                    <br />
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', display: 'inline-block' }}>
+                      {t('auth.ak.descSub2')}
+                    </span>
                   </div>
-                  <button className="btn btn-primary btn-block btn-lg" onClick={handleAkademiyaLogin}>
+                  <button className="btn btn-primary btn-block btn-lg" onClick={() => setShowAkWarning(true)}>
                     {t('auth.ak.loginBtn')}
                   </button>
                   <p style={{ textAlign: 'center', marginTop: '14px', fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -338,6 +343,38 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
           )}
         </div>
       </div>
+
+      {showAkWarning && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
+          }}
+          onClick={() => setShowAkWarning(false)}
+        >
+          <div
+            className="card"
+            style={{ maxWidth: '360px', margin: '16px', padding: '24px 20px' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 12px', color: 'var(--text)', fontSize: '15px', fontWeight: 600 }}>
+              {t('auth.ak.warningTitle')}
+            </h3>
+            <p style={{ fontSize: '13.5px', lineHeight: '1.7', color: 'var(--text-secondary)', margin: '0 0 20px' }}>
+              {t('auth.ak.hafsGoogleWarning')}
+            </p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowAkWarning(false)}>
+                {t('common.cancel')}
+              </button>
+              <button className="btn btn-primary" style={{ flex: 1 }}
+                onClick={() => { setShowAkWarning(false); handleAkademiyaLogin() }}>
+                {t('auth.ak.confirmProceed')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
