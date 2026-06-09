@@ -25,14 +25,18 @@ export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   initialized: false,
   setAuth: (user, accessToken) => {
-    const lang = countryToLang(user.country);
-    setLanguage(lang);
+    if (user.country) {
+      setLanguage(countryToLang(user.country));
+    }
     set({ user, accessToken, initialized: true });
   },
   clearAuth: () => set({ user: null, accessToken: null }),
   updateUser: (updates) =>
-    set((state) => ({
-      user: state.user ? { ...state.user, ...updates } : null,
-    })),
+    set((state) => {
+      if (updates.country !== undefined) {
+        setLanguage(countryToLang(updates.country));
+      }
+      return { user: state.user ? { ...state.user, ...updates } : null };
+    }),
   setInitialized: (v) => set({ initialized: v }),
 }));
