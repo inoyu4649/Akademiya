@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { setLanguage, countryToLang } from "../i18n";
+import { setLanguage, type SupportedLang } from "../i18n";
 
 export interface AuthUser {
   id: number;
@@ -7,6 +7,7 @@ export interface AuthUser {
   displayName: string;
   country: string | null;
   phone: string | null;
+  language: string | null;
   role: "user" | "admin";
 }
 
@@ -25,16 +26,16 @@ export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   initialized: false,
   setAuth: (user, accessToken) => {
-    if (user.country) {
-      setLanguage(countryToLang(user.country));
+    if (user.language) {
+      setLanguage(user.language as SupportedLang);
     }
     set({ user, accessToken, initialized: true });
   },
   clearAuth: () => set({ user: null, accessToken: null }),
   updateUser: (updates) =>
     set((state) => {
-      if (updates.country !== undefined) {
-        setLanguage(countryToLang(updates.country));
+      if (updates.language) {
+        setLanguage(updates.language as SupportedLang);
       }
       return { user: state.user ? { ...state.user, ...updates } : null };
     }),

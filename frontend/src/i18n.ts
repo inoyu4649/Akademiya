@@ -38,11 +38,4 @@ export function setLanguage(lang: SupportedLang) {
   localStorage.setItem("lang", lang);
 }
 
-export function countryToLang(country: string | null | undefined): SupportedLang {
-  if (country === "KR") return "ko";
-  if (country === "JP") return "ja";
-  if (country === "CN" || country === "TW" || country === "HK") return "zh";
-  return "en";
-}
-
 export default i18n;

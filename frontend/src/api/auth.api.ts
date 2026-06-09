@@ -14,6 +14,7 @@ export const authApi = {
     displayName: string;
     country: string;
     phone: string;
+    language?: string;
     privacyVersion: number;
     termsVersion: number;
   }) => client.post<AuthResponse>("/auth/register", data),
@@ -37,6 +38,7 @@ export const authApi = {
     country?: string;
     phone?: string;
     newPassword?: string;
+    language?: string;
   }) => client.patch<AuthUser>("/auth/profile", data),
 
   deleteAccount: (password?: string) =>

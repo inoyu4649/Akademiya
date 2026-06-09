@@ -169,7 +169,9 @@ export default function ProfilePage() {
           <label className={s.label}>{t("auth.profile.countryLabel")}</label>
           <select className={s.select} value={form.country} onChange={setField("country")}>
             {sortedCountries(lang).map((c) => (
-              <option key={c.code} value={c.code}>{lang === "ko" ? c.ko : c.en}</option>
+              <option key={c.code} value={c.code}>
+                {lang === "ko" ? c.ko : lang === "ja" ? c.ja : lang === "zh" ? c.zh : c.en}
+              </option>
             ))}
           </select>
         </div>

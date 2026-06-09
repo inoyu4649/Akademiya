@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/auth.store";
@@ -10,6 +10,7 @@ import PrivacyPolicyModal from "../privacy/PrivacyPolicyModal";
 import TermsOfUseModal from "../privacy/TermsOfUseModal";
 import styles from "./AppLayout.module.css";
 import client from "../../api/client";
+import { setLanguage, type SupportedLang } from "../../i18n";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -153,6 +154,79 @@ function IconMoon() {
   );
 }
 
+function IconGlobe() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  );
+}
+
+const LANG_OPTIONS: { code: SupportedLang; label: string }[] = [
+  { code: "ko", label: "한국어" },
+  { code: "en", label: "English" },
+  { code: "ja", label: "日本語" },
+  { code: "zh", label: "中文" },
+];
+
+function LanguageSelector() {
+  const { i18n } = useTranslation();
+  const { user, updateUser } = useAuthStore();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const currentLang = i18n.language as SupportedLang;
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const handleSelect = async (lang: SupportedLang) => {
+    setOpen(false);
+    setLanguage(lang);
+    if (user) {
+      try {
+        const res = await authApi.updateProfile({ language: lang });
+        updateUser(res.data);
+      } catch {
+        // 언어는 이미 로컬에 적용됨 — API 실패 무시
+      }
+    }
+  };
+
+  return (
+    <div className={styles.langSelector} ref={ref}>
+      <button
+        className={styles.themeBtn}
+        onClick={() => setOpen((v) => !v)}
+        aria-label="언어 선택"
+        title="언어 선택"
+      >
+        <IconGlobe />
+      </button>
+      {open && (
+        <div className={styles.langDropdown}>
+          {LANG_OPTIONS.map((l) => (
+            <button
+              key={l.code}
+              className={`${styles.langOption} ${currentLang === l.code ? styles.langOptionActive : ""}`}
+              onClick={() => handleSelect(l.code)}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function IconGmc() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -258,6 +332,7 @@ export default function AppLayout() {
           <img src="/logo.png" className={styles.logoImg} alt="Akademiya" />
         </NavLink>
         <div className={styles.mobileHeaderRight}>
+          <LanguageSelector />
           <button
             className={styles.themeBtn}
             onClick={toggleTheme}
@@ -286,6 +361,9 @@ export default function AppLayout() {
             <img src="/logo.png" className={styles.logoImg} alt="Akademiya" />
           </NavLink>
           <div className={styles.sidebarHeaderRight}>
+            <span className={styles.desktopOnly}>
+              <LanguageSelector />
+            </span>
             <span className={styles.desktopOnly}>
               <button
                 className={styles.themeBtn}

@@ -39,6 +39,7 @@
       "confirmPasswordPlaceholder": "パスワードを再入力してください",
       "countryLabel": "居住国",
       "countryPlaceholder": "国を選択してください",
+      "languageLabel": "言語",
       "phoneLabel": "電話番号",
       "phonePlaceholder": "電話番号を入力してください",
       "submitButton": "登録する",
@@ -104,6 +105,7 @@
       "title": "プロフィールの完成",
       "description": "サービスをご利用いただくために、追加情報を入力してください。",
       "countryLabel": "居住国",
+      "languageLabel": "言語",
       "phoneLabel": "電話番号",
       "submitButton": "完了"
     },

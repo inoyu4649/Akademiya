@@ -4,15 +4,23 @@ import { useTranslation } from "react-i18next";
 import AuthLayout, { css as s } from "../../components/layout/AuthLayout";
 import { authApi } from "../../api/auth.api";
 import { useAuthStore } from "../../store/auth.store";
-import { sortedCountries } from "../../utils/countries";
+import { sortedCountries, type Country } from "../../utils/countries";
 import { PRIVACY_POLICY_VERSION, TERMS_OF_USE_VERSION } from "../privacy/privacyContent";
+import type { SupportedLang } from "../../i18n";
 import rs from "./RegisterPage.module.css";
+
+const LANG_OPTIONS: { code: SupportedLang; label: string }[] = [
+  { code: "ko", label: "한국어" },
+  { code: "en", label: "English" },
+  { code: "ja", label: "日本語" },
+  { code: "zh", label: "中文" },
+];
 
 export default function RegisterPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
-  const lang = i18n.language as "ko" | "en" | "ja" | "zh";
+  const lang = i18n.language as SupportedLang;
 
   const [form, setForm] = useState({
     displayName: "",
@@ -21,6 +29,7 @@ export default function RegisterPage() {
     confirmPassword: "",
     country: "",
     phone: "",
+    language: lang,
   });
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
@@ -57,6 +66,7 @@ export default function RegisterPage() {
         displayName: form.displayName,
         country: form.country,
         phone: form.phone,
+        language: form.language,
         privacyVersion: PRIVACY_POLICY_VERSION,
         termsVersion: TERMS_OF_USE_VERSION,
       });
@@ -72,6 +82,12 @@ export default function RegisterPage() {
   };
 
   const countries = sortedCountries(lang);
+  const getLabel = (c: Country) => {
+    if (lang === "ko") return c.ko;
+    if (lang === "ja") return c.ja;
+    if (lang === "zh") return c.zh;
+    return c.en;
+  };
 
   return (
     <AuthLayout title={t("auth.register.title")}>
@@ -102,10 +118,18 @@ export default function RegisterPage() {
           <select className={s.select} value={form.country} onChange={set("country")}>
             <option value="">{t("auth.register.countryPlaceholder")}</option>
             {countries.map((c) => (
-              <option key={c.code} value={c.code}>{lang === "ko" ? c.ko : c.en}</option>
+              <option key={c.code} value={c.code}>{getLabel(c)}</option>
             ))}
           </select>
           {errors.country && <p className={s.fieldError}>{errors.country}</p>}
+        </div>
+        <div className={s.field}>
+          <label className={s.label}>{t("auth.register.languageLabel")}</label>
+          <select className={s.select} value={form.language} onChange={set("language")}>
+            {LANG_OPTIONS.map((l) => (
+              <option key={l.code} value={l.code}>{l.label}</option>
+            ))}
+          </select>
         </div>
         <div className={s.field}>
           <label className={s.label}>{t("auth.register.phoneLabel")}</label>

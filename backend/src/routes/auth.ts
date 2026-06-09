@@ -40,13 +40,14 @@ function userPayload(u: DbUser) {
     displayName: u.display_name as string,
     country: u.country as string | null,
     phone: u.phone as string | null,
+    language: u.language as string | null,
     role: u.role as string,
   };
 }
 
 // ─── POST /register ──────────────────────────────────────────────────────────
 router.post("/register", async (req, res) => {
-  const { email, password, displayName, country, phone, privacyVersion, termsVersion } =
+  const { email, password, displayName, country, phone, language, privacyVersion, termsVersion } =
     req.body as Record<string, string>;
 
   if (!email || !password || !displayName || !country || !phone) {
@@ -82,8 +83,8 @@ router.post("/register", async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     const [result] = await pool.query(
-      "INSERT INTO users (email, password_hash, display_name, country, phone) VALUES (?, ?, ?, ?, ?)",
-      [email.toLowerCase(), passwordHash, displayName, country, phone]
+      "INSERT INTO users (email, password_hash, display_name, country, phone, language) VALUES (?, ?, ?, ?, ?, ?)",
+      [email.toLowerCase(), passwordHash, displayName, country, phone, language || null]
     );
     const userId = (result as { insertId: number }).insertId;
 
@@ -124,7 +125,7 @@ router.post("/register", async (req, res) => {
     setRefreshCookie(res, refreshToken);
     res.status(201).json({
       accessToken,
-      user: { id: userId, email: email.toLowerCase(), displayName, country, phone, role: "user" },
+      user: { id: userId, email: email.toLowerCase(), displayName, country, phone, language: language || null, role: "user" },
     });
   } catch (err) {
     console.error("[register]", err);
@@ -191,7 +192,7 @@ router.post("/refresh", async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      `SELECT rt.user_id, u.email, u.role, u.display_name, u.country, u.phone
+      `SELECT rt.user_id, u.email, u.role, u.display_name, u.country, u.phone, u.language
        FROM refresh_tokens rt
        JOIN users u ON u.id = rt.user_id
        WHERE rt.token_hash = ? AND rt.expires_at > NOW()`,
@@ -249,13 +250,13 @@ router.post("/forgot-password", async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      "SELECT id, country FROM users WHERE email = ?",
+      "SELECT id, language FROM users WHERE email = ?",
       [email.toLowerCase()]
     );
-    const users = rows as { id: number; country: string }[];
+    const users = rows as { id: number; language: string | null }[];
     if (users.length === 0) return;
 
-    const { id: userId, country } = users[0];
+    const { id: userId, language } = users[0];
     const code = generateResetCode();
     const expiresAt = new Date(Date.now() + RESET_CODE_TTL_MIN * 60 * 1000);
 
@@ -266,7 +267,7 @@ router.post("/forgot-password", async (req, res) => {
       [userId, hashToken(code), expiresAt]
     );
 
-    const lang = country === "KR" ? "ko" : "en";
+    const lang = language || "en";
     await sendPasswordResetEmail(email.toLowerCase(), code, lang);
   } catch (err) {
     console.error("[forgot-password]", err);
@@ -316,7 +317,7 @@ router.post("/reset-password", async (req, res) => {
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, display_name, country, phone, role FROM users WHERE id = ?",
+      "SELECT id, email, display_name, country, phone, language, role FROM users WHERE id = ?",
       [req.user!.id]
     );
     const users = rows as DbUser[];
@@ -333,7 +334,7 @@ router.get("/me", requireAuth, async (req, res) => {
 
 // ─── PATCH /profile ───────────────────────────────────────────────────────────
 router.patch("/profile", requireAuth, async (req, res) => {
-  const { currentPassword, displayName, country, phone, newPassword } =
+  const { currentPassword, displayName, country, phone, newPassword, language } =
     req.body as Record<string, string>;
 
   try {
@@ -345,7 +346,10 @@ router.patch("/profile", requireAuth, async (req, res) => {
       return;
     }
 
-    if (user.password_hash) {
+    const hasOtherChanges = !!(displayName || country || phone || newPassword);
+    const isLanguageOnlyUpdate = !!language && !hasOtherChanges;
+
+    if (!isLanguageOnlyUpdate && user.password_hash) {
       if (!currentPassword) {
         res.status(400).json({ error: "CURRENT_PASSWORD_REQUIRED" });
         return;
@@ -362,6 +366,7 @@ router.patch("/profile", requireAuth, async (req, res) => {
     if (displayName) { updates.push("display_name = ?"); values.push(displayName); }
     if (country)     { updates.push("country = ?");       values.push(country); }
     if (phone)       { updates.push("phone = ?");          values.push(phone); }
+    if (language)    { updates.push("language = ?");       values.push(language); }
     if (newPassword) {
       if (newPassword.length < 8) {
         res.status(400).json({ error: "PASSWORD_TOO_SHORT" });
@@ -380,7 +385,7 @@ router.patch("/profile", requireAuth, async (req, res) => {
     await pool.query(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
 
     const [updated] = await pool.query(
-      "SELECT id, email, display_name, country, phone, role FROM users WHERE id = ?",
+      "SELECT id, email, display_name, country, phone, language, role FROM users WHERE id = ?",
       [req.user!.id]
     );
     res.json(userPayload((updated as DbUser[])[0]));
@@ -482,7 +487,7 @@ router.post("/oauth-exchange", async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, display_name, country, phone, role FROM users WHERE id = ?",
+      "SELECT id, email, display_name, country, phone, language, role FROM users WHERE id = ?",
       [userId]
     );
     const users = rows as DbUser[];

@@ -4,16 +4,25 @@ import { useTranslation } from "react-i18next";
 import AuthLayout, { css as s } from "../../components/layout/AuthLayout";
 import { authApi } from "../../api/auth.api";
 import { useAuthStore } from "../../store/auth.store";
-import { sortedCountries } from "../../utils/countries";
+import { sortedCountries, type Country } from "../../utils/countries";
+import type { SupportedLang } from "../../i18n";
+
+const LANG_OPTIONS: { code: SupportedLang; label: string }[] = [
+  { code: "ko", label: "한국어" },
+  { code: "en", label: "English" },
+  { code: "ja", label: "日本語" },
+  { code: "zh", label: "中文" },
+];
 
 export default function CompleteProfilePage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const updateUser = useAuthStore((s) => s.updateUser);
-  const lang = i18n.language as "ko" | "en" | "ja" | "zh";
+  const lang = i18n.language as SupportedLang;
 
   const [country, setCountry] = useState("");
   const [phone, setPhone] = useState("");
+  const [language, setLang] = useState<SupportedLang>(lang);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +31,7 @@ export default function CompleteProfilePage() {
     if (!country || !phone) { setError(t("common.required")); return; }
     setLoading(true);
     try {
-      const res = await authApi.updateProfile({ country, phone });
+      const res = await authApi.updateProfile({ country, phone, language });
       updateUser(res.data);
       navigate("/");
     } catch {
@@ -30,6 +39,14 @@ export default function CompleteProfilePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const countries = sortedCountries(lang);
+  const getLabel = (c: Country) => {
+    if (lang === "ko") return c.ko;
+    if (lang === "ja") return c.ja;
+    if (lang === "zh") return c.zh;
+    return c.en;
   };
 
   return (
@@ -43,8 +60,16 @@ export default function CompleteProfilePage() {
           <label className={s.label}>{t("auth.completeProfile.countryLabel")}</label>
           <select className={s.select} value={country} onChange={(e) => setCountry(e.target.value)}>
             <option value=""></option>
-            {sortedCountries(lang).map((c) => (
-              <option key={c.code} value={c.code}>{lang === "ko" ? c.ko : c.en}</option>
+            {countries.map((c) => (
+              <option key={c.code} value={c.code}>{getLabel(c)}</option>
+            ))}
+          </select>
+        </div>
+        <div className={s.field}>
+          <label className={s.label}>{t("auth.completeProfile.languageLabel")}</label>
+          <select className={s.select} value={language} onChange={(e) => setLang(e.target.value as SupportedLang)}>
+            {LANG_OPTIONS.map((l) => (
+              <option key={l.code} value={l.code}>{l.label}</option>
             ))}
           </select>
         </div>

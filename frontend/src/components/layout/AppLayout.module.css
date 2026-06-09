@@ -64,6 +64,49 @@
   color: var(--text-primary);
 }
 
+/* ── Language selector ── */
+.langSelector {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.langDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  min-width: 112px;
+  z-index: 500;
+  overflow: hidden;
+}
+
+.langOption {
+  display: block;
+  width: 100%;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.langOption:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.langOptionActive {
+  color: var(--accent) !important;
+  font-weight: 500;
+}
+
 /* ── Theme toggle button ── */
 .themeBtn {
   display: flex;

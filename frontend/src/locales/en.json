@@ -39,6 +39,7 @@
       "confirmPasswordPlaceholder": "Re-enter your password",
       "countryLabel": "Country of Residence",
       "countryPlaceholder": "Select a country",
+      "languageLabel": "Language",
       "phoneLabel": "Phone Number",
       "phonePlaceholder": "Enter your phone number",
       "submitButton": "Create Account",
@@ -104,6 +105,7 @@
       "title": "Complete Your Profile",
       "description": "Please provide additional information to continue.",
       "countryLabel": "Country of Residence",
+      "languageLabel": "Language",
       "phoneLabel": "Phone Number",
       "submitButton": "Complete Setup"
     },

@@ -39,6 +39,7 @@
       "confirmPasswordPlaceholder": "请再次输入密码",
       "countryLabel": "居住国家",
       "countryPlaceholder": "请选择国家",
+      "languageLabel": "语言",
       "phoneLabel": "手机号码",
       "phonePlaceholder": "请输入手机号码",
       "submitButton": "注册",
@@ -104,6 +105,7 @@
       "title": "完善个人资料",
       "description": "请提供其他信息以继续使用服务。",
       "countryLabel": "居住国家",
+      "languageLabel": "语言",
       "phoneLabel": "手机号码",
       "submitButton": "完成"
     },
