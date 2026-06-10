@@ -157,9 +157,17 @@ export const surveyApi = {
   removeViewer: (id: number, userId: number) =>
     client.delete(`/surveys/${id}/viewers/${userId}`),
 
-  // 부분 수정 (활성화/비활성화 등)
-  update: (id: number, data: { title?: string; description?: string; is_active?: boolean; expires_at?: string | null }) =>
-    client.patch(`/surveys/${id}`, data),
+  // 부분 수정 (속성만 변경 — 응답 삭제 없음)
+  update: (id: number, data: {
+    title?: string;
+    description?: string;
+    is_active?: boolean;
+    expires_at?: string | null;
+    allow_anonymous?: boolean;
+    allow_edit?: boolean;
+    allow_multiple?: boolean;
+    public_identity_question?: string | null;
+  }) => client.patch(`/surveys/${id}`, data),
 
   // 전체 수정 (문항 포함)
   updateFull: (id: number, data: {

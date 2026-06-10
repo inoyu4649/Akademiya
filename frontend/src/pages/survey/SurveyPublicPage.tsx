@@ -23,6 +23,24 @@ export default function SurveyPublicPage() {
   const alreadyResponded =
     !survey?.allow_multiple && localStorage.getItem(storageKey) === "1";
 
+  // 공개 페이지는 로그인 불필요 → 브라우저 색 테마 선호도 반영
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: light)");
+    const prevTheme = document.documentElement.getAttribute("data-theme");
+    const apply = (light: boolean) => {
+      if (light) document.documentElement.setAttribute("data-theme", "light");
+      else document.documentElement.removeAttribute("data-theme");
+    };
+    apply(mq.matches);
+    const handler = (e: MediaQueryListEvent) => apply(e.matches);
+    mq.addEventListener("change", handler);
+    return () => {
+      mq.removeEventListener("change", handler);
+      if (prevTheme) document.documentElement.setAttribute("data-theme", prevTheme);
+      else document.documentElement.removeAttribute("data-theme");
+    };
+  }, []);
+
   useEffect(() => {
     surveyApi
       .publicDetail(surveyId)

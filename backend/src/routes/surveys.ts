@@ -353,13 +353,12 @@ router.get("/og/:id", async (req, res) => {
   const surveyId = Number(req.params.id);
 
   const [rows] = await pool.execute(
-    "SELECT title FROM surveys WHERE id = ? AND scope_type = 'public' AND is_active = 1",
+    "SELECT title, description FROM surveys WHERE id = ? AND scope_type = 'public' AND is_active = 1",
     [surveyId]
   ) as any[];
 
-  const surveyTitle = (rows as any[]).length > 0
-    ? (rows as any[])[0].title as string
-    : "";
+  const surveyTitle       = (rows as any[]).length > 0 ? ((rows as any[])[0].title as string) : "";
+  const surveyDescription = (rows as any[]).length > 0 ? ((rows as any[])[0].description as string || "") : "";
 
   const esc = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -369,14 +368,17 @@ router.get("/og/:id", async (req, res) => {
   const pageUrl = `https://${host}/surveys/public/${surveyId}?_bot_bypass=1`;
   const imageUrl = `https://${host}/logo.png`;
 
+  const ogTitle = esc(surveyTitle || "Akademiya Surveys");
+  const ogDesc  = esc(surveyDescription || "Survey by Akademiya");
+
   const html = `<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Akademiya Surveys</title>
-  <meta property="og:title" content="Akademiya Surveys">
-  <meta property="og:description" content="${esc(surveyTitle)}">
+  <title>${ogTitle}</title>
+  <meta property="og:title" content="${ogTitle}">
+  <meta property="og:description" content="${ogDesc}">
   <meta property="og:type" content="website">
   <meta property="og:url" content="${pageUrl}">
   <meta property="og:image" content="${imageUrl}">
@@ -384,8 +386,8 @@ router.get("/og/:id", async (req, res) => {
   <meta property="og:image:height" content="512">
   <meta property="og:site_name" content="Akademiya">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Akademiya Surveys">
-  <meta name="twitter:description" content="${esc(surveyTitle)}">
+  <meta name="twitter:title" content="${ogTitle}">
+  <meta name="twitter:description" content="${ogDesc}">
   <meta http-equiv="refresh" content="0; url=${pageUrl}">
 </head>
 <body>
@@ -828,15 +830,20 @@ router.delete("/:id/viewers/:uid", requireAuth, async (req, res) => {
   res.json({ message: "removed" });
 });
 
-// ── PATCH /api/surveys/:id — 부분 수정 (활성화/비활성화 등) ───────────────────
+// ── PATCH /api/surveys/:id — 부분 수정 (활성화/비활성화, 속성 변경 등) ──────────
 router.patch("/:id", requireAuth, async (req, res) => {
   const userId   = req.user!.id;
   const surveyId = Number(req.params.id);
-  const { title, description, is_active, expires_at } = req.body as any;
+  const {
+    title, description, is_active, expires_at,
+    allow_anonymous, allow_edit, allow_multiple, public_identity_question,
+  } = req.body as any;
 
-  const [rows] = await pool.execute("SELECT creator_id FROM surveys WHERE id = ?", [surveyId]) as any[];
+  const [rows] = await pool.execute("SELECT creator_id, scope_type FROM surveys WHERE id = ?", [surveyId]) as any[];
   if (!(rows as any[]).length) { res.status(404).json({ error: "notFound" }); return; }
   if ((rows as any[])[0].creator_id !== userId) { res.status(403).json({ error: "forbidden" }); return; }
+
+  const scopeType = (rows as any[])[0].scope_type;
 
   const updates: string[] = [];
   const params: any[] = [];
@@ -844,6 +851,19 @@ router.patch("/:id", requireAuth, async (req, res) => {
   if (description !== undefined) { updates.push("description = ?"); params.push(description?.trim() || null); }
   if (is_active !== undefined)   { updates.push("is_active = ?");   params.push(is_active ? 1 : 0); }
   if (expires_at !== undefined)  { updates.push("expires_at = ?");  params.push(toMysqlDatetime(expires_at)); }
+  if (allow_edit !== undefined)     { updates.push("allow_edit = ?");     params.push(allow_edit ? 1 : 0); }
+  if (allow_multiple !== undefined) { updates.push("allow_multiple = ?"); params.push(allow_multiple ? 1 : 0); }
+  // 공개 설문은 public_identity_question으로 allow_anonymous 자동 결정
+  if (scopeType === "public" && public_identity_question !== undefined) {
+    const identityQ = public_identity_question?.trim() || null;
+    updates.push("public_identity_question = ?");
+    params.push(identityQ);
+    updates.push("allow_anonymous = ?");
+    params.push(identityQ ? 0 : 1);
+  } else if (allow_anonymous !== undefined) {
+    updates.push("allow_anonymous = ?");
+    params.push(allow_anonymous ? 1 : 0);
+  }
   if (updates.length === 0) { res.json({ message: "nothing" }); return; }
   params.push(surveyId);
 

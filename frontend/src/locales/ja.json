@@ -598,7 +598,7 @@
     "editTitle": "アンケートを編集",
     "editSurvey": "アンケートを編集",
     "saveEdit": "変更を保存",
-    "editHasResponses": "このアンケートには{{count}}件の回答があります。設問を変更すると既存の回答がすべて削除されます。",
+    "editHasResponses": "このアンケートには{{count}}件の回答があります。設問を変更すると既存の回答がすべて削除されます。（タイトル・期限・設定のみの変更では回答は保持されます。）",
     "editWillDeleteResponses": "既存の回答{{count}}件がすべて削除されます。続けますか？",
     "addSubQuestion": "サブ設問を追加",
     "triggerAlways": "常に表示",

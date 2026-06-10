@@ -598,7 +598,7 @@
     "editTitle": "설문 수정",
     "editSurvey": "설문 수정",
     "saveEdit": "수정 저장",
-    "editHasResponses": "이 설문에는 {{count}}개의 응답이 있습니다. 문항을 수정하면 기존 응답이 모두 삭제됩니다.",
+    "editHasResponses": "이 설문에는 {{count}}개의 응답이 있습니다. 문항을 수정하면 기존 응답이 모두 삭제됩니다. (제목·기한·복수/수정 허용 등 속성만 변경하면 응답이 유지됩니다.)",
     "editWillDeleteResponses": "기존 응답 {{count}}개가 모두 삭제됩니다. 계속하시겠습니까?",
     "addSubQuestion": "부속 질문 추가",
     "triggerAlways": "항상 표시",

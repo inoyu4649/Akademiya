@@ -598,7 +598,7 @@
     "editTitle": "编辑问卷",
     "editSurvey": "编辑问卷",
     "saveEdit": "保存修改",
-    "editHasResponses": "该问卷已有{{count}}条回答。修改题目将删除所有现有回答。",
+    "editHasResponses": "该问卷已有{{count}}条回答。修改题目将删除所有现有回答。（仅修改标题、截止日期或其他设置不会影响已有回答。）",
     "editWillDeleteResponses": "现有{{count}}条回答将被永久删除。是否继续？",
     "addSubQuestion": "添加子题目",
     "triggerAlways": "始终显示",

@@ -598,7 +598,7 @@
     "editTitle": "Edit Survey",
     "editSurvey": "Edit Survey",
     "saveEdit": "Save Changes",
-    "editHasResponses": "This survey has {{count}} response(s). Editing questions will delete all existing responses.",
+    "editHasResponses": "This survey has {{count}} response(s). Editing questions will delete all existing responses. (Changing title, deadline, or other settings without modifying questions will keep responses.)",
     "editWillDeleteResponses": "{{count}} existing response(s) will be permanently deleted. Continue?",
     "addSubQuestion": "Add Sub-question",
     "triggerAlways": "Always show",

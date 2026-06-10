@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { surveyApi, type QType, type SurveyQuestion } from "../../api/survey.api";
@@ -45,6 +45,19 @@ interface QuestionDraft {
 
 let _keyCounter = 0;
 const nextKey = () => String(++_keyCounter);
+
+/** _key 제외 문항 구조를 JSON 문자열로 직렬화 (변경 감지용) */
+function questionsToComparable(qs: QuestionDraft[]): string {
+  return JSON.stringify(qs.map((q) => ({
+    type: q.type, title: q.title, description: q.description,
+    required: q.required, has_other: q.has_other, options: q.options,
+    children: q.children.map((sq) => ({
+      type: sq.type, title: sq.title, description: sq.description,
+      required: sq.required, has_other: sq.has_other, options: sq.options,
+      triggerOptionIdx: sq.triggerOptionIdx, triggerRating: sq.triggerRating,
+    })),
+  })));
+}
 
 /** UTC ISO 문자열 → datetime-local 입력 값(로컬 시간) */
 function utcToLocalDatetime(utcStr: string): string {
@@ -116,6 +129,7 @@ export default function SurveyEditPage() {
   const [error, setError]             = useState("");
   const [responseCount, setResponseCount] = useState(0);
   const [scopeType, setScopeType]     = useState<"class" | "org" | "public">("class");
+  const originalQuestionsRef = useRef<string>("");
 
   useEffect(() => {
     surveyApi.detail(surveyId)
@@ -132,7 +146,9 @@ export default function SurveyEditPage() {
           setAllowPublicNamed(true);
           setPublicIdentityQuestion(s.public_identity_question);
         }
-        setQuestions(questionsToDrafts(qs));
+        const drafts = questionsToDrafts(qs);
+        setQuestions(drafts);
+        originalQuestionsRef.current = questionsToComparable(drafts);
         setResponseCount(rc ?? 0);
       })
       .catch(() => navigate("/surveys"))
@@ -250,45 +266,62 @@ export default function SurveyEditPage() {
       setError(t("survey.publicIdentityQuestionRequired")); return;
     }
 
-    if (responseCount > 0) {
+    const questionsChanged = questionsToComparable(questions) !== originalQuestionsRef.current;
+
+    if (questionsChanged && responseCount > 0) {
       if (!confirm(t("survey.editWillDeleteResponses", { count: responseCount }))) return;
     }
 
     setSaving(true);
     try {
-      await surveyApi.updateFull(surveyId, {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        allow_anonymous: scopeType === "public" ? !allowPublicNamed : allowAnon,
-        public_identity_question: scopeType === "public" && allowPublicNamed ? publicIdentityQuestion.trim() : null,
-        allow_edit: allowEdit,
-        allow_multiple: allowMultiple,
-        expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
-        questions: questions.map((q) => ({
-          type: q.type,
-          title: q.title.trim(),
-          description: q.description.trim() || undefined,
-          required: q.required,
-          has_other: ["single", "multiple"].includes(q.type) ? q.has_other : false,
-          options: ["single", "multiple"].includes(q.type) ? q.options.filter((o) => o.trim()) : undefined,
-          sub_questions: q.children.map((sq) => {
-            const { min: rMin, max: rMax } = q.type === "rating"
-              ? serializeRatingTrigger(sq.triggerRating)
-              : { min: null, max: null };
-            return {
-              type: sq.type,
-              title: sq.title.trim(),
-              description: sq.description.trim() || undefined,
-              required: sq.required,
-              has_other: ["single", "multiple"].includes(sq.type) ? sq.has_other : false,
-              options: ["single", "multiple"].includes(sq.type) ? sq.options.filter((o) => o.trim()) : undefined,
-              trigger_option_idx: q.type !== "rating" ? sq.triggerOptionIdx : null,
-              trigger_rating_min: rMin,
-              trigger_rating_max: rMax,
-            };
-          }),
-        })),
-      });
+      if (!questionsChanged) {
+        // 문항 변경 없음 → 속성만 PATCH (응답 유지)
+        await surveyApi.update(surveyId, {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          allow_edit: allowEdit,
+          allow_multiple: allowMultiple,
+          expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+          ...(scopeType === "public"
+            ? { public_identity_question: allowPublicNamed ? publicIdentityQuestion.trim() : null }
+            : { allow_anonymous: allowAnon }),
+        });
+      } else {
+        // 문항 변경 있음 → 전체 PUT (기존 응답 삭제)
+        await surveyApi.updateFull(surveyId, {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          allow_anonymous: scopeType === "public" ? !allowPublicNamed : allowAnon,
+          public_identity_question: scopeType === "public" && allowPublicNamed ? publicIdentityQuestion.trim() : null,
+          allow_edit: allowEdit,
+          allow_multiple: allowMultiple,
+          expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+          questions: questions.map((q) => ({
+            type: q.type,
+            title: q.title.trim(),
+            description: q.description.trim() || undefined,
+            required: q.required,
+            has_other: ["single", "multiple"].includes(q.type) ? q.has_other : false,
+            options: ["single", "multiple"].includes(q.type) ? q.options.filter((o) => o.trim()) : undefined,
+            sub_questions: q.children.map((sq) => {
+              const { min: rMin, max: rMax } = q.type === "rating"
+                ? serializeRatingTrigger(sq.triggerRating)
+                : { min: null, max: null };
+              return {
+                type: sq.type,
+                title: sq.title.trim(),
+                description: sq.description.trim() || undefined,
+                required: sq.required,
+                has_other: ["single", "multiple"].includes(sq.type) ? sq.has_other : false,
+                options: ["single", "multiple"].includes(sq.type) ? sq.options.filter((o) => o.trim()) : undefined,
+                trigger_option_idx: q.type !== "rating" ? sq.triggerOptionIdx : null,
+                trigger_rating_min: rMin,
+                trigger_rating_max: rMax,
+              };
+            }),
+          })),
+        });
+      }
       navigate(`/surveys/${surveyId}`);
     } catch {
       setError(t("common.error"));
