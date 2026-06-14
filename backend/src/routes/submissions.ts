@@ -3,6 +3,7 @@ import { pool } from "../db/pool.js";
 import { requireAuth } from "../middleware/auth.js";
 import multer from "multer";
 import path from "path";
+import crypto from "crypto";
 import { fileURLToPath } from "url";
 import fs from "fs";
 
@@ -18,7 +19,7 @@ const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
   filename:    (_req, file, cb) => {
     const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+    cb(null, `${Date.now()}-${crypto.randomBytes(12).toString("hex")}${ext}`);
   },
 });
 

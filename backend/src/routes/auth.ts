@@ -88,21 +88,11 @@ router.post("/register", async (req, res) => {
     );
     const userId = (result as { insertId: number }).insertId;
 
-    // ── 학교 이메일 도메인 자동 조직 가입 ────────────────────────────
-    // 승인된 조직 중 google_domain이 사용자 이메일 도메인과 일치하면 즉시 멤버 추가
-    const emailDomain = email.toLowerCase().split("@")[1];
-    if (emailDomain) {
-      const [matchingOrgs] = await pool.query(
-        "SELECT id FROM organizations WHERE google_domain = ? AND status = 'approved'",
-        [emailDomain]
-      );
-      for (const org of (matchingOrgs as { id: number }[])) {
-        await pool.query(
-          "INSERT IGNORE INTO org_members (org_id, user_id, permission) VALUES (?, ?, 0)",
-          [org.id, userId]
-        );
-      }
-    }
+    // ── 학교 이메일 도메인 자동 조직 가입 (제거됨) ──────────────────
+    // 이메일/비밀번호 가입은 이메일 소유 검증이 없으므로(스푸핑 가능)
+    // 도메인 기반 자동 가입을 적용하지 않는다. 도메인 자동 가입은
+    // Google(이메일 검증됨) 로그인 경로(passport.ts)에서만 허용한다.
+    // 일반 가입자는 가입 코드/관리자 승인 절차로 조직에 가입한다.
 
     // 개인정보 처리방침 동의 저장
     await pool.query(
@@ -162,6 +152,10 @@ router.post("/login", async (req, res) => {
       res.status(401).json({ error: "INVALID_CREDENTIALS" });
       return;
     }
+    if (user.is_banned) {
+      res.status(403).json({ error: "ACCOUNT_BANNED" });
+      return;
+    }
 
     const accessToken = generateAccessToken({
       id: user.id as number,
@@ -192,7 +186,7 @@ router.post("/refresh", async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      `SELECT rt.user_id, u.email, u.role, u.display_name, u.country, u.phone, u.language
+      `SELECT rt.user_id, u.email, u.role, u.display_name, u.country, u.phone, u.language, u.is_banned
        FROM refresh_tokens rt
        JOIN users u ON u.id = rt.user_id
        WHERE rt.token_hash = ? AND rt.expires_at > NOW()`,
@@ -205,6 +199,14 @@ router.post("/refresh", async (req, res) => {
       return;
     }
     const record = records[0];
+
+    // 밴된 사용자는 세션 갱신 차단 + 기존 리프레시 토큰 폐기
+    if (record.is_banned) {
+      await pool.query("DELETE FROM refresh_tokens WHERE user_id = ?", [record.user_id]);
+      res.clearCookie(REFRESH_COOKIE, { path: "/api/auth" });
+      res.status(403).json({ error: "ACCOUNT_BANNED" });
+      return;
+    }
 
     await pool.query("DELETE FROM refresh_tokens WHERE token_hash = ?", [hashToken(token)]);
     const newRefresh = generateRefreshToken();

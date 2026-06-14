@@ -119,10 +119,17 @@ router.post("/join", requireAuth, async (req, res) => {
 
   // ── Google 학교 이메일 도메인 자동 가입 ─────────────────────────
   // 조직에 google_domain이 설정되어 있고 사용자 이메일 도메인과 일치하면
-  // join_request 없이 org_members에 즉시 추가 (승인 불필요)
+  // join_request 없이 org_members에 즉시 추가 (승인 불필요).
+  // 단, 이메일 소유가 검증된 Google 계정(google_id 보유)에만 허용한다.
+  // 이메일/비밀번호 가입 이메일은 미검증이라 스푸핑으로 무단 편입될 수 있음.
   const orgDomain   = (org.google_domain as string | null)?.toLowerCase();
   const userDomain  = req.user!.email.split("@")[1]?.toLowerCase() ?? "";
-  if (orgDomain && userDomain === orgDomain) {
+  const [verifiedRows] = await pool.execute(
+    "SELECT google_id FROM users WHERE id = ?",
+    [userId]
+  ) as any[];
+  const isGoogleVerified = !!(verifiedRows as any[])[0]?.google_id;
+  if (orgDomain && userDomain === orgDomain && isGoogleVerified) {
     await pool.execute(
       "INSERT IGNORE INTO org_members (org_id, user_id, permission) VALUES (?, ?, 0)",
       [org.id, userId]

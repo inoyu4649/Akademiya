@@ -369,6 +369,11 @@ router.post("/:id/ban", requireAuth, async (req, res) => {
       "UPDATE users SET is_banned = 1, banned_at = NOW(), banned_reason = ? WHERE id = ?",
       [note?.trim() || "Banned by Akademiya admin", report.reported_id]
     );
+    // 기존 세션 즉시 무효화 — 리프레시 토큰 전량 폐기
+    await conn.execute(
+      "DELETE FROM refresh_tokens WHERE user_id = ?",
+      [report.reported_id]
+    );
     // 신고 처리
     await conn.execute(
       "UPDATE user_reports SET status = 'resolved', handler_id = ?, handler_note = ?, updated_at = NOW() WHERE id = ?",

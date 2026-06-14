@@ -16,7 +16,8 @@ export function hashToken(token: string): string {
 }
 
 export function generateResetCode(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  // CSPRNG 사용 — Math.random()은 시퀀스 복원이 가능해 코드 예측 위험
+  return String(crypto.randomInt(100000, 1000000));
 }
 
 /** OAuth 리다이렉트 핸드오프용 단기 코드 (in-memory, 60초 TTL) */

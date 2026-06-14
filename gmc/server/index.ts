@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import crypto from 'crypto';
 import https from 'https';
 import { readFileSync, existsSync, mkdirSync, readdirSync, unlinkSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -584,7 +585,7 @@ app.post('/api/login', async (req: Request, res: Response) => {
       if (nameFromHeader) studentName = nameFromHeader[1];
     }
 
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const sessionId = `session_${crypto.randomBytes(24).toString('hex')}`;
     sessions.set(sessionId, { cookies, studentNo, loginTime: new Date().toISOString() });
 
     await saveCredentials(studentNo, password);
@@ -651,7 +652,7 @@ app.post('/api/akademiya/verify', async (req: Request, res: Response) => {
         });
       }
 
-      const sessionId = `ak_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const sessionId = `ak_${crypto.randomBytes(24).toString('hex')}`;
       sessions.set(sessionId, {
         cookies: loginResult.cookies,
         studentNo: gmcUser.student_no,
@@ -765,7 +766,7 @@ app.post('/api/akademiya/link', async (req: Request, res: Response) => {
       role: gmcRole ?? 0,
     });
 
-    const sessionId = `ak_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const sessionId = `ak_${crypto.randomBytes(24).toString('hex')}`;
     sessions.set(sessionId, { cookies, studentNo, loginTime: new Date().toISOString() });
 
     console.log(`[Akademiya 연동 완료] ${akademiyaEmail} → ${studentNo} (role ${gmcRole ?? 0})`);
@@ -1095,6 +1096,11 @@ app.delete('/api/admin/suspend/:id', async (req: Request, res: Response) => {
 
 // ========== 통계 API ==========
 app.get('/api/stats', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const role = await getUserRole(session.studentNo);
+  if (role < 1) return res.status(403).json({ success: false, message: '권한 없음' });
+
   const { date, limit } = req.query as Record<string, string | undefined>;
   if (date) {
     return res.json({ success: true, records: await getUsageStatsByDate(date) });
@@ -1103,7 +1109,9 @@ app.get('/api/stats', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/stats/summary', async (_req: Request, res: Response) => {
+app.get('/api/stats/summary', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
   return res.json({ success: true, summary: await getUsageStatsSummary() });
 });
 
@@ -1211,17 +1219,6 @@ app.post('/api/account/delete', async (req: Request, res: Response) => {
   sessions.delete(sessionId);
   console.log(`[${session.studentNo}] 계정 탈퇴 (credentials 삭제)`);
   return res.json({ success: true, message: '저장된 인증 정보가 삭제되었습니다.' });
-});
-
-app.get('/api/debug/page', async (req: Request, res: Response) => {
-  const session = sessions.get(req.query.sessionId as string);
-  if (!session) return res.status(401).json({ error: '세션 없음' });
-  try {
-    const client = createClient();
-    const r = await client.get(req.query.path as string, { headers: { 'Cookie': cookieStr(session.cookies) } });
-    extractCookies(r).forEach(c => { session.cookies[c.name] = c.value; });
-    return res.type('html').send(decodeResponse(r));
-  } catch (e) { return res.status(500).send((e as Error).message); }
 });
 
 // SPA fallback
