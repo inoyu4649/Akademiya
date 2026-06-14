@@ -57,7 +57,9 @@
       "termsAgree": "I have read and agree to the",
       "termsLink": "Terms of Use",
       "termsAgreeSuffix": "(required)",
-      "termsRequired": "You must agree to the Terms of Use."
+      "termsRequired": "You must agree to the Terms of Use.",
+      "intlAgree": "(Required) I agree to the overseas transfer of my personal data (Google LLC, USA — social login & email delivery).",
+      "intlRequired": "You must agree to the overseas transfer of personal data."
     },
     "forgotPassword": {
       "title": "Forgot Password",
@@ -122,6 +124,8 @@
     }
   },
   "nav": {
+    "privacyPolicy": "Privacy Policy",
+    "termsOfUse": "Terms of Use",
     "home": "Home",
     "classes": "Classes",
     "reports": "Reports",

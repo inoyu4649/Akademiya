@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/auth.store";
 import { authApi } from "../../api/auth.api";
@@ -248,15 +248,21 @@ export default function AppLayout() {
   const { theme, toggle: toggleTheme }    = useTheme();
   const [privacyNeedsConsent, setPrivacyNeedsConsent] = useState(false);
   const [termsNeedsConsent, setTermsNeedsConsent] = useState(false);
+  const [privacyConsentedVersion, setPrivacyConsentedVersion] = useState(0);
+  const [termsConsentedVersion, setTermsConsentedVersion] = useState(0);
 
-  // 개인정보 처리방침 + 이용약관 동의 여부 확인
+  // 개인정보 처리방침 + 국외 이전 + 이용약관 동의 여부 확인
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      client.get<{ needsConsent: boolean }>("/privacy/check"),
-      client.get<{ needsConsent: boolean }>("/terms/check"),
-    ]).then(([privacyRes, termsRes]) => {
-      if (privacyRes.data.needsConsent) setPrivacyNeedsConsent(true);
+      client.get<{ needsConsent: boolean; consented: number }>("/privacy/check"),
+      client.get<{ needsConsent: boolean; consented: number }>("/terms/check"),
+      client.get<{ needsConsent: boolean }>("/intl-transfer/check"),
+    ]).then(([privacyRes, termsRes, intlRes]) => {
+      setPrivacyConsentedVersion(privacyRes.data.consented);
+      setTermsConsentedVersion(termsRes.data.consented);
+      // 처리방침 또는 국외이전 중 하나라도 미동의면 개인정보 모달(둘 다 처리)을 띄움
+      if (privacyRes.data.needsConsent || intlRes.data.needsConsent) setPrivacyNeedsConsent(true);
       else if (termsRes.data.needsConsent) setTermsNeedsConsent(true);
     }).catch(() => { /* 무시 */ });
   }, [user]);
@@ -307,16 +313,16 @@ export default function AppLayout() {
   return (
     <>
       {privacyNeedsConsent && (
-        <PrivacyPolicyModal onConsented={() => {
+        <PrivacyPolicyModal consentedVersion={privacyConsentedVersion} onConsented={() => {
           setPrivacyNeedsConsent(false);
           // 개인정보 동의 완료 후 이용약관 재확인
-          client.get<{ needsConsent: boolean }>("/terms/check")
-            .then((r) => { if (r.data.needsConsent) setTermsNeedsConsent(true); })
+          client.get<{ needsConsent: boolean; consented: number }>("/terms/check")
+            .then((r) => { setTermsConsentedVersion(r.data.consented); if (r.data.needsConsent) setTermsNeedsConsent(true); })
             .catch(() => {});
         }} />
       )}
       {!privacyNeedsConsent && termsNeedsConsent && (
-        <TermsOfUseModal onConsented={() => setTermsNeedsConsent(false)} />
+        <TermsOfUseModal consentedVersion={termsConsentedVersion} onConsented={() => setTermsNeedsConsent(false)} />
       )}
     <div className={styles.layout}>
       {/* ── Mobile top header ── */}
@@ -470,6 +476,11 @@ export default function AppLayout() {
         {/* ── Version badge ── */}
         <div className={styles.versionBadge}>
           Akademiya Web App version 1.1
+        </div>
+        <div className={styles.versionLinks}>
+          <Link to="/privacy" className={styles.versionLink}>{t("nav.privacyPolicy", "개인정보 처리방침")}</Link>
+          <span className={styles.versionLinkSep}>·</span>
+          <Link to="/terms" className={styles.versionLink}>{t("nav.termsOfUse", "이용약관")}</Link>
         </div>
 
         <div className={styles.sidebarBottom}>

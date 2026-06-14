@@ -1,9 +1,16 @@
-import { Link } from "react-router-dom";
-import { akademiyaTermsOfUse } from "./privacyContent";
+import { Link, useParams } from "react-router-dom";
+import {
+  akademiyaTermsOfUse,
+  akademiyaTermsOfUseVersions,
+  getTermsByVersion,
+} from "./privacyContent";
 import s from "./PrivacyPolicyPage.module.css";
 
 export default function TermsOfUsePage() {
-  const terms = akademiyaTermsOfUse;
+  const { version } = useParams<{ version?: string }>();
+  const requested = version ? getTermsByVersion(Number(version)) : undefined;
+  const terms = requested ?? akademiyaTermsOfUse;
+  const isLatest = terms.version === akademiyaTermsOfUse.version;
 
   return (
     <div className={s.wrapper}>
@@ -15,6 +22,8 @@ export default function TermsOfUsePage() {
           <h1 className={s.title}>{terms.title}</h1>
           <p className={s.meta}>
             버전 {terms.version} &nbsp;·&nbsp; 시행일: {terms.effectiveDate}
+            {terms.expiryDate ? ` ~ ${terms.expiryDate}` : ""}
+            {!isLatest && " (이전 버전)"}
           </p>
         </div>
 
@@ -46,6 +55,23 @@ export default function TermsOfUsePage() {
               </div>
             </section>
           ))}
+        </div>
+
+        <div className={s.versionHistory}>
+          <p className={s.versionHistoryTitle}>버전 이력</p>
+          <ul className={s.versionList}>
+            {[...akademiyaTermsOfUseVersions].reverse().map((v) => (
+              <li key={v.version} className={s.versionItem}>
+                <Link to={`/terms/${v.version}`} className={s.versionLink}>
+                  v{v.version} ({v.effectiveDate}
+                  {v.expiryDate ? ` ~ ${v.expiryDate}` : " ~ 현재"}) 시행
+                </Link>
+                {v.version === akademiyaTermsOfUse.version && (
+                  <span className={s.currentBadge}>현재 버전</span>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div className={s.footer}>

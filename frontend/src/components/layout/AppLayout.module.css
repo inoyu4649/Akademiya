@@ -215,6 +215,31 @@
   text-overflow: ellipsis;
 }
 
+.versionLinks {
+  padding: 0 16px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+}
+
+.versionLink {
+  color: var(--text-muted);
+  opacity: 0.6;
+  text-decoration: none;
+}
+
+.versionLink:hover {
+  opacity: 1;
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.versionLinkSep {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
 /* ── Sidebar bottom ── */
 .sidebarBottom {
   border-top: 1px solid var(--border);

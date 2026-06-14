@@ -5,7 +5,7 @@ import AuthLayout, { css as s } from "../../components/layout/AuthLayout";
 import { authApi } from "../../api/auth.api";
 import { useAuthStore } from "../../store/auth.store";
 import { sortedCountries, type Country } from "../../utils/countries";
-import { PRIVACY_POLICY_VERSION, TERMS_OF_USE_VERSION } from "../privacy/privacyContent";
+import { PRIVACY_POLICY_VERSION, TERMS_OF_USE_VERSION, INTL_TRANSFER_VERSION } from "../privacy/privacyContent";
 import type { SupportedLang } from "../../i18n";
 import rs from "./RegisterPage.module.css";
 
@@ -27,13 +27,14 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
-    country: "",
+    country: "KR", // 거주 국가는 대한민국만 허용 (GDPR 등 국외 규제 이슈 방지)
     phone: "",
     language: lang,
   });
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
-  const [errors, setErrors] = useState<Partial<typeof form & { global: string; privacy: string; terms: string }>>({});
+  const [intlAgreed, setIntlAgreed] = useState(false);
+  const [errors, setErrors] = useState<Partial<typeof form & { global: string; privacy: string; terms: string; intl: string }>>({});
   const [loading, setLoading] = useState(false);
 
   const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -51,6 +52,7 @@ export default function RegisterPage() {
     if (!form.phone) e.phone = t("common.required");
     if (!privacyAgreed) e.privacy = t("auth.register.privacyRequired");
     if (!termsAgreed) e.terms = t("auth.register.termsRequired");
+    if (!intlAgreed) e.intl = t("auth.register.intlRequired", "국외 이전 동의가 필요합니다.");
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -69,6 +71,7 @@ export default function RegisterPage() {
         language: form.language,
         privacyVersion: PRIVACY_POLICY_VERSION,
         termsVersion: TERMS_OF_USE_VERSION,
+        intlTransferVersion: INTL_TRANSFER_VERSION,
       });
       setAuth(res.data.user, res.data.accessToken);
       navigate("/");
@@ -81,7 +84,8 @@ export default function RegisterPage() {
     }
   };
 
-  const countries = sortedCountries(lang);
+  // 거주 국가는 대한민국(KR)만 선택 가능
+  const countries = sortedCountries(lang).filter((c) => c.code === "KR");
   const getLabel = (c: Country) => {
     if (lang === "ko") return c.ko;
     if (lang === "ja") return c.ja;
@@ -116,7 +120,6 @@ export default function RegisterPage() {
         <div className={s.field}>
           <label className={s.label}>{t("auth.register.countryLabel")}</label>
           <select className={s.select} value={form.country} onChange={set("country")}>
-            <option value="">{t("auth.register.countryPlaceholder")}</option>
             {countries.map((c) => (
               <option key={c.code} value={c.code}>{getLabel(c)}</option>
             ))}
@@ -171,6 +174,20 @@ export default function RegisterPage() {
             </span>
           </label>
           {errors.terms && <p className={s.fieldError}>{errors.terms}</p>}
+        </div>
+        <div className={s.field}>
+          <label className={rs.privacyLabel}>
+            <input
+              type="checkbox"
+              className={rs.privacyCheckbox}
+              checked={intlAgreed}
+              onChange={(e) => setIntlAgreed(e.target.checked)}
+            />
+            <span>
+              {t("auth.register.intlAgree", "(필수) 개인정보의 국외 이전(Google LLC, 미국 — 소셜 로그인 및 이메일 발송)에 동의합니다.")}
+            </span>
+          </label>
+          {errors.intl && <p className={s.fieldError}>{errors.intl}</p>}
         </div>
         <button className={s.btn} type="submit" disabled={loading}>
           {loading ? t("common.loading") : t("auth.register.submitButton")}

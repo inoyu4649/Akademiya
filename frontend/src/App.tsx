@@ -57,7 +57,9 @@ const router = createBrowserRouter([
   // ── 공개 페이지 (비로그인 접근 가능) ────────────────────────────
   { path: "/surveys/public/:id", element: <SurveyPublicPage /> },
   { path: "/privacy",             element: <PrivacyPolicyPage /> },
+  { path: "/privacy/:version",    element: <PrivacyPolicyPage /> },
   { path: "/terms",               element: <TermsOfUsePage /> },
+  { path: "/terms/:version",      element: <TermsOfUsePage /> },
 
   // ── 앱 페이지 (사이드바 있음) ─────────────────────────────────
   {

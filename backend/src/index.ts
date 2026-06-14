@@ -23,6 +23,7 @@ import oauthRouter from "./routes/oauth.js";
 import surveysRouter from "./routes/surveys.js";
 import privacyRouter from "./routes/privacy.js";
 import termsRouter from "./routes/terms.js";
+import intlTransferRouter from "./routes/intl-transfer.js";
 import resourcesRouter from "./routes/resources.js";
 import { startDeadlineScheduler } from "./scheduler/deadlines.js";
 import { preloadHolidays } from "./utils/holidays.js";
@@ -141,6 +142,7 @@ app.use("/api/oauth",        oauthRouter);        // GMCAuto ↔ Akademiya OAuth
 app.use("/api/surveys",      surveysRouter);
 app.use("/api/privacy",      privacyRouter);
 app.use("/api/terms",        termsRouter);
+app.use("/api/intl-transfer", intlTransferRouter);
 app.use("/api/resources",    resourcesRouter);
 
 // ── 헬스체크 ─────────────────────────────────────────────────────────────────

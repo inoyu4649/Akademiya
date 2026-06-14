@@ -121,6 +121,52 @@
   margin: 0;
 }
 
+.versionHistory {
+  margin-top: 32px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+}
+
+.versionHistoryTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.versionList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.versionItem {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.versionLink {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.versionLink:hover {
+  text-decoration: underline;
+}
+
+.currentBadge {
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 .footer {
   margin-top: 40px;
   text-align: center;

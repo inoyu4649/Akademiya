@@ -57,7 +57,9 @@
       "termsAgree": "",
       "termsLink": "이용약관",
       "termsAgreeSuffix": "에 동의합니다. (필수)",
-      "termsRequired": "이용약관에 동의해 주세요."
+      "termsRequired": "이용약관에 동의해 주세요.",
+      "intlAgree": "(필수) 개인정보의 국외 이전(Google LLC, 미국 — 소셜 로그인·이메일 발송)에 동의합니다.",
+      "intlRequired": "국외 이전에 동의해 주세요."
     },
     "forgotPassword": {
       "title": "비밀번호 찾기",
@@ -122,6 +124,8 @@
     }
   },
   "nav": {
+    "privacyPolicy": "개인정보 처리방침",
+    "termsOfUse": "이용약관",
     "home": "홈",
     "classes": "반",
     "reports": "신고",

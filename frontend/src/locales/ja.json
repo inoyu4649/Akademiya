@@ -57,7 +57,9 @@
       "termsAgree": "",
       "termsLink": "利用規約",
       "termsAgreeSuffix": "に同意します。（必須）",
-      "termsRequired": "利用規約への同意が必要です。"
+      "termsRequired": "利用規約への同意が必要です。",
+      "intlAgree": "(必須) 個人情報の国外移転(Google LLC、米国 — ソーシャルログイン・メール送信)に同意します。",
+      "intlRequired": "国外移転への同意が必要です。"
     },
     "forgotPassword": {
       "title": "パスワードの再設定",
@@ -122,6 +124,8 @@
     }
   },
   "nav": {
+    "privacyPolicy": "プライバシーポリシー",
+    "termsOfUse": "利用規約",
     "home": "ホーム",
     "classes": "クラス",
     "reports": "通報",

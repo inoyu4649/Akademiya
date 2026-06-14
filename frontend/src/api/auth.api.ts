@@ -17,6 +17,7 @@ export const authApi = {
     language?: string;
     privacyVersion: number;
     termsVersion: number;
+    intlTransferVersion: number;
   }) => client.post<AuthResponse>("/auth/register", data),
 
   login: (data: { email: string; password: string }) =>

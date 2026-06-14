@@ -57,7 +57,9 @@
       "termsAgree": "我已阅读并同意",
       "termsLink": "使用条款",
       "termsAgreeSuffix": "（必填）",
-      "termsRequired": "请同意使用条款。"
+      "termsRequired": "请同意使用条款。",
+      "intlAgree": "(必填) 我同意将个人信息转移至境外(Google LLC，美国 — 社交登录及邮件发送)。",
+      "intlRequired": "请同意个人信息境外转移。"
     },
     "forgotPassword": {
       "title": "忘记密码",
@@ -122,6 +124,8 @@
     }
   },
   "nav": {
+    "privacyPolicy": "隐私政策",
+    "termsOfUse": "使用条款",
     "home": "首页",
     "classes": "班级",
     "reports": "举报",

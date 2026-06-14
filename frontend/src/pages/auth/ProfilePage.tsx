@@ -168,7 +168,8 @@ export default function ProfilePage() {
         <div className={s.field}>
           <label className={s.label}>{t("auth.profile.countryLabel")}</label>
           <select className={s.select} value={form.country} onChange={setField("country")}>
-            {sortedCountries(lang).map((c) => (
+            {/* 거주 국가는 대한민국(KR)만 선택 가능 (GDPR 등 국외 규제 이슈 방지) */}
+            {sortedCountries(lang).filter((c) => c.code === "KR").map((c) => (
               <option key={c.code} value={c.code}>
                 {lang === "ko" ? c.ko : lang === "ja" ? c.ja : lang === "zh" ? c.zh : c.en}
               </option>

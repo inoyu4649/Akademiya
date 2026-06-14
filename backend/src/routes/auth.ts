@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { PRIVACY_POLICY_VERSION } from "./privacy.js";
 import { TERMS_OF_USE_VERSION } from "./terms.js";
+import { INTL_TRANSFER_VERSION } from "./intl-transfer.js";
 import bcrypt from "bcrypt";
 import { pool } from "../db/pool.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -47,11 +48,16 @@ function userPayload(u: DbUser) {
 
 // ─── POST /register ──────────────────────────────────────────────────────────
 router.post("/register", async (req, res) => {
-  const { email, password, displayName, country, phone, language, privacyVersion, termsVersion } =
+  const { email, password, displayName, country, phone, language, privacyVersion, termsVersion, intlTransferVersion } =
     req.body as Record<string, string>;
 
   if (!email || !password || !displayName || !country || !phone) {
     res.status(400).json({ error: "MISSING_FIELDS" });
+    return;
+  }
+  // 거주 국가는 대한민국(KR)만 허용 (GDPR 등 국외 규제 이슈 방지)
+  if (country !== "KR") {
+    res.status(400).json({ error: "COUNTRY_NOT_ALLOWED" });
     return;
   }
   if (Number(privacyVersion) !== PRIVACY_POLICY_VERSION) {
@@ -60,6 +66,10 @@ router.post("/register", async (req, res) => {
   }
   if (Number(termsVersion) !== TERMS_OF_USE_VERSION) {
     res.status(400).json({ error: "TERMS_CONSENT_REQUIRED" });
+    return;
+  }
+  if (Number(intlTransferVersion) !== INTL_TRANSFER_VERSION) {
+    res.status(400).json({ error: "INTL_TRANSFER_CONSENT_REQUIRED" });
     return;
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -103,6 +113,11 @@ router.post("/register", async (req, res) => {
     await pool.query(
       "INSERT INTO terms_consents (user_id, service, version) VALUES (?, 'akademiya', ?)",
       [userId, TERMS_OF_USE_VERSION]
+    );
+    // 국외 이전 동의 저장 (별도 동의)
+    await pool.query(
+      "INSERT INTO intl_transfer_consents (user_id, service, version) VALUES (?, 'akademiya', ?)",
+      [userId, INTL_TRANSFER_VERSION]
     );
 
     const accessToken = generateAccessToken({ id: userId, email: email.toLowerCase(), role: "user" });

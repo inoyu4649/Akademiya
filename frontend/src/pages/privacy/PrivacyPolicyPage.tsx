@@ -1,9 +1,16 @@
-import { Link } from "react-router-dom";
-import { akademiyaPrivacyPolicy } from "./privacyContent";
+import { Link, useParams } from "react-router-dom";
+import {
+  akademiyaPrivacyPolicy,
+  akademiyaPrivacyPolicyVersions,
+  getPrivacyPolicyByVersion,
+} from "./privacyContent";
 import s from "./PrivacyPolicyPage.module.css";
 
 export default function PrivacyPolicyPage() {
-  const policy = akademiyaPrivacyPolicy;
+  const { version } = useParams<{ version?: string }>();
+  const requested = version ? getPrivacyPolicyByVersion(Number(version)) : undefined;
+  const policy = requested ?? akademiyaPrivacyPolicy;
+  const isLatest = policy.version === akademiyaPrivacyPolicy.version;
 
   return (
     <div className={s.wrapper}>
@@ -15,6 +22,8 @@ export default function PrivacyPolicyPage() {
           <h1 className={s.title}>{policy.title}</h1>
           <p className={s.meta}>
             버전 {policy.version} &nbsp;·&nbsp; 시행일: {policy.effectiveDate}
+            {policy.expiryDate ? ` ~ ${policy.expiryDate}` : ""}
+            {!isLatest && " (이전 버전)"}
           </p>
         </div>
 
@@ -46,6 +55,23 @@ export default function PrivacyPolicyPage() {
               </div>
             </section>
           ))}
+        </div>
+
+        <div className={s.versionHistory}>
+          <p className={s.versionHistoryTitle}>버전 이력</p>
+          <ul className={s.versionList}>
+            {[...akademiyaPrivacyPolicyVersions].reverse().map((v) => (
+              <li key={v.version} className={s.versionItem}>
+                <Link to={`/privacy/${v.version}`} className={s.versionLink}>
+                  v{v.version} ({v.effectiveDate}
+                  {v.expiryDate ? ` ~ ${v.expiryDate}` : " ~ 현재"}) 적용
+                </Link>
+                {v.version === akademiyaPrivacyPolicy.version && (
+                  <span className={s.currentBadge}>현재 버전</span>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div className={s.footer}>
