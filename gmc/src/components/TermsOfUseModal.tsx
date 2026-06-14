@@ -70,7 +70,7 @@ const TERMS_SECTIONS = [
     id: 'dispute',
     title: '제8조 (분쟁 해결 및 준거법)',
     content: `서비스와 이용자 간의 분쟁은 대한민국 법원에서 관할합니다.
-문의: lmg1152@naver.com`,
+문의: 022207@hafs.hs.kr`,
   },
   {
     id: 'supplementary',

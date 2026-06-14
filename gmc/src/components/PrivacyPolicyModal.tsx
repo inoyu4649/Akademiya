@@ -58,20 +58,22 @@ GMC PASS 신청 스케줄 등록·실행·관리 및 결과 기록 목적으로 
 
 1. 개인정보 열람, 정정, 삭제, 처리정지 요구
 2. 서비스 내 탈퇴 기능으로 저장된 자격증명 즉시 삭제 가능
-3. 추가 문의: lmg1152@naver.com`,
+3. 추가 문의: 022207@hafs.hs.kr`,
   },
   {
     id: 'officer',
     title: '제6조 (개인정보 보호책임자)',
     content: `- 성명: 이민기
-- 연락처: lmg1152@naver.com
+- 직책: 서비스 운영자
+- 연락처(이메일): 022207@hafs.hs.kr
 - 서비스: https://gmc.akademiya.kr`,
   },
   {
     id: 'remedy',
     title: '제7조 (권익침해 구제방법)',
     content: `1. 개인정보 분쟁조정위원회: 1833-6972 (www.kopico.go.kr)
-2. 개인정보침해신고센터: 118 (privacy.kisa.or.kr)`,
+2. 개인정보침해신고센터: 118 (privacy.kisa.or.kr)
+3. 경찰청: 182 (ecrm.police.go.kr)`,
   },
   {
     id: 'changes',
