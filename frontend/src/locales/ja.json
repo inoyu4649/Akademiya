@@ -500,6 +500,7 @@
     "createTitle": "アンケートを作成",
     "tabFeed": "実施中のアンケート",
     "tabMy": "作成したアンケート",
+    "tabViewable": "閲覧可能なアンケート",
     "empty": "アンケートはありません。",
     "basicInfo": "基本情報",
     "titleLabel": "タイトル",

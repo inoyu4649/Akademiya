@@ -100,6 +100,10 @@ export const surveyApi = {
   my: () =>
     client.get<{ surveys: Survey[] }>("/surveys/my").then((r) => r.data),
 
+  // 통계 조회 권한이 부여된 설문
+  viewable: () =>
+    client.get<{ surveys: Survey[] }>("/surveys/viewable").then((r) => r.data),
+
   // 내 반/조직의 진행중 설문 피드
   feed: () =>
     client.get<{ surveys: Survey[] }>("/surveys/feed").then((r) => r.data),

@@ -500,6 +500,7 @@
     "createTitle": "创建问卷",
     "tabFeed": "进行中的问卷",
     "tabMy": "我创建的问卷",
+    "tabViewable": "可查看的问卷",
     "empty": "暂无问卷。",
     "basicInfo": "基本信息",
     "titleLabel": "标题",

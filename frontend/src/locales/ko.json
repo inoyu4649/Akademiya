@@ -500,6 +500,7 @@
     "createTitle": "설문 만들기",
     "tabFeed": "진행 중 설문",
     "tabMy": "내가 만든 설문",
+    "tabViewable": "조회 가능 설문",
     "empty": "설문이 없습니다.",
     "basicInfo": "기본 정보",
     "titleLabel": "설문 제목",

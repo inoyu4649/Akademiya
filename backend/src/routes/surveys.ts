@@ -261,6 +261,33 @@ router.get("/my", requireAuth, async (req, res) => {
   res.json({ surveys: rows });
 });
 
+// ── GET /api/surveys/viewable ─────────────────────────────────────────────────
+// 통계 조회 권한이 부여된 설문 (내가 만든 설문 제외)
+router.get("/viewable", requireAuth, async (req, res) => {
+  const userId = req.user!.id;
+  const [rows] = await pool.execute(
+    `SELECT s.id, s.title, s.scope_type, s.scope_id, s.is_active,
+            s.allow_edit, s.allow_multiple, s.expires_at, s.created_at,
+            s.creator_id,
+            u.display_name AS creator_name,
+            CASE
+              WHEN s.scope_type = 'class' THEN c.name
+              WHEN s.scope_type = 'org'   THEN o.name
+              ELSE NULL
+            END AS scope_name,
+            (SELECT COUNT(*) FROM survey_responses sr WHERE sr.survey_id = s.id) AS response_count
+     FROM survey_stat_viewers ssv
+     JOIN surveys s ON s.id = ssv.survey_id
+     JOIN users u ON u.id = s.creator_id
+     LEFT JOIN classes c ON c.id = s.scope_id AND s.scope_type = 'class'
+     LEFT JOIN organizations o ON o.id = s.scope_id AND s.scope_type = 'org'
+     WHERE ssv.user_id = ? AND s.creator_id != ?
+     ORDER BY s.created_at DESC`,
+    [userId, userId]
+  ) as any[];
+  res.json({ surveys: rows });
+});
+
 // ── GET /api/surveys/feed ─────────────────────────────────────────────────────
 router.get("/feed", requireAuth, async (req, res) => {
   const userId = req.user!.id;

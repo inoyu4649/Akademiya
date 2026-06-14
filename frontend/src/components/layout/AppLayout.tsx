@@ -469,7 +469,7 @@ export default function AppLayout() {
 
         {/* ── Version badge ── */}
         <div className={styles.versionBadge}>
-          Akademiya Web App version 1.0
+          Akademiya Web App version 1.1
         </div>
 
         <div className={styles.sidebarBottom}>
