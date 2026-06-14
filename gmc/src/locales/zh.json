@@ -4,7 +4,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS 自动申请程序",
-    "version": "v2.6.1",
+    "version": "v2.7",
     "contact": "联系方式: 022207@hafs.hs.kr",
     "madeWith": "由 Claude Code 制作",
     "loading": "正在验证登录信息...",
@@ -82,7 +82,10 @@
     "slotsLoading": "加载中...",
     "holidayLabel": "📅 假日",
     "meLabel": "（我）",
-    "logTitle": "活动日志"
+    "logTitle": "活动日志",
+    "suspendRegisterNotice": "📅 GMC PASS 暂停期间，将在恢复日（{{date}}）自动申请。",
+    "slotsResumeDate": "下一个 GMC PASS 恢复日（{{date}}）",
+    "suspendLabel": "🚫 暂停中"
   },
   "pass": {
     "title": "GMC PASS 申请",
@@ -145,6 +148,18 @@
       "colManage": "管理",
       "revokeBtn": "撤销权限",
       "self": "本人"
+    },
+    "suspend": {
+      "title": "🚫 GMC PASS 暂停期间设置",
+      "startLabel": "开始日期",
+      "endLabel": "结束日期",
+      "addBtn": "添加",
+      "empty": "暂无设置的暂停期间。",
+      "colStart": "开始日期",
+      "colEnd": "结束日期",
+      "colManage": "管理",
+      "deleteBtn": "删除",
+      "invalidRange": "结束日期不能早于开始日期。"
     }
   }
 }

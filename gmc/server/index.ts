@@ -24,6 +24,7 @@ import {
   saveAkademiyaUser, getByAkademiyaUserId, linkGoingHafsCredentials,
   getPrivacyConsent, savePrivacyConsent,
   getTermsConsent, saveTermsConsent,
+  getSuspendPeriods, addSuspendPeriod, deleteSuspendPeriod, getActiveSuspendPeriodForDate,
   serverDir,
 } from './db.js';
 import type { Session, SubmitPassResult, ScheduleRow } from './types.js';
@@ -95,6 +96,25 @@ function isWeekend(): boolean {
   const now = new Date();
   const d = now.getDay();
   return d === 5 || d === 6 || d === 0 || isHolidayCached(dateStr(now));
+}
+
+interface TargetDateInfo {
+  date: string;
+  suspended: boolean;
+  suspendEnd: string | null;
+  resumeDate: string | null;
+}
+
+async function getTargetDateInfo(): Promise<TargetDateInfo> {
+  const candidate = effectiveDate();
+  const period = await getActiveSuspendPeriodForDate(candidate);
+  if (period) {
+    const afterEnd = new Date(period.end_date);
+    afterEnd.setDate(afterEnd.getDate() + 1);
+    const resumeDate = findNextWorkday(afterEnd);
+    return { date: resumeDate, suspended: true, suspendEnd: period.end_date, resumeDate };
+  }
+  return { date: candidate, suspended: false, suspendEnd: null, resumeDate: null };
 }
 
 function findNextRetryAt(prevAtMs: number, date: string, _ourStudentNo: string): number | null {
@@ -308,6 +328,8 @@ setInterval(async () => {
   schedulerBusy = true;
   try {
     if (isWeekend()) return;
+    const todaySuspend = await getActiveSuspendPeriodForDate(todayStr());
+    if (todaySuspend) return;
 
     const retry = await getDueRetry();
     if (retry) { await processRetry(retry); return; }
@@ -415,7 +437,18 @@ setInterval(async () => {
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = dateStr(yesterday);
-  const targetStr = effectiveDate();
+
+  // 중단 기간 체크: 오늘이 중단 기간 시작일이면 종료일 다음 첫 평일로 복사
+  const suspendPeriod = await getActiveSuspendPeriodForDate(today);
+  let targetStr: string;
+  if (suspendPeriod) {
+    const afterEnd = new Date(suspendPeriod.end_date);
+    afterEnd.setDate(afterEnd.getDate() + 1);
+    targetStr = findNextWorkday(afterEnd);
+    console.log(`[자정 복사] 중단 기간 (${suspendPeriod.start_date}~${suspendPeriod.end_date}) → 재개일 ${targetStr}로 복사`);
+  } else {
+    targetStr = effectiveDate();
+  }
 
   const prevSchedules = await getSchedulesByDate(yesterdayStr);
   if (prevSchedules.length === 0) {
@@ -917,8 +950,8 @@ app.post('/api/schedule/register', async (req: Request, res: Response) => {
   }
   if (!timeCode) return res.json({ success: false, message: '야자 시간을 선택하세요.' });
 
-  const targetDate = effectiveDate();
-  const isNonWorkday = isWeekend();
+  const { date: targetDate, suspended } = await getTargetDateInfo();
+  const weekend = isWeekend();
   const existing = await getScheduleAt(time, targetDate);
   if (existing && existing.student_no !== session.studentNo) {
     return res.json({ success: false, message: `${time}에 이미 다른 사용자가 등록되어 있습니다.` });
@@ -926,7 +959,7 @@ app.post('/api/schedule/register', async (req: Request, res: Response) => {
 
   await registerSchedule(time, targetDate, sessionId, session.studentNo, timeCode, 'gmcauto', reason || '');
   console.log(`[스케줄] ${session.studentNo} → ${time} 등록 (${targetDate})`);
-  const suffix = isNonWorkday ? ` (다음 평일: ${targetDate})` : '';
+  const suffix = suspended ? ` (재개일: ${targetDate})` : weekend ? ` (다음 평일: ${targetDate})` : '';
   return res.json({ success: true, message: `${time}에 자동 신청이 등록되었습니다${suffix}.` });
 });
 
@@ -935,7 +968,8 @@ app.post('/api/schedule/cancel', async (req: Request, res: Response) => {
   const session = sessions.get(sessionId);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
 
-  const result = await cancelSchedule(time, effectiveDate(), session.studentNo);
+  const { date: cancelDate } = await getTargetDateInfo();
+  const result = await cancelSchedule(time, cancelDate, session.studentNo);
   if (result.changes === 0) return res.json({ success: false, message: '스케줄을 찾을 수 없습니다.' });
   return res.json({ success: true, message: `${time} 해제 완료` });
 });
@@ -944,7 +978,7 @@ app.get('/api/schedule/status', async (req: Request, res: Response) => {
   const session = sessions.get(req.query.sessionId as string);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
 
-  const target = effectiveDate();
+  const { date: target, suspended, suspendEnd, resumeDate } = await getTargetDateInfo();
   const weekend = isWeekend();
   const my = await getMySchedule(session.studentNo, target);
   const all = await getTodaySchedules(target);
@@ -962,7 +996,7 @@ app.get('/api/schedule/status', async (req: Request, res: Response) => {
     };
   }
 
-  return res.json({ success: true, mySchedule, takenSlots, targetDate: target, isWeekend: weekend });
+  return res.json({ success: true, mySchedule, takenSlots, targetDate: target, isWeekend: weekend, suspended, suspendEnd, resumeDate });
 });
 
 // ========== 관리자 API ==========
@@ -1021,6 +1055,42 @@ app.post('/api/admin/users/role', async (req: Request, res: Response) => {
   await setUserRole(studentNo, newRole);
   console.log(`[관리자] ${session.studentNo} → ${studentNo} 권한 ${newRole} 설정`);
   return res.json({ success: true, message: `${studentNo} 권한이 ${newRole}으로 설정되었습니다.` });
+});
+
+// ========== GMC PASS 중단 기간 API ==========
+
+app.get('/api/admin/suspend', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const role = await getUserRole(session.studentNo);
+  if (role < 3) return res.status(403).json({ success: false, message: '권한 없음' });
+  const periods = await getSuspendPeriods();
+  return res.json({ success: true, periods });
+});
+
+app.post('/api/admin/suspend', async (req: Request, res: Response) => {
+  const { sessionId, startDate, endDate } = req.body as { sessionId: string; startDate: string; endDate: string };
+  const session = sessions.get(sessionId);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const role = await getUserRole(session.studentNo);
+  if (role < 3) return res.status(403).json({ success: false, message: '권한 없음' });
+  if (!startDate || !endDate || startDate > endDate) {
+    return res.json({ success: false, message: '유효하지 않은 날짜 범위입니다.' });
+  }
+  await addSuspendPeriod(startDate, endDate);
+  console.log(`[관리자] ${session.studentNo} 중단 기간 추가: ${startDate} ~ ${endDate}`);
+  return res.json({ success: true });
+});
+
+app.delete('/api/admin/suspend/:id', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const role = await getUserRole(session.studentNo);
+  if (role < 3) return res.status(403).json({ success: false, message: '권한 없음' });
+  const periodId = parseInt(req.params.id as string, 10);
+  await deleteSuspendPeriod(periodId);
+  console.log(`[관리자] ${session.studentNo} 중단 기간 ${periodId} 삭제`);
+  return res.json({ success: true });
 });
 
 // ========== 통계 API ==========

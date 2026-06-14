@@ -9,7 +9,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS 자동신청 프로그램",
-    "version": "v2.6.1",
+    "version": "v2.7",
     "contact": "문의: 022207@hafs.hs.kr",
     "madeWith": "Claude Code로 제작됨",
     "loading": "로그인 정보 확인 중...",
@@ -87,7 +87,10 @@
     "slotsLoading": "불러오는 중...",
     "holidayLabel": "📅 휴일",
     "meLabel": "(나)",
-    "logTitle": "활동 로그"
+    "logTitle": "활동 로그",
+    "suspendRegisterNotice": "📅 GMC PASS 중단 기간입니다. 재개일({{date}})에 자동으로 신청됩니다.",
+    "slotsResumeDate": "다음 GMC PASS 재개일({{date}}) 기준",
+    "suspendLabel": "🚫 중단"
   },
   "pass": {
     "title": "GMC PASS 신청",
@@ -150,6 +153,18 @@
       "colManage": "관리",
       "revokeBtn": "권한 취소",
       "self": "본인"
+    },
+    "suspend": {
+      "title": "🚫 GMC PASS 중단 기간 설정",
+      "startLabel": "시작일",
+      "endLabel": "종료일",
+      "addBtn": "추가",
+      "empty": "설정된 중단 기간이 없습니다.",
+      "colStart": "시작일",
+      "colEnd": "종료일",
+      "colManage": "관리",
+      "deleteBtn": "삭제",
+      "invalidRange": "종료일이 시작일보다 빠를 수 없습니다."
     }
   }
 }

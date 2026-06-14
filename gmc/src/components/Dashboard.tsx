@@ -53,6 +53,9 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
   const [scheduleLoading, setScheduleLoading] = useState(true)
   const [targetDate, setTargetDate]           = useState('')
   const [weekend, setWeekend]                 = useState(false)
+  const [suspended, setSuspended]             = useState(false)
+  const [suspendEnd, setSuspendEnd]           = useState<string | null>(null)
+  const [resumeDate, setResumeDate]           = useState<string | null>(null)
 
   const [regTime, setRegTime]         = useState('09:00')
   const [regTimeCode, setRegTimeCode] = useState('3')
@@ -74,12 +77,18 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
         takenSlots?: string[];
         targetDate?: string;
         isWeekend?: boolean;
+        suspended?: boolean;
+        suspendEnd?: string | null;
+        resumeDate?: string | null;
       }
       if (data.success) {
         setMySchedule(data.mySchedule ?? null)
         setTakenSlots(data.takenSlots || [])
         setTargetDate(data.targetDate || '')
         setWeekend(data.isWeekend || false)
+        setSuspended(data.suspended || false)
+        setSuspendEnd(data.suspendEnd || null)
+        setResumeDate(data.resumeDate || null)
       }
     } catch { /* 무시 */ }
     finally { setScheduleLoading(false) }
@@ -157,7 +166,7 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
         <div className="header-left">
           <img src="/logo_gmc.png" alt="GMCAuto" style={{ height: '30px', objectFit: 'contain' }} />
           <h1>GMCAuto 2</h1>
-          <span className="version">v2.6.1</span>
+          <span className="version">v2.7</span>
         </div>
         <div className="header-right">
           <button
@@ -259,11 +268,15 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
                   <h2>{t('home.registerTitle')}</h2>
                   <p>
                     {t('home.registerDesc')}
-                    {weekend && (
+                    {suspended ? (
+                      <><br /><span style={{ color: 'var(--danger)', fontWeight: '600' }}>
+                        {t('home.suspendRegisterNotice', { date: resumeDate || targetDate })}
+                      </span></>
+                    ) : weekend ? (
                       <><br /><span style={{ color: 'var(--warning)', fontWeight: '600' }}>
                         {t('home.weekendNotice', { date: targetDate })}
                       </span></>
-                    )}
+                    ) : null}
                   </p>
                 </div>
                 <div className="card-body">
@@ -329,9 +342,15 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
               <div className="card-header">
                 <h2>{t('home.slotsTitle')}</h2>
                 <p>
-                  {weekend ? t('home.slotsNextWorkday', { date: targetDate }) : t('home.slotsToday')}{' '}
+                  {suspended
+                    ? t('home.slotsResumeDate', { date: resumeDate || targetDate })
+                    : weekend
+                    ? t('home.slotsNextWorkday', { date: targetDate })
+                    : t('home.slotsToday')
+                  }{' '}
                   ({takenSlots.length})
-                  {weekend && <span style={{ marginLeft: '6px', color: 'var(--warning)', fontSize: '11px', fontWeight: '600' }}>{t('home.holidayLabel')}</span>}
+                  {suspended && <span style={{ marginLeft: '6px', color: 'var(--danger)', fontSize: '11px', fontWeight: '600' }}>{t('home.suspendLabel')}</span>}
+                  {!suspended && weekend && <span style={{ marginLeft: '6px', color: 'var(--warning)', fontSize: '11px', fontWeight: '600' }}>{t('home.holidayLabel')}</span>}
                 </p>
               </div>
               <div className="card-body">

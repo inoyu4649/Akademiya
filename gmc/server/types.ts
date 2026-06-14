@@ -63,6 +63,13 @@ export interface RoleRow extends RowDataPacket {
   role: number;
 }
 
+export interface SuspendPeriodRow extends RowDataPacket {
+  id: number;
+  start_date: string;
+  end_date: string;
+  created_at?: string;
+}
+
 export interface CountRow extends RowDataPacket {
   cnt: number;
 }

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { mkdirSync } from 'fs';
 import type {
   GmcUserRow, ScheduleRow, RetryRow, UsageStatRow,
-  ConsentRow, RoleRow, ParsedStudentNo,
+  ConsentRow, RoleRow, ParsedStudentNo, SuspendPeriodRow,
 } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -118,6 +118,15 @@ export async function initDb(): Promise<void> {
       consented_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       UNIQUE KEY uq_gmc_user (gmc_user_id),
       FOREIGN KEY (gmc_user_id) REFERENCES gmc_users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS gmc_suspend_periods (
+      id         INT AUTO_INCREMENT PRIMARY KEY,
+      start_date VARCHAR(10) NOT NULL,
+      end_date   VARCHAR(10) NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
@@ -482,6 +491,34 @@ export async function backupDb(destPath: string): Promise<void> {
   const { writeFileSync } = await import('fs');
   writeFileSync(destPath, JSON.stringify(rows, null, 2), 'utf8');
   console.log(`[백업] JSON 백업 완료: ${destPath}`);
+}
+
+// ========== GMC PASS 중단 기간 ==========
+
+export async function getSuspendPeriods(): Promise<SuspendPeriodRow[]> {
+  const [rows] = await pool.execute<SuspendPeriodRow[]>(
+    'SELECT * FROM gmc_suspend_periods ORDER BY start_date ASC'
+  );
+  return rows;
+}
+
+export async function addSuspendPeriod(startDate: string, endDate: string): Promise<void> {
+  await pool.execute(
+    'INSERT INTO gmc_suspend_periods (start_date, end_date) VALUES (?, ?)',
+    [startDate, endDate]
+  );
+}
+
+export async function deleteSuspendPeriod(id: number): Promise<void> {
+  await pool.execute('DELETE FROM gmc_suspend_periods WHERE id = ?', [id]);
+}
+
+export async function getActiveSuspendPeriodForDate(dateStr: string): Promise<SuspendPeriodRow | null> {
+  const [rows] = await pool.execute<SuspendPeriodRow[]>(
+    'SELECT * FROM gmc_suspend_periods WHERE start_date <= ? AND end_date >= ? ORDER BY end_date DESC LIMIT 1',
+    [dateStr, dateStr]
+  );
+  return rows[0] ?? null;
 }
 
 // __dirname 불필요하지만 backup 경로를 위해 export

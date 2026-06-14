@@ -363,6 +363,9 @@ export default function AdminDashboard({ session }: AdminDashboardProps) {
 
         {/* ── 사용자 권한 관리 (권한 3) ── */}
         {userRole >= 3 && <UserManager session={session} roleNames={roleNames} ROLE_COLORS={ROLE_COLORS} />}
+
+        {/* ── GMC PASS 중단 기간 설정 (권한 3) ── */}
+        {userRole >= 3 && <SuspendManager session={session} />}
       </div>
     </div>
   )
@@ -381,6 +384,160 @@ function EmptyChart({ label }: EmptyChartProps) {
   return (
     <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
       {label}
+    </div>
+  )
+}
+
+interface SuspendPeriod {
+  id: number
+  start_date: string
+  end_date: string
+  created_at?: string
+}
+
+interface SuspendManagerProps {
+  session: SessionData
+}
+
+function SuspendManager({ session }: SuspendManagerProps) {
+  const { t } = useTranslation()
+  const [periods, setPeriods]           = useState<SuspendPeriod[]>([])
+  const [startDate, setStartDate]       = useState('')
+  const [endDate, setEndDate]           = useState('')
+  const [saving, setSaving]             = useState(false)
+  const [message, setMessage]           = useState<{ success: boolean; text: string } | null>(null)
+
+  const fetchPeriods = useCallback(async () => {
+    try {
+      const res  = await fetch(`/api/admin/suspend?sessionId=${session.sessionId}`)
+      const data = await res.json() as { success: boolean; periods?: SuspendPeriod[] }
+      if (data.success) setPeriods(data.periods || [])
+    } catch { /* ignore */ }
+  }, [session.sessionId])
+
+  useEffect(() => { fetchPeriods() }, [fetchPeriods])
+
+  const handleAdd = async () => {
+    if (!startDate || !endDate) return
+    if (startDate > endDate) {
+      setMessage({ success: false, text: t('admin.suspend.invalidRange') })
+      return
+    }
+    setSaving(true)
+    setMessage(null)
+    try {
+      const res  = await fetch('/api/admin/suspend', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ sessionId: session.sessionId, startDate, endDate }),
+      })
+      const data = await res.json() as { success: boolean; message?: string }
+      if (data.success) {
+        setStartDate('')
+        setEndDate('')
+        fetchPeriods()
+      } else {
+        setMessage({ success: false, text: data.message || '추가 실패' })
+      }
+    } catch {
+      setMessage({ success: false, text: '서버 오류' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('이 중단 기간을 삭제하시겠습니까?')) return
+    try {
+      const res  = await fetch(`/api/admin/suspend/${id}?sessionId=${session.sessionId}`, { method: 'DELETE' })
+      const data = await res.json() as { success: boolean }
+      if (data.success) fetchPeriods()
+    } catch { /* ignore */ }
+  }
+
+  const inputStyle: React.CSSProperties = {
+    padding: '6px 10px', border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-sm)', fontSize: '13px',
+    background: 'var(--bg-input)', color: 'var(--text)',
+  }
+
+  return (
+    <div style={{ marginTop: '24px', borderTop: '1px solid var(--border)', paddingTop: '18px' }}>
+      <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>
+        {t('admin.suspend.title')}
+      </h3>
+
+      <div style={{
+        display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'flex-end',
+        padding: '10px 12px', background: 'var(--bg)',
+        borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginBottom: '10px',
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{t('admin.suspend.startLabel')}</span>
+          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{t('admin.suspend.endLabel')}</span>
+          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={inputStyle} />
+        </div>
+        <button
+          className="btn btn-primary"
+          onClick={handleAdd}
+          disabled={saving || !startDate || !endDate}
+          style={{ fontSize: '12px', padding: '6px 12px' }}
+        >
+          {t('admin.suspend.addBtn')}
+        </button>
+      </div>
+
+      {message && (
+        <div style={{
+          padding: '7px 10px', borderRadius: 'var(--radius-sm)', fontSize: '12px', marginBottom: '10px',
+          background: message.success ? 'var(--success-light)' : 'var(--danger-light)',
+          color:      message.success ? 'var(--success)'       : 'var(--danger)',
+          border:    `1px solid ${message.success ? 'var(--success)' : 'var(--danger)'}`,
+        }}>
+          {message.text}
+        </div>
+      )}
+
+      {periods.length === 0 ? (
+        <div style={{
+          textAlign: 'center', padding: '16px', fontSize: '12px',
+          color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
+        }}>
+          {t('admin.suspend.empty')}
+        </div>
+      ) : (
+        <div style={{ overflowX: 'auto', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+            <thead>
+              <tr style={{ background: 'var(--bg)', borderBottom: '2px solid var(--border)' }}>
+                {[t('admin.suspend.colStart'), t('admin.suspend.colEnd'), t('admin.suspend.colManage')].map(h => (
+                  <th key={h} style={{ padding: '7px 10px', textAlign: 'left', fontWeight: 600, background: 'var(--bg)', color: 'var(--text-secondary)' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {periods.map((p, idx) => (
+                <tr key={p.id} style={{ borderBottom: '1px solid var(--border)', background: idx % 2 === 0 ? 'var(--card-bg)' : 'var(--bg)' }}>
+                  <td style={{ padding: '5px 10px', fontWeight: 500 }}>{p.start_date}</td>
+                  <td style={{ padding: '5px 10px', fontWeight: 500 }}>{p.end_date}</td>
+                  <td style={{ padding: '5px 10px' }}>
+                    <button
+                      className="btn btn-outline"
+                      onClick={() => handleDelete(p.id)}
+                      style={{ fontSize: '11px', padding: '2px 8px', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                    >
+                      {t('admin.suspend.deleteBtn')}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

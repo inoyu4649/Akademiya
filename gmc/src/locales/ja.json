@@ -4,7 +4,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS 自動申請プログラム",
-    "version": "v2.6.1",
+    "version": "v2.7",
     "contact": "お問い合わせ: 022207@hafs.hs.kr",
     "madeWith": "Claude Code で制作",
     "loading": "ログイン情報を確認中...",
@@ -82,7 +82,10 @@
     "slotsLoading": "読み込み中...",
     "holidayLabel": "📅 休日",
     "meLabel": "（自分）",
-    "logTitle": "アクティビティログ"
+    "logTitle": "アクティビティログ",
+    "suspendRegisterNotice": "📅 GMC PASS 休止期間中です。再開日（{{date}}）に自動申請されます。",
+    "slotsResumeDate": "次の GMC PASS 再開日（{{date}}）基準",
+    "suspendLabel": "🚫 休止中"
   },
   "pass": {
     "title": "GMC PASS 申請",
@@ -145,6 +148,18 @@
       "colManage": "管理",
       "revokeBtn": "権限取消",
       "self": "自分"
+    },
+    "suspend": {
+      "title": "🚫 GMC PASS 休止期間の設定",
+      "startLabel": "開始日",
+      "endLabel": "終了日",
+      "addBtn": "追加",
+      "empty": "設定された休止期間はありません。",
+      "colStart": "開始日",
+      "colEnd": "終了日",
+      "colManage": "管理",
+      "deleteBtn": "削除",
+      "invalidRange": "終了日は開始日より前にできません。"
     }
   }
 }

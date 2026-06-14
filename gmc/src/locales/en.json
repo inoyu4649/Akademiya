@@ -4,7 +4,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS Auto-Application",
-    "version": "v2.6.1",
+    "version": "v2.7",
     "contact": "Contact: 022207@hafs.hs.kr",
     "madeWith": "Made with Claude Code",
     "loading": "Verifying session...",
@@ -82,7 +82,10 @@
     "slotsLoading": "Loading...",
     "holidayLabel": "📅 Holiday",
     "meLabel": "(me)",
-    "logTitle": "Activity Log"
+    "logTitle": "Activity Log",
+    "suspendRegisterNotice": "📅 GMC PASS is suspended. Will be applied on resume date ({{date}}).",
+    "slotsResumeDate": "Next GMC PASS resume date ({{date}})",
+    "suspendLabel": "🚫 Suspended"
   },
   "pass": {
     "title": "GMC PASS Application",
@@ -145,6 +148,18 @@
       "colManage": "Manage",
       "revokeBtn": "Revoke",
       "self": "You"
+    },
+    "suspend": {
+      "title": "🚫 GMC PASS Suspension Period",
+      "startLabel": "Start Date",
+      "endLabel": "End Date",
+      "addBtn": "Add",
+      "empty": "No suspension periods configured.",
+      "colStart": "Start Date",
+      "colEnd": "End Date",
+      "colManage": "Manage",
+      "deleteBtn": "Delete",
+      "invalidRange": "End date cannot be earlier than start date."
     }
   }
 }
