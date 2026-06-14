@@ -1,10 +1,101 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Akademiya</title>
+
+    <!-- Primary Meta -->
+    <title>Akademiya — 누구나 운영하는 교육 플랫폼</title>
+    <meta name="description" content="교사 전용의 한계를 넘은 교육 플랫폼. 동아리 부장·학급 임원도 조직과 반을 자유롭게 운영하고, 과제·설문·자료실·알림을 하나로 관리하세요." />
+    <meta name="application-name" content="Akademiya" />
+    <meta name="theme-color" content="#4fc3f7" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://akademiya.kr/" />
+
+    <!-- Favicon & PWA -->
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Akademiya" />
+    <meta property="og:title" content="Akademiya — 누구나 운영하는 교육 플랫폼" />
+    <meta property="og:description" content="교사 전용의 한계를 넘은 교육 플랫폼. 동아리 부장·학급 임원도 조직과 반을 자유롭게 운영하고, 과제·설문·자료실·알림을 하나로 관리하세요." />
+    <meta property="og:url" content="https://akademiya.kr/" />
+    <meta property="og:image" content="https://akademiya.kr/logo.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Akademiya 로고" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="ja_JP" />
+    <meta property="og:locale:alternate" content="zh_CN" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Akademiya — 누구나 운영하는 교육 플랫폼" />
+    <meta name="twitter:description" content="교사 전용의 한계를 넘은 교육 플랫폼. 동아리 부장·학급 임원도 조직과 반을 자유롭게 운영하고, 과제·설문·자료실·알림을 하나로 관리하세요." />
+    <meta name="twitter:image" content="https://akademiya.kr/logo.png" />
+
+    <!-- JSON-LD Structured Data (GEO/AEO) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://akademiya.kr/#website",
+          "url": "https://akademiya.kr/",
+          "name": "Akademiya",
+          "description": "교사 전용의 한계를 넘은 교육 플랫폼. 동아리 부장·학급 임원도 조직과 반을 자유롭게 운영하고, 과제·설문·자료실·알림을 하나로 관리하세요.",
+          "inLanguage": ["ko", "en", "ja", "zh"]
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://akademiya.kr/#app",
+          "name": "Akademiya",
+          "url": "https://akademiya.kr/",
+          "description": "교사 전용의 한계를 넘은 교육 플랫폼. 동아리 부장·학급 임원도 조직과 반을 자유롭게 운영하고, 과제·설문·자료실·알림을 하나로 관리하세요.",
+          "applicationCategory": "EducationApplication",
+          "operatingSystem": "Web",
+          "inLanguage": ["ko", "en", "ja", "zh"],
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "KRW"
+          },
+          "featureList": [
+            "과제 생성·제출·승인 관리",
+            "공개·클래스·조직 설문",
+            "반별 자료실",
+            "마감 알림 시스템",
+            "달력 뷰",
+            "한국어·영어·日本語·中文 다국어 지원"
+          ]
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://akademiya.kr/#organization",
+          "name": "Akademiya",
+          "url": "https://akademiya.kr/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://akademiya.kr/logo.png",
+            "width": 512,
+            "height": 512
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "022207@hafs.hs.kr",
+            "contactType": "customer support",
+            "availableLanguage": ["Korean", "English", "Japanese", "Chinese"]
+          }
+        }
+      ]
+    }
+    </script>
+
     <!-- Google Fonts: Noto Sans 패밀리 — Unicode-range 서브셋 자동 최적화 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

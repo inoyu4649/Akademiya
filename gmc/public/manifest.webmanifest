@@ -1,0 +1,20 @@
+{
+  "name": "GMCAuto",
+  "short_name": "GMCAuto",
+  "description": "용인한국외국어대학교부설고등학교 Going HAFS GMC PASS 자동신청 서비스",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e1e1e",
+  "theme_color": "#4fc3f7",
+  "lang": "ko",
+  "dir": "ltr",
+  "categories": ["utilities", "education"],
+  "icons": [
+    {
+      "src": "/logo_gmc.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+User-agent: *
+# 공개 페이지 허용
+Allow: /$
+Allow: /login
+Allow: /register
+Allow: /forgot-password
+Allow: /privacy
+Allow: /terms
+Allow: /surveys/public/
+
+# 비공개 페이지 차단
+Disallow: /api/
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /surveys/
+Disallow: /classes/
+Disallow: /assignments/
+Disallow: /calendar
+Disallow: /notifications
+Disallow: /profile
+Disallow: /bug-report
+Disallow: /reports/
+
+Sitemap: https://akademiya.kr/sitemap.xml

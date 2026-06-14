@@ -1,0 +1,20 @@
+{
+  "name": "Akademiya",
+  "short_name": "Akademiya",
+  "description": "교사 전용의 한계를 넘은 교육 플랫폼. 동아리 부장·학급 임원도 조직과 반을 자유롭게 운영하세요.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#4fc3f7",
+  "lang": "ko",
+  "dir": "ltr",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
