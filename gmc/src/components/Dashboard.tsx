@@ -4,6 +4,92 @@ import PassForm from './PassForm'
 import LogViewer from './LogViewer'
 import type { SessionData, ScheduleInfo, LogEntry, PassRecord } from '../types'
 
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const raw = window.atob(base64)
+  const arr = new Uint8Array(raw.length)
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i)
+  return arr
+}
+
+type OsType = 'ios' | 'ipados' | 'android' | 'windows' | 'mac' | 'linux' | 'unknown'
+
+function detectOs(): OsType {
+  const ua = navigator.userAgent
+  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'ipados'
+  if (/iPhone/.test(ua)) return 'ios'
+  if (/Android/.test(ua)) return 'android'
+  if (/Windows/.test(ua)) return 'windows'
+  if (/Macintosh|Mac OS X/.test(ua)) return 'mac'
+  if (/Linux/.test(ua)) return 'linux'
+  return 'unknown'
+}
+
+function InstallGuide({ os }: { os: OsType }) {
+  const isSafari = /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS|Chrome/.test(navigator.userAgent)
+
+  if (os === 'ios' || os === 'ipados') {
+    return (
+      <div>
+        <p style={{ margin: '0 0 12px', fontSize: '14px', color: 'var(--text)' }}>
+          {os === 'ipados' ? 'iPad' : 'iPhone'}에서 푸시 알림을 받으려면{' '}
+          <strong>Safari</strong>로 홈 화면에 추가해야 합니다.
+        </p>
+        {!isSafari && (
+          <div style={{
+            background: 'var(--warning-light)', border: '1px solid var(--warning)',
+            borderRadius: '6px', padding: '8px 12px', marginBottom: '12px',
+            fontSize: '13px', color: 'var(--text)',
+          }}>
+            ⚠️ 현재 Safari가 아닙니다. 반드시 <strong>Safari</strong> 브라우저로 접속해주세요.
+          </div>
+        )}
+        <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text)', lineHeight: 2 }}>
+          <li>Safari로 <strong>gmc.akademiya.kr</strong> 접속</li>
+          <li>
+            {os === 'ipados'
+              ? '주소창 옆 공유 버튼(□↑)을 탭'
+              : '화면 하단 가운데 공유 버튼(□↑)을 탭'}
+          </li>
+          <li><strong>홈 화면에 추가</strong> 선택 후 추가</li>
+          <li>홈 화면의 GMCAuto 아이콘으로 실행 후 알림 허용</li>
+        </ol>
+      </div>
+    )
+  }
+
+  if (os === 'android') {
+    return (
+      <div>
+        <p style={{ margin: '0 0 12px', fontSize: '14px', color: 'var(--text)' }}>
+          Android에서 앱을 설치하면 푸시 알림을 받을 수 있습니다.
+        </p>
+        <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text)', lineHeight: 2 }}>
+          <li>Chrome 브라우저로 gmc.akademiya.kr 접속</li>
+          <li>우측 상단 메뉴(⋮) 탭</li>
+          <li><strong>홈 화면에 추가</strong> 또는 <strong>앱 설치</strong> 선택</li>
+          <li>설치된 앱 실행 후 알림 허용</li>
+        </ol>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <p style={{ margin: '0 0 12px', fontSize: '14px', color: 'var(--text)' }}>
+        PC에서 앱을 설치하면 푸시 알림을 받을 수 있습니다.
+      </p>
+      <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text)', lineHeight: 2 }}>
+        <li>Chrome 또는 Edge로 gmc.akademiya.kr 접속</li>
+        <li>주소창 오른쪽 <strong>설치(📥) 아이콘</strong> 클릭</li>
+        <li>또는 브라우저 메뉴 → <strong>앱 설치</strong> 선택</li>
+        <li>설치된 앱 실행 후 알림 허용</li>
+      </ol>
+    </div>
+  )
+}
+
 const AdminDashboard = lazy(() => import('./AdminDashboard'))
 
 interface DashboardProps {
@@ -63,6 +149,13 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
   const [regLoading, setRegLoading]   = useState(false)
   const [regMessage, setRegMessage]   = useState<{ success: boolean; message: string } | null>(null)
 
+  const [notifEnabled, setNotifEnabled]     = useState(false)
+  const [notifLoading, setNotifLoading]     = useState(false)
+  const [notifError, setNotifError]         = useState('')
+  const [isPwa, setIsPwa]                   = useState(false)
+  const [showInstallModal, setShowInstallModal] = useState(false)
+  const [installOs, setInstallOs]           = useState<OsType>('unknown')
+
   const addLog = useCallback((message: string, type: LogEntry['type'] = 'info') => {
     const time = new Date().toLocaleTimeString('ko-KR', { hour12: false })
     setLogs(prev => [...prev, { time, message, type }])
@@ -99,6 +192,81 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
     const iv = setInterval(fetchSchedule, 30000)
     return () => clearInterval(iv)
   }, [fetchSchedule])
+
+  useEffect(() => {
+    const pwa =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (navigator as Navigator & { standalone?: boolean }).standalone === true
+    setIsPwa(pwa)
+    if (pwa && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.ready
+        .then(reg => reg.pushManager.getSubscription())
+        .then(sub => setNotifEnabled(!!sub))
+        .catch(() => {})
+    }
+  }, [])
+
+  const handleNotifToggle = async () => {
+    if (!isPwa) {
+      setInstallOs(detectOs())
+      setShowInstallModal(true)
+      return
+    }
+    if (notifLoading) return
+    setNotifLoading(true)
+    setNotifError('')
+    try {
+      const reg = await navigator.serviceWorker.ready
+      if (notifEnabled) {
+        const sub = await reg.pushManager.getSubscription()
+        if (sub) await sub.unsubscribe()
+        await fetch('/api/push/unsubscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: session.sessionId }),
+        })
+        setNotifEnabled(false)
+      } else {
+        if (!('Notification' in window)) {
+          setNotifError('이 브라우저는 알림을 지원하지 않습니다.')
+          return
+        }
+        if (Notification.permission === 'denied') {
+          setNotifError('브라우저 설정에서 알림 권한을 허용해주세요.')
+          return
+        }
+        const vapidRes = await fetch('/api/push/vapid-public-key')
+        const { publicKey } = await vapidRes.json() as { publicKey: string }
+        const permission = await Notification.requestPermission()
+        if (permission !== 'granted') {
+          setNotifError('알림 권한이 거부되었습니다.')
+          return
+        }
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+        })
+        const subJSON = JSON.parse(JSON.stringify(sub)) as {
+          endpoint: string; keys?: { p256dh?: string; auth?: string }
+        }
+        await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: session.sessionId,
+            endpoint: subJSON.endpoint,
+            p256dh: subJSON.keys?.p256dh ?? '',
+            auth: subJSON.keys?.auth ?? '',
+          }),
+        })
+        setNotifEnabled(true)
+      }
+    } catch (err) {
+      setNotifError((err as Error).message || '오류가 발생했습니다.')
+    } finally {
+      setNotifLoading(false)
+    }
+  }
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -166,7 +334,7 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
         <div className="header-left">
           <img src="/logo_gmc.png" alt="GMCAuto" style={{ height: '30px', objectFit: 'contain' }} />
           <h1>GMCAuto 2</h1>
-          <span className="version">v2.7</span>
+          <span className="version">v2.8</span>
         </div>
         <div className="header-right">
           <button
@@ -225,16 +393,57 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
               <span style={{ fontSize: '11px', opacity: 0.7 }}>↗</span>
             </a>
 
+            {/* 설치 안내 모달 */}
+            {showInstallModal && (
+              <div style={{
+                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+                zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '16px',
+              }}>
+                <div style={{
+                  background: 'var(--card-bg)', border: '1px solid var(--border)',
+                  borderRadius: '12px', padding: '24px', maxWidth: '400px', width: '100%',
+                }}>
+                  <h3 style={{ margin: '0 0 16px', color: 'var(--text)', fontSize: '16px' }}>
+                    앱 설치 후 알림 가능
+                  </h3>
+                  <InstallGuide os={installOs} />
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setShowInstallModal(false)}
+                    style={{ marginTop: '20px', width: '100%' }}
+                  >
+                    확인
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* 내 자동 신청 현황 */}
             {mySchedule && (
               <div className="card">
                 <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h2>{t('home.myScheduleTitle')}</h2>
-                  <button className="btn btn-danger" onClick={handleCancel} style={{ fontSize: '12px', padding: '5px 11px' }}>
-                    {t('home.cancelBtn')}
-                  </button>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <button
+                      className={`btn ${notifEnabled ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={handleNotifToggle}
+                      disabled={notifLoading}
+                      style={{ fontSize: '12px', padding: '5px 11px' }}
+                    >
+                      {notifLoading ? '...' : notifEnabled ? '알림: ON' : '알림: OFF'}
+                    </button>
+                    <button className="btn btn-danger" onClick={handleCancel} style={{ fontSize: '12px', padding: '5px 11px' }}>
+                      {t('home.cancelBtn')}
+                    </button>
+                  </div>
                 </div>
                 <div className="card-body">
+                  {notifError && (
+                    <div className="alert alert-error" style={{ marginBottom: '10px', fontSize: '13px' }}>
+                      {notifError}
+                    </div>
+                  )}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
                     <div><strong>{t('home.applyTimeLabel')}:</strong> {mySchedule.time}</div>
                     <div>

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { mkdirSync } from 'fs';
 import type {
   GmcUserRow, ScheduleRow, RetryRow, UsageStatRow,
-  ConsentRow, RoleRow, ParsedStudentNo, SuspendPeriodRow,
+  ConsentRow, RoleRow, ParsedStudentNo, SuspendPeriodRow, PushSubscriptionRow,
 } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -127,6 +127,20 @@ export async function initDb(): Promise<void> {
       start_date VARCHAR(10) NOT NULL,
       end_date   VARCHAR(10) NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id           INT AUTO_INCREMENT PRIMARY KEY,
+      gmc_user_id  INT NOT NULL,
+      endpoint     TEXT NOT NULL,
+      p256dh       TEXT NOT NULL,
+      auth_key     TEXT NOT NULL,
+      created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_gmc_user (gmc_user_id),
+      FOREIGN KEY (gmc_user_id) REFERENCES gmc_users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
@@ -517,6 +531,47 @@ export async function getActiveSuspendPeriodForDate(dateStr: string): Promise<Su
   const [rows] = await pool.execute<SuspendPeriodRow[]>(
     'SELECT * FROM gmc_suspend_periods WHERE start_date <= ? AND end_date >= ? ORDER BY end_date DESC LIMIT 1',
     [dateStr, dateStr]
+  );
+  return rows[0] ?? null;
+}
+
+// ========== 푸시 구독 ==========
+
+export async function savePushSubscription(
+  gmcUserId: number, endpoint: string, p256dh: string, authKey: string
+): Promise<void> {
+  await pool.execute(
+    `INSERT INTO push_subscriptions (gmc_user_id, endpoint, p256dh, auth_key)
+     VALUES (?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       endpoint   = VALUES(endpoint),
+       p256dh     = VALUES(p256dh),
+       auth_key   = VALUES(auth_key),
+       updated_at = NOW()`,
+    [gmcUserId, endpoint, p256dh, authKey]
+  );
+}
+
+export async function deletePushSubscription(gmcUserId: number): Promise<void> {
+  await pool.execute('DELETE FROM push_subscriptions WHERE gmc_user_id = ?', [gmcUserId]);
+}
+
+export async function deletePushSubscriptionByStudentNo(studentNo: string): Promise<void> {
+  await pool.execute(
+    `DELETE ps FROM push_subscriptions ps
+     JOIN gmc_users gu ON ps.gmc_user_id = gu.id
+     WHERE gu.student_no = ?`,
+    [studentNo]
+  );
+}
+
+export async function getPushSubscriptionByStudentNo(studentNo: string): Promise<PushSubscriptionRow | null> {
+  const [rows] = await pool.execute<PushSubscriptionRow[]>(
+    `SELECT ps.id, ps.gmc_user_id, ps.endpoint, ps.p256dh, ps.auth_key
+     FROM push_subscriptions ps
+     JOIN gmc_users gu ON ps.gmc_user_id = gu.id
+     WHERE gu.student_no = ?`,
+    [studentNo]
   );
   return rows[0] ?? null;
 }

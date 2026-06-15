@@ -26,8 +26,10 @@ import {
   getPrivacyConsent, savePrivacyConsent,
   getTermsConsent, saveTermsConsent,
   getSuspendPeriods, addSuspendPeriod, deleteSuspendPeriod, getActiveSuspendPeriodForDate,
+  savePushSubscription, deletePushSubscription,
   serverDir,
 } from './db.js';
+import { vapidPublicKey, sendPushToStudent } from './webpush.js';
 import type { Session, SubmitPassResult, ScheduleRow } from './types.js';
 
 const GMC_PRIVACY_POLICY_VERSION = 1;
@@ -371,6 +373,10 @@ async function processSchedule(entry: ScheduleRow, key: string, today: string): 
 
     await markScheduleExecuted(key, today, result.ok, result.msg);
     await recordUsage(entry.student_no, 'gmcauto', entry.time_code, key, today, result.ok, result.msg);
+    // 트리거 #2: 신청 성공 푸시
+    if (result.ok) {
+      await sendPushToStudent(entry.student_no, 'GMCAuto', `[${entry.student_no}] ${key} 신청되었습니다.`);
+    }
     console.log(`[스케줄 ${key}] ${entry.student_no}: ${result.msg}`);
   } catch (err) {
     const error = err as Error;
@@ -394,6 +400,10 @@ async function processRetry(retry: Awaited<ReturnType<typeof getDueRetry>> & obj
         const note = ` (재시도 한도 초과 - 5회)`;
         await markScheduleExecuted(retry.origin_time, retry.apply_date, false, result.msg + note);
         await recordUsage(retry.student_no, 'gmcauto', retry.time_code, retry.origin_time, retry.apply_date, false, result.msg + note);
+        // 트리거 #3: 5회 모두 실패 푸시
+        await sendPushToStudent(retry.student_no, 'GMCAuto',
+          `[${retry.student_no}] ${retry.origin_time} 신청 실패하였습니다. 비밀번호를 확인한 후 수동으로 신청 바랍니다.`
+        );
         return;
       }
       const nextAt = findNextRetryAt(retry.retry_at, retry.apply_date, retry.student_no);
@@ -412,6 +422,10 @@ async function processRetry(retry: Awaited<ReturnType<typeof getDueRetry>> & obj
 
     await markScheduleExecuted(retry.origin_time, retry.apply_date, result.ok, result.msg);
     await recordUsage(retry.student_no, 'gmcauto', retry.time_code, retry.origin_time, retry.apply_date, result.ok, result.msg);
+    // 트리거 #2: 재시도 성공 푸시
+    if (result.ok) {
+      await sendPushToStudent(retry.student_no, 'GMCAuto', `[${retry.student_no}] ${retry.origin_time} 신청되었습니다.`);
+    }
     console.log(`${label} ${retry.student_no}: ${result.msg}`);
   } catch (err) {
     const error = err as Error;
@@ -451,7 +465,41 @@ setInterval(async () => {
     targetStr = effectiveDate();
   }
 
+  // ── 트리거 #4/#5: 휴일·중단기간 개시일 첫 알림 ──────────────────
+  const isSuspendStart = suspendPeriod !== null && suspendPeriod.start_date === today;
+
+  let isFirstHolidayDay = false;
+  if (!isSuspendStart) {
+    const todayDay = now.getDay();
+    const todayIsHoliday = todayDay === 5 || todayDay === 6 || todayDay === 0 || isHolidayCached(today);
+    if (todayIsHoliday) {
+      const yDate = new Date(now);
+      yDate.setDate(yDate.getDate() - 1);
+      const yDay = yDate.getDay();
+      const yesterdayWasHoliday = yDay === 5 || yDay === 6 || yDay === 0 || isHolidayCached(dateStr(yDate));
+      isFirstHolidayDay = !yesterdayWasHoliday;
+    }
+  }
+
   const prevSchedules = await getSchedulesByDate(yesterdayStr);
+
+  if (isSuspendStart || isFirstHolidayDay) {
+    const uniqueStudents = [...new Set(
+      prevSchedules.filter(e => e.session_id !== 'auto_retry').map(e => e.student_no)
+    )];
+    for (const sno of uniqueStudents) {
+      if (isSuspendStart && suspendPeriod) {
+        await sendPushToStudent(sno, 'GMCAuto',
+          `[${sno}] ${suspendPeriod.start_date}부터 중단 기간입니다. 재개일(${targetStr})에 신청이 재개됩니다.`
+        );
+      } else {
+        await sendPushToStudent(sno, 'GMCAuto',
+          `[${sno}] ${today}부터 금요일/휴일입니다. 다음 평일(${targetStr})에 신청이 재개됩니다.`
+        );
+      }
+    }
+  }
+
   if (prevSchedules.length === 0) {
     console.log(`[자정 복사] 전날(${yesterdayStr}) 스케줄 없음`);
     return;
@@ -960,6 +1008,8 @@ app.post('/api/schedule/register', async (req: Request, res: Response) => {
 
   await registerSchedule(time, targetDate, sessionId, session.studentNo, timeCode, 'gmcauto', reason || '');
   console.log(`[스케줄] ${session.studentNo} → ${time} 등록 (${targetDate})`);
+  // 트리거 #1: 신청 예약 푸시
+  await sendPushToStudent(session.studentNo, 'GMCAuto', `[${session.studentNo}] ${time} 신청 예약되었습니다.`);
   const suffix = suspended ? ` (재개일: ${targetDate})` : weekend ? ` (다음 평일: ${targetDate})` : '';
   return res.json({ success: true, message: `${time}에 자동 신청이 등록되었습니다${suffix}.` });
 });
@@ -1113,6 +1163,34 @@ app.get('/api/stats/summary', async (req: Request, res: Response) => {
   const session = sessions.get(req.query.sessionId as string);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
   return res.json({ success: true, summary: await getUsageStatsSummary() });
+});
+
+// ========== 푸시 구독 ==========
+
+app.get('/api/push/vapid-public-key', (_req: Request, res: Response) => {
+  return res.json({ publicKey: vapidPublicKey });
+});
+
+app.post('/api/push/subscribe', async (req: Request, res: Response) => {
+  const { sessionId, endpoint, p256dh, auth } = req.body as {
+    sessionId: string; endpoint: string; p256dh: string; auth: string;
+  };
+  const session = sessions.get(sessionId);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const user = await getCredentials(session.studentNo);
+  if (!user) return res.status(404).json({ success: false, message: '사용자 없음' });
+  await savePushSubscription(user.id, endpoint, p256dh, auth);
+  return res.json({ success: true });
+});
+
+app.post('/api/push/unsubscribe', async (req: Request, res: Response) => {
+  const { sessionId } = req.body as { sessionId: string };
+  const session = sessions.get(sessionId);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const user = await getCredentials(session.studentNo);
+  if (!user) return res.status(404).json({ success: false, message: '사용자 없음' });
+  await deletePushSubscription(user.id);
+  return res.json({ success: true });
 });
 
 // ========== 세션 관련 ==========

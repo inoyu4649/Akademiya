@@ -70,6 +70,16 @@ export interface SuspendPeriodRow extends RowDataPacket {
   created_at?: string;
 }
 
+export interface PushSubscriptionRow extends RowDataPacket {
+  id: number;
+  gmc_user_id: number;
+  endpoint: string;
+  p256dh: string;
+  auth_key: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface CountRow extends RowDataPacket {
   cnt: number;
 }
