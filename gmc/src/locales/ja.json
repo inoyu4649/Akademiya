@@ -25,6 +25,7 @@
     "recaptchaNote": "reCAPTCHA v3 自動処理（Chrome 必要）",
     "tabGmc": "GMCAuto アカウント",
     "tabAkademiya": "Akademiya でログイン",
+    "pwaAkademiyaOnly": "インストールされたアプリでは Akademiya ログインのみ利用できます。",
     "ak": {
       "desc": "Akademiya アカウントでログイン",
       "descSub": "going.hafs.hs.kr の認証情報を一度連携すると、次回から自動ログインされます。",

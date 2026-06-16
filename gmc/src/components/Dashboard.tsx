@@ -334,7 +334,7 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
         <div className="header-left">
           <img src="/logo_gmc.png" alt="GMCAuto" style={{ height: '30px', objectFit: 'contain' }} />
           <h1>GMCAuto 2</h1>
-          <span className="version">v2.8</span>
+          <span className="version">v2.8.1</span>
         </div>
         <div className="header-right">
           <button
@@ -545,6 +545,26 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
                 </button>
               </div>
             </div>
+
+            {/* 후원 배너 */}
+            <a
+              href="https://qr.kakaopay.com/FGHpfWJl01f404928"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                gridColumn: '1 / -1', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', gap: '8px', padding: '8px 16px',
+                background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)',
+                borderRadius: '8px', color: 'var(--warning)', fontSize: '13px',
+                fontWeight: '500', textDecoration: 'none', transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(245, 158, 11, 0.08)')}
+            >
+              <span>💛</span>
+              <span>개발자를 위해 1000원만 후원해주세요!</span>
+              <span style={{ fontSize: '11px', opacity: 0.7 }}>↗</span>
+            </a>
 
             {/* 슬롯 현황 */}
             <div className="card">

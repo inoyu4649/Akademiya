@@ -30,6 +30,7 @@
     "recaptchaNote": "reCAPTCHA v3 자동 처리 (Chrome 필요)",
     "tabGmc": "GMCAuto 계정",
     "tabAkademiya": "Akademiya 로그인",
+    "pwaAkademiyaOnly": "설치된 앱에서는 Akademiya 로그인만 사용할 수 있습니다.",
     "ak": {
       "desc": "Akademiya 계정으로 로그인",
       "descSub": "최초 1회 going.hafs.hs.kr 비밀번호 연동 후 자동 로그인됩니다.",

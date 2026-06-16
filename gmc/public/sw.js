@@ -1,4 +1,4 @@
-// GMCAuto Service Worker v2.8
+// GMCAuto Service Worker v2.8.1
 
 self.addEventListener('install', () => {
   self.skipWaiting();

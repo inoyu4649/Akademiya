@@ -25,6 +25,7 @@
     "recaptchaNote": "reCAPTCHA v3 is handled automatically (Chrome required)",
     "tabGmc": "GMCAuto Account",
     "tabAkademiya": "Sign in with Akademiya",
+    "pwaAkademiyaOnly": "Only sign-in with Akademiya is available in the installed app.",
     "ak": {
       "desc": "Sign in with Akademiya account",
       "descSub": "After linking your going.hafs.hs.kr credentials once, you will be signed in automatically.",

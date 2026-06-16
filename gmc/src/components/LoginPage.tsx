@@ -38,8 +38,16 @@ interface AkUserInfo {
   akademiyaUserId?: number
 }
 
+function detectIsPwa(): boolean {
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true
+  )
+}
+
 export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme }: LoginPageProps) {
   const { t } = useTranslation()
+  const [isPwa]                 = useState(detectIsPwa)
   const [tab, setTab]           = useState<'gmc' | 'akademiya'>('akademiya')
   const [studentNo, setStudentNo] = useState('')
   const [password, setPassword]   = useState('')
@@ -213,33 +221,40 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
           <p>{t('app.subtitle')}</p>
         </div>
 
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
-          {[
-            { id: 'akademiya' as const, label: t('auth.tabAkademiya', 'Akademiya 로그인') },
-            { id: 'gmc' as const,       label: t('auth.tabGmc',       'GMCAuto 계정') },
-          ].map(tb => (
-            <button
-              key={tb.id}
-              onClick={() => { setTab(tb.id); setError(''); setAkError(''); setAkStep('idle') }}
-              style={{
-                flex: 1, padding: '12px', border: 'none', background: 'none', cursor: 'pointer',
-                fontSize: '13.5px', fontWeight: tab === tb.id ? '600' : '400',
-                color: tab === tb.id ? 'var(--primary)' : 'var(--text-secondary)',
-                borderBottom: tab === tb.id ? '2px solid var(--primary)' : '2px solid transparent',
-                transition: 'all 0.2s',
-              }}
-            >
-              {tb.label}
-            </button>
-          ))}
-        </div>
+        {!isPwa && (
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
+            {[
+              { id: 'akademiya' as const, label: t('auth.tabAkademiya', 'Akademiya 로그인') },
+              { id: 'gmc' as const,       label: t('auth.tabGmc',       'GMCAuto 계정') },
+            ].map(tb => (
+              <button
+                key={tb.id}
+                onClick={() => { setTab(tb.id); setError(''); setAkError(''); setAkStep('idle') }}
+                style={{
+                  flex: 1, padding: '12px', border: 'none', background: 'none', cursor: 'pointer',
+                  fontSize: '13.5px', fontWeight: tab === tb.id ? '600' : '400',
+                  color: tab === tb.id ? 'var(--primary)' : 'var(--text-secondary)',
+                  borderBottom: tab === tb.id ? '2px solid var(--primary)' : '2px solid transparent',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {tb.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="card-body">
+          {isPwa && (
+            <p style={{ textAlign: 'center', marginBottom: '14px', fontSize: '12px', color: 'var(--text-muted)' }}>
+              {t('auth.pwaAkademiyaOnly', '설치된 앱에서는 Akademiya 로그인만 사용할 수 있습니다.')}
+            </p>
+          )}
           {sessionExpired && tab === 'akademiya' && !akError && (
             <div className="alert alert-warning">{t('auth.sessionExpired')}</div>
           )}
 
-          {tab === 'gmc' && (
+          {tab === 'gmc' && !isPwa && (
             <>
               {error && <div className="alert alert-error">{error}</div>}
               <form onSubmit={handleGmcSubmit}>

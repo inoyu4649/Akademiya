@@ -7,11 +7,24 @@ import PrivacyPolicyModal from './components/PrivacyPolicyModal'
 import TermsOfUseModal from './components/TermsOfUseModal'
 import type { SessionData } from './types'
 
-const SESSION_KEY = 'gmcauto_session'
-const THEME_KEY   = 'gmcauto_theme'
+const SESSION_KEY  = 'gmcauto_session'
+const THEME_KEY    = 'gmcauto_theme'
+const THEME_MANUAL_KEY = 'gmcauto_theme_manual'
 
 function applyTheme(theme: string) {
   document.documentElement.setAttribute('data-theme', theme)
+}
+
+function getSystemTheme(): 'dark' | 'light' {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+function isThemeManualOverride(): boolean {
+  try {
+    return localStorage.getItem(THEME_MANUAL_KEY) === '1'
+  } catch {
+    return false
+  }
 }
 
 function App() {
@@ -23,17 +36,34 @@ function App() {
   const [showTermsModal, setShowTermsModal] = useState(false)
 
   const [theme, setTheme] = useState<string>(() => {
-    const saved = localStorage.getItem(THEME_KEY)
-    return saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    if (isThemeManualOverride()) {
+      const saved = localStorage.getItem(THEME_KEY)
+      if (saved) return saved
+    }
+    return getSystemTheme()
   })
 
   useEffect(() => {
     applyTheme(theme)
-    localStorage.setItem(THEME_KEY, theme)
   }, [theme])
 
+  // 수동 전환 이력이 없으면 브라우저/PWA의 시스템 테마 변경을 실시간으로 반영
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = () => {
+      if (!isThemeManualOverride()) setTheme(getSystemTheme())
+    }
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
   const toggleTheme = useCallback(() => {
-    setTheme(t => t === 'dark' ? 'light' : 'dark')
+    setTheme(t => {
+      const next = t === 'dark' ? 'light' : 'dark'
+      localStorage.setItem(THEME_KEY, next)
+      localStorage.setItem(THEME_MANUAL_KEY, '1')
+      return next
+    })
   }, [])
 
   useEffect(() => {

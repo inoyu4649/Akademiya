@@ -25,6 +25,7 @@
     "recaptchaNote": "reCAPTCHA v3 自动处理（需要 Chrome）",
     "tabGmc": "GMCAuto 账户",
     "tabAkademiya": "使用 Akademiya 登录",
+    "pwaAkademiyaOnly": "在已安装的应用中，只能使用 Akademiya 登录。",
     "ak": {
       "desc": "使用 Akademiya 账户登录",
       "descSub": "关联 going.hafs.hs.kr 凭据一次后，将自动登录。",
