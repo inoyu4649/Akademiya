@@ -47,12 +47,19 @@ function InstallGuide({ os }: { os: OsType }) {
         )}
         <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text)', lineHeight: 2 }}>
           <li>Safari로 <strong>gmc.akademiya.kr</strong> 접속</li>
-          <li>
-            {os === 'ipados'
-              ? '주소창 옆 공유 버튼(□↑)을 탭'
-              : '화면 하단 가운데 공유 버튼(□↑)을 탭'}
-          </li>
-          <li><strong>홈 화면에 추가</strong> 선택 후 추가</li>
+          {os === 'ipados' ? (
+            <>
+              <li>주소창 옆 공유 버튼(□↑)을 탭</li>
+              <li><strong>더 보기</strong> 탭</li>
+            </>
+          ) : (
+            <>
+              <li>주소창 오른쪽 <strong>···</strong> 버튼 탭</li>
+              <li><strong>공유</strong> 탭</li>
+              <li><strong>더 보기</strong> 탭</li>
+            </>
+          )}
+          <li>목록 하단의 <strong>홈 화면에 추가</strong> 선택 후 추가</li>
           <li>홈 화면의 GMCAuto 아이콘으로 실행 후 알림 허용</li>
         </ol>
       </div>
@@ -152,6 +159,7 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
   const [notifLoading, setNotifLoading]     = useState(false)
   const [notifError, setNotifError]         = useState('')
   const [isPwa, setIsPwa]                   = useState(false)
+  const [isSmartphone, setIsSmartphone]     = useState(false)
   const [showInstallModal, setShowInstallModal] = useState(false)
   const [installOs, setInstallOs]           = useState<OsType>('unknown')
 
@@ -195,6 +203,8 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
       window.matchMedia('(display-mode: standalone)').matches ||
       (navigator as Navigator & { standalone?: boolean }).standalone === true
     queueMicrotask(() => setIsPwa(pwa))
+    const os = detectOs()
+    queueMicrotask(() => setIsSmartphone(os === 'ios' || os === 'android'))
     if (pwa && 'serviceWorker' in navigator) {
       navigator.serviceWorker.ready
         .then(reg => reg.pushManager.getSubscription())
@@ -543,25 +553,27 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
               </div>
             </div>
 
-            {/* 후원 배너 */}
-            <a
-              href="https://qr.kakaopay.com/FGHpfWJl01f404928"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                gridColumn: '1 / -1', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', gap: '8px', padding: '8px 16px',
-                background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)',
-                borderRadius: '8px', color: 'var(--warning)', fontSize: '13px',
-                fontWeight: '500', textDecoration: 'none', transition: 'background 0.15s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(245, 158, 11, 0.08)')}
-            >
-              <span>💛</span>
-              <span>개발자를 위해 1000원만 후원해주세요!</span>
-              <span style={{ fontSize: '11px', opacity: 0.7 }}>↗</span>
-            </a>
+            {/* 후원 배너 (스마트폰 환경에서만 표시) */}
+            {isSmartphone && (
+              <a
+                href="https://qr.kakaopay.com/FGHpfWJl01f404928"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  gridColumn: '1 / -1', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', gap: '8px', padding: '8px 16px',
+                  background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)',
+                  borderRadius: '8px', color: 'var(--warning)', fontSize: '13px',
+                  fontWeight: '500', textDecoration: 'none', transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(245, 158, 11, 0.08)')}
+              >
+                <span>💛</span>
+                <span>개발자를 위해 1000원만 후원해주세요!</span>
+                <span style={{ fontSize: '11px', opacity: 0.7 }}>↗</span>
+              </a>
+            )}
 
             {/* 슬롯 현황 */}
             <div className="card">
