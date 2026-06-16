@@ -12,10 +12,13 @@ const ALLOWED_OG_HOSTS = new Set(["akademiya.kr", "www.akademiya.kr"]);
 // L-5: 익명 공개 설문 중복응답 판별용 브라우저별 쿠키 토큰 (IP 대신 사용)
 const ANON_RESPONSE_COOKIE = "survey_anon_token";
 
-// L-5: 공개(비로그인) 설문 응답 전용 rate limiter — 전역 200/15분보다 엄격하게 IP당 10/15분
+// L-5: 공개(비로그인) 설문 응답 전용 rate limiter.
+// 학교는 NAT/공용 와이파이로 한 반(30명대)~학교 전체가 같은 egress IP를 공유함 →
+// 같은 반이 동시에 제출만 해도 IP당 캡이 낮으면 정상 사용자가 차단됨(예: max=10이면 34명 중 11번째부터 막힘).
+// 한 학급(약 35명)은 물론 학교 전체 동시 제출까지 여유를 두고, 진짜 스크립트성 대량 남용만 걸리도록 넉넉하게 설정.
 const publicRespondLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "TOO_MANY_REQUESTS" },
