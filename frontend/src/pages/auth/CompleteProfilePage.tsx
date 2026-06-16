@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AuthLayout, { css as s } from "../../components/layout/AuthLayout";
 import { authApi } from "../../api/auth.api";
 import client from "../../api/client";
 import { useAuthStore } from "../../store/auth.store";
 import { sortedCountries, type Country } from "../../utils/countries";
+import { redirectToGmcAuto, isSafeGmcRedirect } from "../../utils/gmcAuto";
 import {
   PRIVACY_POLICY_VERSION,
   TERMS_OF_USE_VERSION,
@@ -24,8 +25,12 @@ const LANG_OPTIONS: { code: SupportedLang; label: string }[] = [
 export default function CompleteProfilePage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const updateUser = useAuthStore((s) => s.updateUser);
   const lang = i18n.language as SupportedLang;
+
+  const gmcRedirectRaw = searchParams.get("gmcRedirect");
+  const gmcRedirect = isSafeGmcRedirect(gmcRedirectRaw) ? gmcRedirectRaw : null;
 
   const [country, setCountry] = useState("KR"); // 거주 국가는 대한민국만 허용
   const [phone, setPhone] = useState("");
@@ -53,7 +58,12 @@ export default function CompleteProfilePage() {
         client.post("/intl-transfer/consent", { version: INTL_TRANSFER_VERSION }),
       ]);
       updateUser(res.data);
-      navigate("/");
+      if (gmcRedirect) {
+        // GMCAuto에서 시작된 가입 절차가 끝났으므로 Akademiya 메인이 아니라 GMCAuto로 복귀
+        redirectToGmcAuto(gmcRedirect);
+      } else {
+        navigate("/");
+      }
     } catch {
       setError(t("common.error"));
     } finally {

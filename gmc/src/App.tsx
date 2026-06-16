@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import './App.css'
 import LoginPage from './components/LoginPage'
@@ -7,9 +7,7 @@ import PrivacyPolicyModal from './components/PrivacyPolicyModal'
 import TermsOfUseModal from './components/TermsOfUseModal'
 import type { SessionData } from './types'
 
-const SESSION_KEY  = 'gmcauto_session'
-const THEME_KEY    = 'gmcauto_theme'
-const THEME_MANUAL_KEY = 'gmcauto_theme_manual'
+const SESSION_KEY = 'gmcauto_session'
 
 function applyTheme(theme: string) {
   document.documentElement.setAttribute('data-theme', theme)
@@ -17,14 +15,6 @@ function applyTheme(theme: string) {
 
 function getSystemTheme(): 'dark' | 'light' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-}
-
-function isThemeManualOverride(): boolean {
-  try {
-    return localStorage.getItem(THEME_MANUAL_KEY) === '1'
-  } catch {
-    return false
-  }
 }
 
 function App() {
@@ -35,35 +25,28 @@ function App() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false)
   const [showTermsModal, setShowTermsModal] = useState(false)
 
-  const [theme, setTheme] = useState<string>(() => {
-    if (isThemeManualOverride()) {
-      const saved = localStorage.getItem(THEME_KEY)
-      if (saved) return saved
-    }
-    return getSystemTheme()
-  })
+  // 재접속/새로고침 시에는 항상 시스템(브라우저·PWA) 테마부터 시작 — 이전 토글 선택은 저장하지 않음
+  const [theme, setTheme] = useState<string>(getSystemTheme)
+  // 이번 세션에서 토글 버튼으로 수동 전환했는지 (메모리에만 유지, 새로고침하면 사라짐)
+  const themeManualRef = useRef(false)
 
   useEffect(() => {
     applyTheme(theme)
   }, [theme])
 
-  // 수동 전환 이력이 없으면 브라우저/PWA의 시스템 테마 변경을 실시간으로 반영
+  // 수동 전환 전까지는 브라우저/PWA의 시스템 테마 변경을 실시간으로 반영
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     const handler = () => {
-      if (!isThemeManualOverride()) setTheme(getSystemTheme())
+      if (!themeManualRef.current) setTheme(getSystemTheme())
     }
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
   }, [])
 
   const toggleTheme = useCallback(() => {
-    setTheme(t => {
-      const next = t === 'dark' ? 'light' : 'dark'
-      localStorage.setItem(THEME_KEY, next)
-      localStorage.setItem(THEME_MANUAL_KEY, '1')
-      return next
-    })
+    themeManualRef.current = true
+    setTheme(t => t === 'dark' ? 'light' : 'dark')
   }, [])
 
   useEffect(() => {

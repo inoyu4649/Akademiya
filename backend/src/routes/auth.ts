@@ -22,6 +22,20 @@ const REFRESH_COOKIE = "refresh_token";
 const SALT_ROUNDS = 12;
 const RESET_CODE_TTL_MIN = 15;
 
+// GMCAuto에서 곧바로 Google OAuth로 진입했을 때, 로그인 완료 후 되돌아갈 GMC redirect_uri 화이트리스트
+// (frontend/src/utils/gmcAuto.ts의 ALLOWED_GMC_ORIGINS와 동일하게 유지)
+const ALLOWED_GMC_ORIGINS = ["https://gmc.akademiya.kr", "http://localhost:5174", "http://localhost:3001"];
+
+function isSafeGmcRedirect(uri: string | undefined): uri is string {
+  if (!uri) return false;
+  try {
+    const url = new URL(uri);
+    return ALLOWED_GMC_ORIGINS.some((o) => uri.startsWith(o)) && url.pathname === "/auth/callback";
+  } catch {
+    return false;
+  }
+}
+
 type DbUser = Record<string, unknown>;
 
 function setRefreshCookie(res: Response, token: string) {
@@ -463,7 +477,13 @@ router.delete("/account", requireAuth, async (req, res) => {
 });
 
 // ─── Google OAuth ─────────────────────────────────────────────────────────────
-router.get("/google", passport.authenticate("google", { scope: ["profile", "email"], session: false }));
+// GMCAuto에서 곧바로 진입한 경우 ?state=<gmc redirect_uri>를 전달받아 콜백까지 왕복시킨다
+// (state는 passport-oauth2가 세션으로 검증하는 게 아니라 우리가 직접 화이트리스트로 검증한다 — session:false이므로)
+router.get("/google", (req, res, next) => {
+  const rawState = typeof req.query.state === "string" ? req.query.state : undefined;
+  const state = isSafeGmcRedirect(rawState) ? rawState : undefined;
+  passport.authenticate("google", { scope: ["profile", "email"], session: false, state })(req, res, next);
+});
 
 router.get(
   "/google/callback",
@@ -481,7 +501,12 @@ router.get(
         [user.id, hashToken(refreshToken)]
       );
       setRefreshCookie(res, refreshToken);
-      res.redirect(`${process.env.FRONTEND_URL}/auth/callback?code=${code}`);
+      const rawState = typeof req.query.state === "string" ? req.query.state : undefined;
+      const gmcRedirect = isSafeGmcRedirect(rawState) ? rawState : undefined;
+      const dest = gmcRedirect
+        ? `${process.env.FRONTEND_URL}/auth/callback?code=${code}&gmcRedirect=${encodeURIComponent(gmcRedirect)}`
+        : `${process.env.FRONTEND_URL}/auth/callback?code=${code}`;
+      res.redirect(dest);
     } catch {
       res.redirect(`${process.env.FRONTEND_URL}/auth/login?error=oauth_failed`);
     }

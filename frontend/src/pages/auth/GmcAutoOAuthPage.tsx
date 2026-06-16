@@ -6,16 +6,18 @@
  *
  * 동작:
  * 1. 사용자가 Akademiya에 로그인된 경우 → 즉시 코드 발급 → redirect_uri?code=XXX로 이동
- * 2. 로그인되지 않은 경우 → 로그인 페이지로 리디렉트 (returnTo 포함)
+ * 2. 로그인되지 않은 경우 → Akademiya 로그인 선택 화면을 거치지 않고 곧바로 Google OAuth로 이동.
+ *    OAuth 완료(신규 가입 절차 포함) 후에는 Akademiya 메인 화면이 아니라 다시 이 redirect_uri로 자동 복귀한다
+ *    (OAuthCallbackPage / CompleteProfilePage의 gmcRedirect 처리 참조).
  */
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useAuthStore } from "../../store/auth.store";
 import { authApi } from "../../api/auth.api";
 import client from "../../api/client";
+import { isSafeGmcRedirect } from "../../utils/gmcAuto";
 
 export default function GmcAutoOAuthPage() {
-  const navigate              = useNavigate();
   const [searchParams]        = useSearchParams();
   const { user, initialized, setAuth, setInitialized } = useAuthStore();
   const [status, setStatus]   = useState<"loading" | "error">("loading");
@@ -24,20 +26,8 @@ export default function GmcAutoOAuthPage() {
 
   const redirectUri = searchParams.get("redirect_uri") || "https://gmc.akademiya.kr/auth/callback";
 
-  // 허용된 redirect_uri (보안: 허가된 도메인만 허용)
-  const ALLOWED_ORIGINS = ["https://gmc.akademiya.kr", "http://localhost:5174", "http://localhost:3001"];
-
-  function isSafeRedirectUri(uri: string) {
-    try {
-      const url = new URL(uri);
-      return ALLOWED_ORIGINS.some(o => uri.startsWith(o)) && url.pathname === "/auth/callback";
-    } catch {
-      return false;
-    }
-  }
-
   useEffect(() => {
-    if (!isSafeRedirectUri(redirectUri)) {
+    if (!isSafeGmcRedirect(redirectUri)) {
       setErrorMsg("허용되지 않은 redirect_uri입니다.");
       setStatus("error");
       return;
@@ -47,9 +37,11 @@ export default function GmcAutoOAuthPage() {
     if (!initialized) return;
 
     if (!user) {
-      // 로그인되지 않음 → 로그인 페이지로 이동 (로그인 후 이 페이지로 돌아옴)
-      const returnTo = encodeURIComponent(`/auth/gmcauto-oauth?redirect_uri=${encodeURIComponent(redirectUri)}`);
-      navigate(`/auth/login?returnTo=${returnTo}`, { replace: true });
+      // 로그인되지 않음 → Akademiya 로그인 선택 화면 없이 곧바로 Google OAuth로 이동.
+      // 완료 후에는 backend가 이 redirectUri로 다시 돌려보낸다 (state 파라미터로 왕복).
+      if (processedRef.current) return;
+      processedRef.current = true;
+      window.location.href = `/api/auth/google?state=${encodeURIComponent(redirectUri)}`;
       return;
     }
 
