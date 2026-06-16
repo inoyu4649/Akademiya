@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import rateLimit from "express-rate-limit";
+import crypto from "crypto";
 import { pool } from "../db/pool.js";
 import { requireAuth } from "../middleware/auth.js";
 
@@ -7,6 +8,9 @@ const router: IRouter = Router();
 
 // L-1: OG 메타 엔드포인트에서 신뢰할 호스트 화이트리스트 (X-Forwarded-Host 미신뢰 반영 방지)
 const ALLOWED_OG_HOSTS = new Set(["akademiya.kr", "www.akademiya.kr"]);
+
+// L-5: 익명 공개 설문 중복응답 판별용 브라우저별 쿠키 토큰 (IP 대신 사용)
+const ANON_RESPONSE_COOKIE = "survey_anon_token";
 
 // L-5: 공개(비로그인) 설문 응답 전용 rate limiter — 전역 200/15분보다 엄격하게 IP당 10/15분
 const publicRespondLimiter = rateLimit({
@@ -512,15 +516,29 @@ router.post("/public/:id/respond", publicRespondLimiter, async (req, res) => {
   }
 
   const storedName = survey.public_identity_question ? (respondent_name!.trim()) : null;
+  const responseIp = req.ip ?? null;  // 식별 용도가 아닌 모더레이션/감사 참고용으로만 저장
 
-  // L-5: 익명 응답은 user_id가 NULL이라 UNIQUE(survey_id, user_id)가 무력화됨 → IP 기준 중복응답 차단
-  const responseIp = req.ip ?? null;
-  if (!survey.allow_multiple && responseIp) {
-    const [existing] = await pool.execute(
-      "SELECT id FROM survey_responses WHERE survey_id = ? AND response_ip = ?",
-      [surveyId, responseIp]
-    ) as any[];
-    if ((existing as any[]).length) {
+  // L-5: 익명 응답은 user_id가 NULL이라 UNIQUE(survey_id, user_id)가 무력화됨.
+  // 학교는 공용 IP(NAT/공용 와이파이) 사용이 흔해 IP로는 다른 사람을 같은 사람으로 오인할 수 있음 →
+  //   - 기명식(이름 입력 필수): 입력한 respondent_name으로 중복 판단
+  //   - 익명: 브라우저별 쿠키 토큰(response_token)으로 중복 판단 (IP는 rate limiter에서만 사용)
+  let anonToken: string | null = null;
+  if (!survey.public_identity_question) {
+    anonToken = (req.cookies as Record<string, string> | undefined)?.[ANON_RESPONSE_COOKIE] ?? null;
+    if (!anonToken) anonToken = crypto.randomBytes(24).toString("hex");
+  }
+
+  if (!survey.allow_multiple) {
+    const existing = survey.public_identity_question
+      ? await pool.execute(
+          "SELECT id FROM survey_responses WHERE survey_id = ? AND respondent_name = ?",
+          [surveyId, storedName]
+        ) as any[]
+      : await pool.execute(
+          "SELECT id FROM survey_responses WHERE survey_id = ? AND response_token = ?",
+          [surveyId, anonToken]
+        ) as any[];
+    if ((existing[0] as any[]).length) {
       res.status(409).json({ error: "survey.alreadyResponded" });
       return;
     }
@@ -530,12 +548,21 @@ router.post("/public/:id/respond", publicRespondLimiter, async (req, res) => {
   try {
     await conn.beginTransaction();
     const [respIns] = await conn.execute(
-      "INSERT INTO survey_responses (survey_id, user_id, respondent_name, response_ip) VALUES (?, NULL, ?, ?)",
-      [surveyId, storedName, responseIp]
+      "INSERT INTO survey_responses (survey_id, user_id, respondent_name, response_ip, response_token) VALUES (?, NULL, ?, ?, ?)",
+      [surveyId, storedName, responseIp, anonToken]
     ) as any[];
     const responseId = (respIns as any).insertId;
     await insertAnswers(conn, surveyId, responseId, answers ?? []);
     await conn.commit();
+    if (anonToken) {
+      res.cookie(ANON_RESPONSE_COOKIE, anonToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 400 * 24 * 60 * 60 * 1000,  // 400일 (Chrome 쿠키 maxAge 상한)
+        path: "/api/surveys/public",
+      });
+    }
     res.status(201).json({ message: "responded" });
   } catch (e) {
     try { await conn.rollback(); } catch { /* ignore */ }
