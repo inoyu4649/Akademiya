@@ -13,13 +13,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuthStore } from "../../store/auth.store";
-import { authApi } from "../../api/auth.api";
 import client from "../../api/client";
 import { isSafeGmcRedirect } from "../../utils/gmcAuto";
 
 export default function GmcAutoOAuthPage() {
   const [searchParams]        = useSearchParams();
-  const { user, initialized, setAuth, setInitialized } = useAuthStore();
+  // 세션 복원은 App.tsx의 AuthInitializer가 모든 라우트에서 항상 1회 수행한다 — 여기서
+  // 별도로 refresh()를 또 호출하면 동시에 두 번의 /auth/refresh 요청이 경합하게 되고,
+  // 리프레시 토큰이 1회용(로테이션)이라 둘 중 하나가 "이미 사용된 토큰"으로 401을 받을 수 있다.
+  // 그 401이 AuthInitializer의 성공 응답보다 먼저 반영되면 로그인 상태인데도 initialized=true,
+  // user=null로 잠깐 보여 Google OAuth로 잘못 튕기는 경합 버그가 생긴다 → 중복 호출 제거.
+  const { user, initialized } = useAuthStore();
   const [status, setStatus]   = useState<"loading" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
   const processedRef          = useRef(false);
@@ -63,14 +67,6 @@ export default function GmcAutoOAuthPage() {
         processedRef.current = false;
       });
   }, [initialized, user, redirectUri]);
-
-  // 세션 복원 (직접 이 URL에 접근한 경우 — AuthInitializer 미실행)
-  useEffect(() => {
-    if (initialized) return;
-    authApi.refresh()
-      .then((res) => setAuth(res.data.user, res.data.accessToken))
-      .catch(() => setInitialized(true));
-  }, []);
 
   return (
     <div
