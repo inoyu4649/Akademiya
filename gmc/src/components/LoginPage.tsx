@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SessionData } from '../types'
 
@@ -61,56 +61,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
   const [akPassword, setAkPassword]   = useState('')
   const [akError, setAkError]         = useState('')
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const code   = params.get('code')
-    if (code) {
-      setTab('akademiya')
-      verifyAkademiyaCode(code)
-      window.history.replaceState({}, '', window.location.pathname)
-    }
-  }, [])
-
-  const handleGmcSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    try {
-      const res  = await fetch('/api/login', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ studentNo, password }),
-      })
-      const data = await res.json() as {
-        success: boolean; message?: string;
-        sessionId: string; studentNo: string; studentName?: string;
-        role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
-      }
-      if (data.success) {
-        onLogin({
-          sessionId: data.sessionId,
-          studentNo: data.studentNo,
-          studentName: data.studentName || '',
-          role: data.role ?? 0,
-          needsPrivacyConsent: data.needsPrivacyConsent ?? false,
-          needsTermsConsent: data.needsTermsConsent ?? false,
-        })
-      } else {
-        setError(data.message || t('auth.loginFailed', '로그인에 실패했습니다.'))
-      }
-    } catch {
-      setError(t('auth.serverError', '서버에 연결할 수 없습니다.'))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleAkademiyaLogin = () => {
-    const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback')
-    window.location.href = `https://akademiya.kr/auth/gmcauto-oauth?redirect_uri=${redirectUri}`
-  }
-
-  const verifyAkademiyaCode = async (code: string) => {
+  const verifyAkademiyaCode = useCallback(async (code: string) => {
     setAkStep('verifying')
     setAkError('')
     try {
@@ -155,6 +106,57 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
       setAkError(t('auth.serverError'))
       setAkStep('idle')
     }
+  }, [t, onLogin])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const code   = params.get('code')
+    if (code) {
+      queueMicrotask(() => {
+        setTab('akademiya')
+        verifyAkademiyaCode(code)
+      })
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [verifyAkademiyaCode])
+
+  const handleGmcSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const res  = await fetch('/api/login', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ studentNo, password }),
+      })
+      const data = await res.json() as {
+        success: boolean; message?: string;
+        sessionId: string; studentNo: string; studentName?: string;
+        role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
+      }
+      if (data.success) {
+        onLogin({
+          sessionId: data.sessionId,
+          studentNo: data.studentNo,
+          studentName: data.studentName || '',
+          role: data.role ?? 0,
+          needsPrivacyConsent: data.needsPrivacyConsent ?? false,
+          needsTermsConsent: data.needsTermsConsent ?? false,
+        })
+      } else {
+        setError(data.message || t('auth.loginFailed', '로그인에 실패했습니다.'))
+      }
+    } catch {
+      setError(t('auth.serverError', '서버에 연결할 수 없습니다.'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAkademiyaLogin = () => {
+    const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback')
+    window.location.href = `https://akademiya.kr/auth/gmcauto-oauth?redirect_uri=${redirectUri}`
   }
 
   const handleAkademiyaLink = async (e: React.FormEvent) => {

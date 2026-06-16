@@ -1,5 +1,5 @@
 import mysql, { ResultSetHeader } from 'mysql2/promise';
-import { dirname, join } from 'path';
+import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { mkdirSync } from 'fs';
 import type {

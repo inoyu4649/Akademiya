@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SessionData, LogEntry } from '../types'
 
@@ -22,9 +22,7 @@ export default function PassForm({ session, addLog }: PassFormProps) {
   const [timeCode, setTimeCode] = useState('3')
   const [reason, setReason] = useState('')
 
-  useEffect(() => { loadForm() }, [])
-
-  const loadForm = async () => {
+  const loadForm = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
@@ -43,7 +41,9 @@ export default function PassForm({ session, addLog }: PassFormProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [session.sessionId, addLog])
+
+  useEffect(() => { queueMicrotask(() => loadForm()) }, [loadForm])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

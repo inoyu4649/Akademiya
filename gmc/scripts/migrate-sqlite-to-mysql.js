@@ -79,7 +79,7 @@ const require = createRequire(import.meta.url);
 let Database;
 try {
   Database = require('better-sqlite3');
-} catch (e) {
+} catch {
   console.error('❌ better-sqlite3 패키지가 필요합니다.');
   console.error('   npm install --no-save better-sqlite3');
   process.exit(1);

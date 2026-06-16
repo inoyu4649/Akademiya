@@ -81,7 +81,7 @@ export default function AdminDashboard({ session }: AdminDashboardProps) {
     finally { setLoading(false) }
   }, [session.sessionId, grade, cls, dateFrom, dateTo])
 
-  useEffect(() => { fetchStats() }, [fetchStats])
+  useEffect(() => { queueMicrotask(() => fetchStats()) }, [fetchStats])
 
   const exportXlsx = () => {
     const timeCodeMap: Record<string, string> = {
@@ -415,7 +415,7 @@ function SuspendManager({ session }: SuspendManagerProps) {
     } catch { /* ignore */ }
   }, [session.sessionId])
 
-  useEffect(() => { fetchPeriods() }, [fetchPeriods])
+  useEffect(() => { queueMicrotask(() => fetchPeriods()) }, [fetchPeriods])
 
   const handleAdd = async () => {
     if (!startDate || !endDate) return
@@ -558,7 +558,7 @@ function UserManager({ session, roleNames, ROLE_COLORS }: UserManagerProps) {
     } catch { /* ignore */ }
   }, [session.sessionId])
 
-  useEffect(() => { fetchUsers() }, [fetchUsers])
+  useEffect(() => { queueMicrotask(() => fetchUsers()) }, [fetchUsers])
 
   const applyRole = useCallback(async (studentNo: string, role: number) => {
     setSaving(true)

@@ -140,7 +140,6 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
   const [targetDate, setTargetDate]           = useState('')
   const [weekend, setWeekend]                 = useState(false)
   const [suspended, setSuspended]             = useState(false)
-  const [suspendEnd, setSuspendEnd]           = useState<string | null>(null)
   const [resumeDate, setResumeDate]           = useState<string | null>(null)
 
   const [regTime, setRegTime]         = useState('09:00')
@@ -171,7 +170,6 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
         targetDate?: string;
         isWeekend?: boolean;
         suspended?: boolean;
-        suspendEnd?: string | null;
         resumeDate?: string | null;
       }
       if (data.success) {
@@ -180,7 +178,6 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
         setTargetDate(data.targetDate || '')
         setWeekend(data.isWeekend || false)
         setSuspended(data.suspended || false)
-        setSuspendEnd(data.suspendEnd || null)
         setResumeDate(data.resumeDate || null)
       }
     } catch { /* 무시 */ }
@@ -188,7 +185,7 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
   }, [session.sessionId])
 
   useEffect(() => {
-    fetchSchedule()
+    queueMicrotask(() => fetchSchedule())
     const iv = setInterval(fetchSchedule, 30000)
     return () => clearInterval(iv)
   }, [fetchSchedule])
@@ -197,7 +194,7 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
     const pwa =
       window.matchMedia('(display-mode: standalone)').matches ||
       (navigator as Navigator & { standalone?: boolean }).standalone === true
-    setIsPwa(pwa)
+    queueMicrotask(() => setIsPwa(pwa))
     if (pwa && 'serviceWorker' in navigator) {
       navigator.serviceWorker.ready
         .then(reg => reg.pushManager.getSubscription())
@@ -645,7 +642,7 @@ function PassHistory({ session }: PassHistoryProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
 
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
@@ -661,9 +658,9 @@ function PassHistory({ session }: PassHistoryProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [session.sessionId])
 
-  useEffect(() => { fetchHistory() }, [])
+  useEffect(() => { queueMicrotask(() => fetchHistory()) }, [fetchHistory])
 
   return (
     <div className="card">

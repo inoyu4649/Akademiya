@@ -59,7 +59,7 @@ function App() {
 
   useEffect(() => {
     const saved = localStorage.getItem(SESSION_KEY)
-    if (!saved) { setBootChecked(true); return }
+    if (!saved) { queueMicrotask(() => setBootChecked(true)); return }
     try {
       const data = JSON.parse(saved) as SessionData
       fetch(`/api/session/check?sessionId=${encodeURIComponent(data.sessionId)}`)
@@ -84,7 +84,7 @@ function App() {
         .finally(() => setBootChecked(true))
     } catch {
       localStorage.removeItem(SESSION_KEY)
-      setBootChecked(true)
+      queueMicrotask(() => setBootChecked(true))
     }
   }, [])
 
