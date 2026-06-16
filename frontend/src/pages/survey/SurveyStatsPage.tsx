@@ -199,7 +199,12 @@ export default function SurveyStatsPage() {
   function downloadCSV() {
     if (!survey) return;
     const lines: string[] = [];
-    const esc = (s: string) => `"${String(s ?? "").replace(/"/g, '""')}"`;
+    // L-7 (M-6 프론트 쌍둥이): 셀 선두가 = + - @ \t \r 이면 Excel/Sheets에서 수식으로 실행됨 → ' 접두로 중화
+    const esc = (s: string) => {
+      let v = String(s ?? "");
+      if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
+      return `"${v.replace(/"/g, '""')}"`;
+    };
 
     lines.push(esc(survey.title));
     lines.push(esc(t("survey.totalResponses", { count: total })));

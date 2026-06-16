@@ -38,7 +38,23 @@ import { isHolidayCached, preloadHolidays, ensureMonthLoaded } from './holidays.
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
-app.use(cors());
+
+// ── CORS (L-3): 전면 허용(cors()) 대신 알려진 origin만 허용 ──────────────
+// 운영: gmc.akademiya.kr에서 express.static으로 같은 출처 서빙(불필요하나 방어적으로 포함).
+// 개발: vite dev server(5174)에서 별도 포트(3001) API 호출.
+const allowedOrigins = [
+  'https://gmc.akademiya.kr',
+  'http://localhost:5174',
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+}));
 app.use(express.json());
 
 const distPath = join(__dirname, '..', 'dist');

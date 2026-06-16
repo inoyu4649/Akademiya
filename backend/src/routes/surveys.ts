@@ -1,8 +1,21 @@
 import { Router, type IRouter } from "express";
+import rateLimit from "express-rate-limit";
 import { pool } from "../db/pool.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const router: IRouter = Router();
+
+// L-1: OG 메타 엔드포인트에서 신뢰할 호스트 화이트리스트 (X-Forwarded-Host 미신뢰 반영 방지)
+const ALLOWED_OG_HOSTS = new Set(["akademiya.kr", "www.akademiya.kr"]);
+
+// L-5: 공개(비로그인) 설문 응답 전용 rate limiter — 전역 200/15분보다 엄격하게 IP당 10/15분
+const publicRespondLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "TOO_MANY_REQUESTS" },
+});
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -391,7 +404,9 @@ router.get("/og/:id", async (req, res) => {
   const esc = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-  const host = (req.headers["x-forwarded-host"] as string) ?? req.headers.host ?? "akademiya.kr";
+  // L-1: X-Forwarded-Host를 그대로 신뢰하지 않고 화이트리스트로 제한
+  const requestedHost = (req.headers["x-forwarded-host"] as string) ?? req.headers.host ?? "";
+  const host = ALLOWED_OG_HOSTS.has(requestedHost) ? requestedHost : "akademiya.kr";
   // _bot_bypass=1 파라미터: nginx 봇 감지를 우회하여 무한 리다이렉트 루프 방지
   const pageUrl = `https://${host}/surveys/public/${surveyId}?_bot_bypass=1`;
   const canonicalUrl = `https://${host}/surveys/public/${surveyId}`;
@@ -472,7 +487,7 @@ router.get("/public/:id", async (req, res) => {
 });
 
 // ── POST /api/surveys/public/:id/respond — 공개 설문 응답 (비로그인) ──────────
-router.post("/public/:id/respond", async (req, res) => {
+router.post("/public/:id/respond", publicRespondLimiter, async (req, res) => {
   const surveyId = Number(req.params.id);
   const { answers, respondent_name } = req.body as {
     answers: Array<{ question_id: number; option_ids?: number[]; text_answer?: string }>;
@@ -498,12 +513,25 @@ router.post("/public/:id/respond", async (req, res) => {
 
   const storedName = survey.public_identity_question ? (respondent_name!.trim()) : null;
 
+  // L-5: 익명 응답은 user_id가 NULL이라 UNIQUE(survey_id, user_id)가 무력화됨 → IP 기준 중복응답 차단
+  const responseIp = req.ip ?? null;
+  if (!survey.allow_multiple && responseIp) {
+    const [existing] = await pool.execute(
+      "SELECT id FROM survey_responses WHERE survey_id = ? AND response_ip = ?",
+      [surveyId, responseIp]
+    ) as any[];
+    if ((existing as any[]).length) {
+      res.status(409).json({ error: "survey.alreadyResponded" });
+      return;
+    }
+  }
+
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
     const [respIns] = await conn.execute(
-      "INSERT INTO survey_responses (survey_id, user_id, respondent_name) VALUES (?, NULL, ?)",
-      [surveyId, storedName]
+      "INSERT INTO survey_responses (survey_id, user_id, respondent_name, response_ip) VALUES (?, NULL, ?, ?)",
+      [surveyId, storedName, responseIp]
     ) as any[];
     const responseId = (respIns as any).insertId;
     await insertAnswers(conn, surveyId, responseId, answers ?? []);

@@ -78,6 +78,13 @@ router.post("/", requireAuth, async (req, res) => {
     return;
   }
 
+  // 피신고자도 해당 org 멤버인지 확인 (L-4: 임의 reported_id 지정 차단 — 데이터 무결성)
+  const reportedOrgPerm = await getOrgPermission(reportedId, orgId);
+  if (reportedOrgPerm === null) {
+    res.status(400).json({ error: "report.reportedNotOrgMember" });
+    return;
+  }
+
   // 초기 stage 결정
   let stage: "class_leader" | "org_admin" = "class_leader";
 

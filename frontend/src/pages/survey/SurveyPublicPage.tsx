@@ -164,8 +164,16 @@ export default function SurveyPublicPage() {
       showToast(t("survey.submitSuccess"));
     } catch (err: any) {
       const code = err?.response?.data?.error ?? "";
-      if (code === "survey.expired") showToast(t("survey.expiredErr"));
-      else                           showToast(t("common.error"));
+      if (code === "survey.expired") {
+        showToast(t("survey.expiredErr"));
+      } else if (code === "survey.alreadyResponded") {
+        // L-5: 서버가 IP 기준 중복응답을 차단한 경우 — 로컬 플래그도 맞춰 동기화
+        if (!survey?.allow_multiple) localStorage.setItem(storageKey, "1");
+        setSubmitted(true);
+        showToast(t("survey.alreadyRespondedErr"));
+      } else {
+        showToast(t("common.error"));
+      }
     } finally {
       setSubmitting(false);
     }

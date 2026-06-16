@@ -13,15 +13,35 @@ async function getClassPermission(userId: number, classId: number): Promise<numb
   return (rows as any[])[0].permission as number;
 }
 
-async function filterProfanity(content: string): Promise<{ text: string; filtered: boolean }> {
+// L-6: 매 요청마다 DB 조회 + RegExp 재생성하던 것을 TTL 캐싱으로 개선 (escape는 기존부터 적용되어 안전했음)
+const PROFANITY_CACHE_TTL_MS = 5 * 60 * 1000; // 5분 — DB의 단어 목록 변경이 늦어도 이 안에는 반영됨
+let profanityCache: { word: string; regex: RegExp }[] | null = null;
+let profanityCacheAt = 0;
+
+async function getProfanityList(): Promise<{ word: string; regex: RegExp }[]> {
+  const now = Date.now();
+  if (profanityCache && now - profanityCacheAt < PROFANITY_CACHE_TTL_MS) {
+    return profanityCache;
+  }
   const [words] = await pool.execute("SELECT word FROM profanity_words") as any[];
+  profanityCache = (words as { word: string }[]).map((row) => ({
+    word: row.word,
+    regex: new RegExp(row.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+  }));
+  profanityCacheAt = now;
+  return profanityCache;
+}
+
+async function filterProfanity(content: string): Promise<{ text: string; filtered: boolean }> {
+  const list = await getProfanityList();
   let text = content;
   let filtered = false;
-  for (const row of words as { word: string }[]) {
-    const w = row.word;
-    const regex = new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+  for (const { word, regex } of list) {
+    // 캐싱된(재사용되는) global RegExp는 lastIndex가 호출 간 상태를 가지므로 매 호출 전 리셋
+    regex.lastIndex = 0;
     if (regex.test(text)) {
-      text = text.replace(regex, "*".repeat(w.length));
+      regex.lastIndex = 0;
+      text = text.replace(regex, "*".repeat(word.length));
       filtered = true;
     }
   }

@@ -10,7 +10,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
   const token = authHeader.slice(7);
   try {
-    const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as Express.User;
+    const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET!, { algorithms: ["HS256"] }) as Express.User;
     req.user = payload;
     next();
   } catch {
