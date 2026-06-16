@@ -310,6 +310,7 @@
     "serverError": "An error occurred. Please try again.",
     "files": "Attachments",
     "linkBtn": "Open Link",
+    "downloadFailed": "Unable to download the file. You may not have permission, or it may have been deleted.",
     "create": {
       "title": "Upload Resource",
       "fileHint": "Up to {{files}} files, {{mb}}MB total",

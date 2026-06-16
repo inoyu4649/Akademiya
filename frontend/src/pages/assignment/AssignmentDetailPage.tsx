@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/auth.store";
 import { assignmentApi, type Assignment, type Submission, type Comment } from "../../api/assignment.api";
+import { downloadFile } from "../../api/file.api";
 import styles from "./AssignmentDetailPage.module.css";
 
 // ── Return modal (반장용) ────────────────────────────────────────────────────
@@ -147,9 +148,8 @@ function SubmitSection({
                 <a
                   key={f.id}
                   className={styles.fileLink}
-                  href={f.file_url}
-                  target="_blank"
-                  rel="noreferrer"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => void downloadFile(f.file_url, f.original_name).catch((e) => console.error("download failed", e))}
                 >
                   📎 {f.original_name ?? t("assignment.detail.downloadFile")}
                   <span className={styles.fileSize}>
@@ -318,12 +318,14 @@ function SubmissionManagement({
                   {/* 다중 파일 */}
                   {(s as any).files?.length > 0
                     ? (s as any).files.map((f: any) => (
-                        <a key={f.id} href={f.file_url} target="_blank" rel="noreferrer" className={styles.fileLink} title={f.original_name}>
+                        <a key={f.id} style={{ cursor: "pointer" }} className={styles.fileLink} title={f.original_name}
+                           onClick={() => void downloadFile(f.file_url, f.original_name).catch((e) => console.error("download failed", e))}>
                           📎
                         </a>
                       ))
                     : s.file_url && (
-                        <a href={s.file_url} target="_blank" rel="noreferrer" className={styles.fileLink}>📎</a>
+                        <a style={{ cursor: "pointer" }} className={styles.fileLink}
+                           onClick={() => void downloadFile(s.file_url!).catch((e) => console.error("download failed", e))}>📎</a>
                       )}
                   {s.link_url && (
                     <a href={s.link_url} target="_blank" rel="noreferrer" className={styles.fileLink}>

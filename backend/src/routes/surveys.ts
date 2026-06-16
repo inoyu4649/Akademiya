@@ -506,7 +506,7 @@ router.post("/public/:id/respond", async (req, res) => {
       [surveyId, storedName]
     ) as any[];
     const responseId = (respIns as any).insertId;
-    await insertAnswers(conn, responseId, answers ?? []);
+    await insertAnswers(conn, surveyId, responseId, answers ?? []);
     await conn.commit();
     res.status(201).json({ message: "responded" });
   } catch (e) {
@@ -570,27 +570,57 @@ router.get("/:id", requireAuth, async (req, res) => {
 });
 
 // ── 응답 삽입 헬퍼 ─────────────────────────────────────────────────────────────
-async function insertAnswers(conn: any, responseId: number, answers: any[]) {
+// 통계 오염 방지(M-2): question_id가 해당 survey 소속인지, option_id가 해당 question
+// 소속인지 화이트리스트로 검증한 뒤에만 저장. 소속이 아닌 id는 조용히 무시한다
+// (비공개 설문 집계를 비인증 공개 응답으로 조작하는 것을 차단).
+async function insertAnswers(conn: any, surveyId: number, responseId: number, answers: any[]) {
+  // survey 소속 question_id 집합
+  const [qRows] = await conn.execute(
+    "SELECT id FROM survey_questions WHERE survey_id = ?",
+    [surveyId]
+  );
+  const validQuestionIds = new Set<number>((qRows as any[]).map((r) => Number(r.id)));
+
+  // question별 유효 option_id 집합
+  const [oRows] = await conn.execute(
+    `SELECT o.id, o.question_id
+       FROM survey_options o
+       JOIN survey_questions q ON q.id = o.question_id
+      WHERE q.survey_id = ?`,
+    [surveyId]
+  );
+  const validOptionsByQuestion = new Map<number, Set<number>>();
+  for (const r of oRows as any[]) {
+    const qid = Number(r.question_id);
+    if (!validOptionsByQuestion.has(qid)) validOptionsByQuestion.set(qid, new Set());
+    validOptionsByQuestion.get(qid)!.add(Number(r.id));
+  }
+
   for (const ans of answers) {
+    const qid = Number(ans.question_id);
+    if (!validQuestionIds.has(qid)) continue; // 이 설문 소속이 아닌 question → 무시
+
     if (ans.option_ids?.length) {
+      const validOpts = validOptionsByQuestion.get(qid) ?? new Set<number>();
       for (const optId of ans.option_ids) {
+        if (!validOpts.has(Number(optId))) continue; // 이 question 소속이 아닌 option → 무시
         await conn.execute(
           "INSERT INTO survey_response_items (response_id, question_id, option_id) VALUES (?, ?, ?)",
-          [responseId, ans.question_id, optId]
+          [responseId, qid, Number(optId)]
         );
       }
     } else if (!ans.other_text) {
       // text/rating 타입: option도 other도 없는 경우
       await conn.execute(
         "INSERT INTO survey_response_items (response_id, question_id, text_answer) VALUES (?, ?, ?)",
-        [responseId, ans.question_id, ans.text_answer ?? null]
+        [responseId, qid, ans.text_answer ?? null]
       );
     }
     // 기타(직접 입력) 응답
     if (ans.other_text) {
       await conn.execute(
         "INSERT INTO survey_response_items (response_id, question_id, text_answer, is_other) VALUES (?, ?, ?, 1)",
-        [responseId, ans.question_id, ans.other_text]
+        [responseId, qid, ans.other_text]
       );
     }
   }
@@ -636,7 +666,7 @@ router.post("/:id/respond", requireAuth, async (req, res) => {
       "INSERT INTO survey_responses (survey_id, user_id) VALUES (?, ?)",
       [surveyId, storeUserId]
     ) as any[];
-    await insertAnswers(conn, (respIns as any).insertId, answers ?? []);
+    await insertAnswers(conn, surveyId, (respIns as any).insertId, answers ?? []);
     await conn.commit();
     res.status(201).json({ message: "responded" });
   } catch (e) {
@@ -678,7 +708,7 @@ router.put("/:id/respond", requireAuth, async (req, res) => {
   try {
     await conn.beginTransaction();
     await conn.execute("DELETE FROM survey_response_items WHERE response_id = ?", [responseId]);
-    await insertAnswers(conn, responseId, answers ?? []);
+    await insertAnswers(conn, surveyId, responseId, answers ?? []);
     await conn.commit();
     res.json({ message: "updated" });
   } catch (e) {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { resourceApi, type Resource } from "../../api/resource.api";
+import { downloadFile } from "../../api/file.api";
 import styles from "./ClassResourcesPage.module.css";
 
 function formatBytes(bytes: number): string {
@@ -136,10 +137,12 @@ export default function ClassResourcesPage() {
                     <a
                       key={f.id}
                       className={styles.fileLink}
-                      href={`${import.meta.env.VITE_API_URL ?? ""}${f.file_url}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download={f.original_name}
+                      style={{ cursor: "pointer" }}
+                      onClick={() =>
+                        void downloadFile(f.file_url, f.original_name).catch(() =>
+                          setToast(t("resource.downloadFailed"))
+                        )
+                      }
                     >
                       📎 {f.original_name}
                       <span className={styles.fileSizeBadge}>{formatBytes(f.file_size)}</span>

@@ -4,6 +4,14 @@ import { requireAuth } from "../middleware/auth.js";
 
 const router: IRouter = Router();
 
+// CSV 수식 인젝션 방지(M-6): 셀 선두가 = + - @ (또는 탭/CR)이면 ' 접두 후 큰따옴표 이스케이프.
+// Excel/스프레드시트가 사용자 입력(제목·반이름)을 수식으로 해석·실행하는 것을 차단.
+function csvCell(value: unknown): string {
+  let s = String(value ?? "");
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
 // ── GET /api/stats/class/:classId ─────────────────────────────────────────────
 // 반 통계: 반장(permission>=1) 또는 조직 permission>=1
 router.get("/class/:classId", requireAuth, async (req, res) => {
@@ -142,7 +150,7 @@ router.get("/class/:classId/csv", requireAuth, async (req, res) => {
     const rate = totalMembers > 0 ? Math.round((ts / totalMembers) * 100) : 0;
     const due  = a.due_at ? new Date(a.due_at).toISOString().slice(0, 16).replace("T", " ") : "";
     return [
-      `"${String(a.title).replace(/"/g, '""')}"`,
+      csvCell(a.title),
       `"${due}"`,
       totalMembers,
       a.submitted,
@@ -247,7 +255,7 @@ router.get("/org/:orgId/csv", requireAuth, async (req, res) => {
   const lines  = (classRows as any[]).map((c) => {
     const possible = Number(c.member_count) * Number(c.total_assignments);
     const rate     = possible > 0 ? Math.round((Number(c.total_submitters) / possible) * 100) : 0;
-    return [`"${String(c.name).replace(/"/g, '""')}"`, c.member_count, c.total_assignments, c.total_submitters, rate].join(",");
+    return [csvCell(c.name), c.member_count, c.total_assignments, c.total_submitters, rate].join(",");
   });
 
   const csv = [header, ...lines].join("\n");

@@ -4,8 +4,6 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
 import "./config/passport.js";
 import authRouter from "./routes/auth.js";
 import orgsRouter from "./routes/orgs.js";
@@ -25,11 +23,9 @@ import privacyRouter from "./routes/privacy.js";
 import termsRouter from "./routes/terms.js";
 import intlTransferRouter from "./routes/intl-transfer.js";
 import resourcesRouter from "./routes/resources.js";
+import filesRouter from "./routes/files.js";
 import { startDeadlineScheduler } from "./scheduler/deadlines.js";
 import { preloadHolidays } from "./utils/holidays.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname  = path.dirname(__filename);
 
 dotenv.config();
 
@@ -122,8 +118,8 @@ const authLimiter = rateLimit({
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 
-// ── 정적 파일: 업로드 ────────────────────────────────────────────────────────
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// 업로드 파일은 공개 정적 서빙하지 않고 인증·멤버십 검사 라우트(/api/files)로만 제공.
+// (H-2 저장형 XSS / M-4 접근 통제 — 과거 express.static "/uploads" 제거)
 
 // ── 라우터 등록 ──────────────────────────────────────────────────────────────
 app.use("/api/auth",         authLimiter, authRouter);   // 인증 엔드포인트: 엄격한 rate limit
@@ -144,6 +140,7 @@ app.use("/api/privacy",      privacyRouter);
 app.use("/api/terms",        termsRouter);
 app.use("/api/intl-transfer", intlTransferRouter);
 app.use("/api/resources",    resourcesRouter);
+app.use("/api/files",        filesRouter);     // 인증·멤버십 검사 업로드 파일 다운로드
 
 // ── 헬스체크 ─────────────────────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {
