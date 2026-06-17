@@ -92,7 +92,10 @@ export default function NotificationBell() {
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
     setPushSupported(true);
-    navigator.serviceWorker.getRegistration("/sw.js").then(async (reg) => {
+    // 인자 없이 호출해야 현재 페이지 scope로 등록된 SW를 올바르게 찾는다.
+    // "/sw.js"를 넘기면 스크립트 경로가 아니라 scope 매칭 URL로 해석되어
+    // 일부 브라우저에서 undefined를 반환한다.
+    navigator.serviceWorker.getRegistration().then(async (reg) => {
       if (!reg) return;
       const sub = await reg.pushManager.getSubscription();
       setPushEnabled(!!sub);
@@ -116,13 +119,16 @@ export default function NotificationBell() {
         // ON: 권한 요청 → 구독 → 백엔드 저장
         const permission = await Notification.requestPermission();
         if (permission !== "granted") return;
-        let reg = await navigator.serviceWorker.getRegistration("/sw.js");
-        if (!reg) {
-          reg = await navigator.serviceWorker.register("/sw.js");
+        const existing = await navigator.serviceWorker.getRegistration();
+        if (!existing) {
+          await navigator.serviceWorker.register("/sw.js");
         }
-        await navigator.serviceWorker.ready;
+        // ready는 항상 active 상태의 registration을 반환한다.
+        // register() 직후에는 installing 상태일 수 있으므로
+        // ready 반환값으로 pushManager를 사용해야 subscribe가 정상 동작한다.
+        const activeReg = await navigator.serviceWorker.ready;
         const publicKey = await pushApi.getVapidPublicKey();
-        const sub = await reg.pushManager.subscribe({
+        const sub = await activeReg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: publicKey,
         });
