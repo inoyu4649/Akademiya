@@ -466,6 +466,30 @@
       "returned": "Returned"
     }
   },
+  "pwaInstall": {
+    "modalTitle": "Install app to enable notifications",
+    "modalClose": "OK",
+    "iosTitle": "To receive push notifications on {{device}}, you need to add this site to your Home Screen via <strong>Safari</strong>.",
+    "iosNotSafari": "⚠️ You are not using Safari. Please open this page in <strong>Safari</strong>.",
+    "step1": "Open <strong>akademiya.kr</strong> in Safari",
+    "iosIpadStep2": "Tap the Share button (□↑) next to the address bar",
+    "iosIpadStep3": "Tap <strong>More</strong>",
+    "iosStep2": "Tap the <strong>···</strong> button to the right of the address bar",
+    "iosStep3": "Tap <strong>Share</strong>",
+    "iosStep4": "Tap <strong>More</strong>",
+    "iosStep5": "Select <strong>Add to Home Screen</strong> at the bottom of the list",
+    "iosStep6": "Launch Akademiya from your Home Screen and allow notifications",
+    "androidTitle": "Install the app on Android to receive push notifications.",
+    "androidStep1": "Open akademiya.kr in Chrome",
+    "androidStep2": "Tap the menu (⋮) in the top-right corner",
+    "androidStep3": "Select <strong>Add to Home screen</strong> or <strong>Install app</strong>",
+    "androidStep4": "Launch the installed app and allow notifications",
+    "pcTitle": "Install the app on your PC to receive push notifications.",
+    "pcStep1": "Open akademiya.kr in Chrome or Edge",
+    "pcStep2": "Click the <strong>Install (📥) icon</strong> in the address bar",
+    "pcStep3": "Or go to the browser menu and select <strong>Install app</strong>",
+    "pcStep4": "Launch the installed app and allow notifications"
+  },
   "notification": {
     "title": "Notifications",
     "empty": "No notifications.",

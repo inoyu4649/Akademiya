@@ -466,6 +466,30 @@
       "returned": "差し戻し"
     }
   },
+  "pwaInstall": {
+    "modalTitle": "アプリをインストールして通知を有効にする",
+    "modalClose": "確認",
+    "iosTitle": "{{device}}でプッシュ通知を受け取るには、<strong>Safari</strong> からホーム画面に追加する必要があります。",
+    "iosNotSafari": "⚠️ 現在 Safari ではありません。必ず <strong>Safari</strong> ブラウザでアクセスしてください。",
+    "step1": "Safari で <strong>akademiya.kr</strong> を開く",
+    "iosIpadStep2": "アドレスバー横の共有ボタン(□↑)をタップ",
+    "iosIpadStep3": "<strong>その他</strong> をタップ",
+    "iosStep2": "アドレスバー右の <strong>···</strong> ボタンをタップ",
+    "iosStep3": "<strong>共有</strong> をタップ",
+    "iosStep4": "<strong>その他</strong> をタップ",
+    "iosStep5": "リスト下部の <strong>ホーム画面に追加</strong> を選択して追加",
+    "iosStep6": "ホーム画面の Akademiya アイコンから起動し、通知を許可",
+    "androidTitle": "Android でアプリをインストールするとプッシュ通知が受け取れます。",
+    "androidStep1": "Chrome ブラウザで akademiya.kr を開く",
+    "androidStep2": "右上メニュー(⋮)をタップ",
+    "androidStep3": "<strong>ホーム画面に追加</strong> または <strong>アプリをインストール</strong> を選択",
+    "androidStep4": "インストールしたアプリを起動し、通知を許可",
+    "pcTitle": "PC にアプリをインストールするとプッシュ通知が受け取れます。",
+    "pcStep1": "Chrome または Edge で akademiya.kr を開く",
+    "pcStep2": "アドレスバー右の <strong>インストール(📥) アイコン</strong> をクリック",
+    "pcStep3": "またはブラウザメニュー → <strong>アプリをインストール</strong> を選択",
+    "pcStep4": "インストールしたアプリを起動し、通知を許可"
+  },
   "notification": {
     "title": "通知",
     "empty": "通知はありません。",

@@ -466,6 +466,30 @@
       "returned": "已退回"
     }
   },
+  "pwaInstall": {
+    "modalTitle": "安装应用以启用通知",
+    "modalClose": "确认",
+    "iosTitle": "要在{{device}}上接收推送通知，需要通过 <strong>Safari</strong> 将页面添加到主屏幕。",
+    "iosNotSafari": "⚠️ 当前不是 Safari 浏览器。请务必使用 <strong>Safari</strong> 浏览器访问。",
+    "step1": "用 Safari 打开 <strong>akademiya.kr</strong>",
+    "iosIpadStep2": "点击地址栏旁边的分享按钮(□↑)",
+    "iosIpadStep3": "点击<strong>更多</strong>",
+    "iosStep2": "点击地址栏右侧的 <strong>···</strong> 按钮",
+    "iosStep3": "点击<strong>分享</strong>",
+    "iosStep4": "点击<strong>更多</strong>",
+    "iosStep5": "在列表底部选择<strong>添加到主屏幕</strong>并确认",
+    "iosStep6": "从主屏幕启动 Akademiya 图标并允许通知",
+    "androidTitle": "在 Android 上安装应用即可接收推送通知。",
+    "androidStep1": "用 Chrome 浏览器打开 akademiya.kr",
+    "androidStep2": "点击右上角菜单(⋮)",
+    "androidStep3": "选择<strong>添加到主屏幕</strong>或<strong>安装应用</strong>",
+    "androidStep4": "启动已安装的应用并允许通知",
+    "pcTitle": "在 PC 上安装应用即可接收推送通知。",
+    "pcStep1": "用 Chrome 或 Edge 打开 akademiya.kr",
+    "pcStep2": "点击地址栏右侧的<strong>安装(📥)图标</strong>",
+    "pcStep3": "或在浏览器菜单中选择<strong>安装应用</strong>",
+    "pcStep4": "启动已安装的应用并允许通知"
+  },
   "notification": {
     "title": "通知",
     "empty": "暂无通知。",

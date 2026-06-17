@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { notificationApi, type Notification } from "../../api/notification.api";
 import { pushApi } from "../../api/push.api";
+import PwaInstallModal from "./PwaInstallModal";
 import styles from "./NotificationBell.module.css";
 
 // ── 상대 시간 포맷 ────────────────────────────────────────────────────────────
@@ -66,9 +67,11 @@ export default function NotificationBell() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // 푸시 알림 상태
+  const [isPwa, setIsPwa]                 = useState(false);
   const [pushSupported, setPushSupported] = useState(false);
   const [pushEnabled, setPushEnabled]     = useState(false);
   const [pushLoading, setPushLoading]     = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
 
   // 알림 목록 조회
   const fetchNotifications = useCallback(async () => {
@@ -88,13 +91,16 @@ export default function NotificationBell() {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
-  // 푸시 지원 여부 + 현재 구독 상태 확인
+  // PWA 여부 + 푸시 지원 여부 + 현재 구독 상태 확인
   useEffect(() => {
+    const pwa =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    setIsPwa(pwa);
+
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
     setPushSupported(true);
     // 인자 없이 호출해야 현재 페이지 scope로 등록된 SW를 올바르게 찾는다.
-    // "/sw.js"를 넘기면 스크립트 경로가 아니라 scope 매칭 URL로 해석되어
-    // 일부 브라우저에서 undefined를 반환한다.
     navigator.serviceWorker.getRegistration().then(async (reg) => {
       if (!reg) return;
       const sub = await reg.pushManager.getSubscription();
@@ -104,6 +110,12 @@ export default function NotificationBell() {
 
   async function handleTogglePush() {
     if (pushLoading) return;
+    // PWA가 아닌 경우: 설치 안내 모달 표시
+    if (!isPwa) {
+      setOpen(false);
+      setShowInstallModal(true);
+      return;
+    }
     setPushLoading(true);
     try {
       if (pushEnabled) {
@@ -251,19 +263,17 @@ export default function NotificationBell() {
                   {t("notification.markAllRead")}
                 </button>
               )}
-              {pushSupported && (
-                <button
-                  className={`${styles.pushToggle} ${pushEnabled ? styles.pushToggleOn : ""}`}
-                  onClick={handleTogglePush}
-                  disabled={pushLoading}
-                >
-                  {pushLoading
-                    ? "..."
-                    : pushEnabled
-                    ? t("notification.pushOn")
-                    : t("notification.pushOff")}
-                </button>
-              )}
+              <button
+                className={`${styles.pushToggle} ${pushEnabled ? styles.pushToggleOn : ""}`}
+                onClick={handleTogglePush}
+                disabled={pushLoading}
+              >
+                {pushLoading
+                  ? "..."
+                  : pushEnabled
+                  ? t("notification.pushOn")
+                  : t("notification.pushOff")}
+              </button>
             </div>
           </div>
 
@@ -301,6 +311,11 @@ export default function NotificationBell() {
             )}
           </div>
         </div>
+      )}
+
+      {/* PWA 설치 안내 모달 (비 PWA 모드에서 알림 버튼 클릭 시) */}
+      {showInstallModal && (
+        <PwaInstallModal onClose={() => setShowInstallModal(false)} />
       )}
     </div>
   );
