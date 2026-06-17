@@ -67,9 +67,8 @@ export default function NotificationBell() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // 푸시 알림 상태
-  const [isPwa, setIsPwa]                 = useState(false);
-  const [pushSupported, setPushSupported] = useState(false);
-  const [pushEnabled, setPushEnabled]     = useState(false);
+  const [isPwa, setIsPwa]         = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
   const [pushLoading, setPushLoading]     = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
 
@@ -99,7 +98,6 @@ export default function NotificationBell() {
     setIsPwa(pwa);
 
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
-    setPushSupported(true);
     // 인자 없이 호출해야 현재 페이지 scope로 등록된 SW를 올바르게 찾는다.
     navigator.serviceWorker.getRegistration().then(async (reg) => {
       if (!reg) return;
