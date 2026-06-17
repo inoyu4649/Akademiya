@@ -510,6 +510,8 @@
     },
     "pushOn": "Alerts: ON",
     "pushOff": "Alerts: OFF",
+    "pushDenied": "Notification permission denied. Please allow it in your browser settings.",
+    "pushError": "Failed to set up notifications. Please try again later.",
     "broadcast": {
       "title": "Send Announcement",
       "titleLabel": "Title",

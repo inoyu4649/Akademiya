@@ -267,3 +267,12 @@
   align-items: center;
   gap: 6px;
 }
+
+/* ── 푸시 에러 메시지 ── */
+.pushErrorMsg {
+  padding: 6px 12px;
+  font-size: 11px;
+  color: var(--danger);
+  background: rgba(244, 67, 54, 0.08);
+  border-bottom: 1px solid var(--border);
+}

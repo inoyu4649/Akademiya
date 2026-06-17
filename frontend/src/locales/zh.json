@@ -510,6 +510,8 @@
     },
     "pushOn": "通知: ON",
     "pushOff": "通知: OFF",
+    "pushDenied": "通知权限已被拒绝，请在浏览器设置中允许。",
+    "pushError": "通知设置失败，请稍后再试。",
     "broadcast": {
       "title": "发送公告",
       "titleLabel": "标题",

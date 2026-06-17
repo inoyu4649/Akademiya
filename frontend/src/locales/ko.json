@@ -510,6 +510,8 @@
     },
     "pushOn": "알림: ON",
     "pushOff": "알림: OFF",
+    "pushDenied": "알림 권한이 거부됐습니다. 브라우저 설정에서 허용해주세요.",
+    "pushError": "알림 설정에 실패했습니다. 잠시 후 다시 시도해주세요.",
     "broadcast": {
       "title": "공지 보내기",
       "titleLabel": "제목",
