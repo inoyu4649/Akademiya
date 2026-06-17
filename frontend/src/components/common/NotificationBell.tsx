@@ -67,10 +67,9 @@ export default function NotificationBell() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // 푸시 알림 상태
-  const [isPwa, setIsPwa]               = useState(false);
-  const [pushEnabled, setPushEnabled]   = useState(false);
-  const [pushLoading, setPushLoading]   = useState(false);
-  const [pushError, setPushError]       = useState<string | null>(null);
+  const [isPwa, setIsPwa]         = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading]     = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
 
   // 알림 목록 조회
@@ -116,7 +115,6 @@ export default function NotificationBell() {
       return;
     }
     setPushLoading(true);
-    setPushError(null);
     try {
       if (pushEnabled) {
         // OFF: 구독 해제
@@ -130,14 +128,14 @@ export default function NotificationBell() {
       } else {
         // ON: 권한 요청 → 구독 → 백엔드 저장
         const permission = await Notification.requestPermission();
-        if (permission !== "granted") {
-          setPushError(t("notification.pushDenied"));
-          return;
-        }
+        if (permission !== "granted") return;
         const existing = await navigator.serviceWorker.getRegistration();
         if (!existing) {
           await navigator.serviceWorker.register("/sw.js");
         }
+        // ready는 항상 active 상태의 registration을 반환한다.
+        // register() 직후에는 installing 상태일 수 있으므로
+        // ready 반환값으로 pushManager를 사용해야 subscribe가 정상 동작한다.
         const activeReg = await navigator.serviceWorker.ready;
         const publicKey = await pushApi.getVapidPublicKey();
         const sub = await activeReg.pushManager.subscribe({
@@ -147,9 +145,8 @@ export default function NotificationBell() {
         await pushApi.subscribe(sub.toJSON());
         setPushEnabled(true);
       }
-    } catch (err) {
-      console.error("[push] toggle failed:", err);
-      setPushError(t("notification.pushError"));
+    } catch {
+      /* ignore — 사용자가 권한 거부하거나 서버 오류 */
     } finally {
       setPushLoading(false);
     }
@@ -277,10 +274,6 @@ export default function NotificationBell() {
               </button>
             </div>
           </div>
-
-          {pushError && (
-            <div className={styles.pushErrorMsg}>{pushError}</div>
-          )}
 
           <div className={styles.list}>
             {notifications.length === 0 ? (
