@@ -1,7 +1,7 @@
 {
   "name": "gmcauto2",
   "private": true,
-  "version": "2.8.1",
+  "version": "2.8.2",
   "type": "module",
   "description": "GMCAuto 2 - GMC PASS 자동신청 프로그램 (Akademiya 통합 버전)",
   "scripts": {

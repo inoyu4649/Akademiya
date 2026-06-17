@@ -52,4 +52,10 @@ export const orgApi = {
 
   leave: (orgId: number) =>
     client.delete(`/orgs/${orgId}/leave`),
+
+  deleteOrg: (orgId: number) =>
+    client.delete(`/orgs/${orgId}`),
+
+  kickMember: (orgId: number, userId: number, reason: string) =>
+    client.delete(`/orgs/${orgId}/members/${userId}`, { data: { reason } }),
 };

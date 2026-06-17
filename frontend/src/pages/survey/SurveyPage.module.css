@@ -22,11 +22,11 @@
 .backBtn {
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 13px;
   cursor: pointer;
   padding: 0;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
   transition: color 0.1s;
 }
 .backBtn:hover { color: var(--text-primary); }
@@ -139,7 +139,7 @@
 
 .scopeName { font-size: 12px; color: var(--text-muted); }
 
-.expiredBadge  { font-size: 11px; background: rgba(239,68,68,0.12); color: #ef4444; padding: 2px 8px; border-radius: 10px; }
+.expiredBadge  { font-size: 11px; background: rgba(244,67,54,0.12); color: var(--danger); padding: 2px 8px; border-radius: 10px; }
 .inactiveBadge { font-size: 11px; background: rgba(156,163,175,0.15); color: var(--text-muted); padding: 2px 8px; border-radius: 10px; }
 .respondedBadge { font-size: 11px; background: rgba(19,229,106,0.12); color: #13e56a; padding: 2px 8px; border-radius: 10px; }
 
@@ -210,16 +210,16 @@
 .toggleBtn:hover { background: var(--bg-hover); }
 
 .deleteBtn {
-  background: rgba(239,68,68,0.08);
-  border: 1px solid rgba(239,68,68,0.3);
+  background: rgba(244,67,54,0.08);
+  border: 1px solid rgba(244,67,54,0.3);
   border-radius: var(--radius-sm);
-  color: #ef4444;
+  color: var(--danger);
   padding: 7px 14px;
   font-size: 13px;
   cursor: pointer;
   transition: background 0.1s;
 }
-.deleteBtn:hover { background: rgba(239,68,68,0.14); }
+.deleteBtn:hover { background: rgba(244,67,54,0.14); }
 
 .copyUrlBtn {
   background: rgba(245,158,11,0.08);
@@ -276,7 +276,7 @@
 }
 
 .requiredMark {
-  color: #ef4444;
+  color: var(--danger);
   font-weight: 700;
   margin-left: 2px;
 }
@@ -340,10 +340,10 @@
 }
 
 .sectionTitle {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .label {
@@ -477,7 +477,7 @@
   margin-left: auto;
   transition: color 0.1s, background 0.1s;
 }
-.removeQBtn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+.removeQBtn:hover { color: var(--danger); background: rgba(244,67,54,0.1); }
 
 .options { margin-top: 10px; }
 
@@ -501,7 +501,7 @@
   flex-shrink: 0;
   transition: color 0.1s, background 0.1s;
 }
-.removeOptBtn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+.removeOptBtn:hover { color: var(--danger); background: rgba(244,67,54,0.1); }
 
 .addOptBtn {
   background: none;
@@ -707,17 +707,17 @@
 }
 
 .removeViewerBtn {
-  background: rgba(239,68,68,0.08);
-  border: 1px solid rgba(239,68,68,0.3);
+  background: rgba(244,67,54,0.08);
+  border: 1px solid rgba(244,67,54,0.3);
   border-radius: var(--radius-sm);
-  color: #ef4444;
+  color: var(--danger);
   font-size: 12px;
   padding: 4px 10px;
   cursor: pointer;
   transition: background 0.1s;
   white-space: nowrap;
 }
-.removeViewerBtn:hover { background: rgba(239,68,68,0.14); }
+.removeViewerBtn:hover { background: rgba(244,67,54,0.14); }
 
 /* ── Toast ── */
 .toast {
@@ -746,7 +746,7 @@
 
 .errorMsg {
   font-size: 13px;
-  color: #ef4444;
+  color: var(--danger);
   margin-top: 8px;
 }
 
@@ -841,10 +841,10 @@
 
 /* 수정 경고 배너 */
 .editWarning {
-  background: rgba(245,158,11,0.10);
-  border: 1px solid rgba(245,158,11,0.35);
+  background: rgba(255,152,0,0.10);
+  border: 1px solid rgba(255,152,0,0.35);
   border-radius: var(--radius-sm);
-  color: #b45309;
+  color: var(--warning);
   font-size: 13px;
   padding: 10px 16px;
   margin-bottom: 20px;
@@ -921,8 +921,9 @@
   display: inline-block;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #e0f2fe;
-  color: #0369a1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 600;
 }
@@ -932,19 +933,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fef3c7;
-  border-radius: 8px;
+  background: rgba(255,152,0,0.10);
+  border: 1px solid rgba(255,152,0,0.30);
+  border-radius: var(--radius-sm);
   padding: 10px 14px;
   font-size: 13px;
   font-weight: 500;
-  color: #92400e;
+  color: var(--warning);
   margin-bottom: 16px;
 }
 
 .cancelEditBtn {
   border: none;
   background: transparent;
-  color: #92400e;
+  color: var(--warning);
   font-size: 13px;
   cursor: pointer;
   text-decoration: underline;
@@ -966,11 +968,12 @@
 /* ── Multiple response note ── */
 .multipleNote {
   font-size: 13px;
-  color: var(--color-primary, #4f46e5);
+  color: var(--text-secondary);
   margin-bottom: 12px;
   padding: 8px 12px;
-  background: #ede9fe;
-  border-radius: 8px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
 /* ── option group (create page) ── */

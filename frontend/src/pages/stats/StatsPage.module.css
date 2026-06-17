@@ -84,7 +84,7 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 /* ── Table card ── */
@@ -125,8 +125,8 @@
   word-break: break-word;
 }
 
-.numGreen  { color: #4CAF50; font-weight: 500; }
-.numOrange { color: #FF9800; font-weight: 500; }
+.numGreen  { color: var(--success); font-weight: 500; }
+.numOrange { color: var(--warning); font-weight: 500; }
 .numBlue   { color: var(--accent); font-weight: 500; }
 .numGrey   { color: var(--text-muted); font-weight: 500; }
 

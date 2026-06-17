@@ -6,6 +6,7 @@ import { classApi, type ClassDetail, type ClassMember, type ClassJoinRequest } f
 import { notificationApi } from "../../api/notification.api";
 import { surveyApi, type Survey } from "../../api/survey.api";
 import ReportModal from "../report/ReportModal";
+import KickModal from "../common/KickModal";
 import styles from "./ClassDetailPage.module.css";
 
 function RoleBadge({ perm }: { perm: number }) {
@@ -32,6 +33,9 @@ export default function ClassDetailPage() {
   const [toast, setToast]     = useState("");
   const [permEdits, setPermEdits] = useState<Record<number, number>>({});
   const [reportTarget, setReportTarget] = useState<{ id: number; name: string } | null>(null);
+  const [kickTarget, setKickTarget] = useState<{ id: number; name: string } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
@@ -105,6 +109,27 @@ export default function ClassDetailPage() {
     }
   }
 
+  async function handleDelete() {
+    setDeleteLoading(true);
+    try {
+      await classApi.deleteClass(classId);
+      navigate("/classes");
+    } catch {
+      setDeleteConfirm(false);
+      showToast(t("class.delete.serverError"));
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
+  async function handleKick(reason: string) {
+    if (!kickTarget) return;
+    await classApi.kickMember(classId, kickTarget.id, reason);
+    setMembers((prev) => prev.filter((m) => m.id !== kickTarget.id));
+    setKickTarget(null);
+    showToast(t("kick.success"));
+  }
+
   async function handleBroadcast() {
     if (!bcTitle.trim()) { showToast(t("notification.broadcast.missingFields")); return; }
     setBcLoading(true);
@@ -126,6 +151,35 @@ export default function ClassDetailPage() {
   return (
     <div className={styles.page}>
       {toast && <div className={styles.toast}>{toast}</div>}
+
+      {/* 강퇴 모달 */}
+      {kickTarget && (
+        <KickModal
+          targetName={kickTarget.name}
+          onClose={() => setKickTarget(null)}
+          onSubmit={handleKick}
+        />
+      )}
+
+      {/* 반 삭제 확인 모달 */}
+      {deleteConfirm && (
+        <div className={styles.modalOverlay} onClick={() => setDeleteConfirm(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>⚠ {t("class.delete.title")}</h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 18, lineHeight: 1.6 }}>
+              {t("class.delete.warning", { name: cls?.name })}
+            </p>
+            <div className={styles.modalActions}>
+              <button className={styles.btnCancel} onClick={() => setDeleteConfirm(false)}>
+                {t("common.cancel")}
+              </button>
+              <button className={styles.btnDanger} onClick={handleDelete} disabled={deleteLoading}>
+                {deleteLoading ? t("common.loading") : t("class.delete.confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 반 탈퇴 확인 모달 */}
       {leaveConfirm && (
@@ -239,6 +293,11 @@ export default function ClassDetailPage() {
             </button>
           )}
           <RoleBadge perm={myPerm} />
+          {myPerm >= 1 && (
+            <button className={styles.btnDelete} onClick={() => setDeleteConfirm(true)}>
+              {t("class.delete.btn")}
+            </button>
+          )}
           <button className={styles.btnLeave} onClick={() => setLeaveConfirm(true)}>
             {t("class.leave.btn")}
           </button>
@@ -288,14 +347,22 @@ export default function ClassDetailPage() {
                 )}
               </span>
               {myPerm >= 1 && (
-                <span>
+                <span style={{ display: "flex", gap: 6 }}>
                   {m.id !== currentUser?.id && (
-                    <button
-                      className={styles.reportBtn}
-                      onClick={() => setReportTarget({ id: m.id, name: m.display_name })}
-                    >
-                      {t("report.reportBtn")}
-                    </button>
+                    <>
+                      <button
+                        className={styles.kickBtn}
+                        onClick={() => setKickTarget({ id: m.id, name: m.display_name })}
+                      >
+                        {t("kick.btn")}
+                      </button>
+                      <button
+                        className={styles.reportBtn}
+                        onClick={() => setReportTarget({ id: m.id, name: m.display_name })}
+                      >
+                        {t("report.reportBtn")}
+                      </button>
+                    </>
                   )}
                 </span>
               )}

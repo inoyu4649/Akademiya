@@ -27,40 +27,41 @@ function detectOs(): OsType {
 }
 
 function InstallGuide({ os }: { os: OsType }) {
+  const { t } = useTranslation()
   const isSafari = /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS|Chrome/.test(navigator.userAgent)
 
   if (os === 'ios' || os === 'ipados') {
+    const device = os === 'ipados' ? 'iPad' : 'iPhone'
     return (
       <div>
         <p style={{ margin: '0 0 12px', fontSize: '14px', color: 'var(--text)' }}>
-          {os === 'ipados' ? 'iPad' : 'iPhone'}에서 푸시 알림을 받으려면{' '}
-          <strong>Safari</strong>로 홈 화면에 추가해야 합니다.
+          {t('install.iosTitle', { device })}
         </p>
         {!isSafari && (
           <div style={{
             background: 'var(--warning-light)', border: '1px solid var(--warning)',
             borderRadius: '6px', padding: '8px 12px', marginBottom: '12px',
             fontSize: '13px', color: 'var(--text)',
-          }}>
-            ⚠️ 현재 Safari가 아닙니다. 반드시 <strong>Safari</strong> 브라우저로 접속해주세요.
-          </div>
+          }}
+            dangerouslySetInnerHTML={{ __html: t('install.iosNotSafari') }}
+          />
         )}
         <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text)', lineHeight: 2 }}>
-          <li>Safari로 <strong>gmc.akademiya.kr</strong> 접속</li>
+          <li dangerouslySetInnerHTML={{ __html: t('install.step1') }} />
           {os === 'ipados' ? (
             <>
-              <li>주소창 옆 공유 버튼(□↑)을 탭</li>
-              <li><strong>더 보기</strong> 탭</li>
+              <li dangerouslySetInnerHTML={{ __html: t('install.iosIpadStep2') }} />
+              <li dangerouslySetInnerHTML={{ __html: t('install.iosIpadStep3') }} />
             </>
           ) : (
             <>
-              <li>주소창 오른쪽 <strong>···</strong> 버튼 탭</li>
-              <li><strong>공유</strong> 탭</li>
-              <li><strong>더 보기</strong> 탭</li>
+              <li dangerouslySetInnerHTML={{ __html: t('install.iosStep2') }} />
+              <li dangerouslySetInnerHTML={{ __html: t('install.iosStep3') }} />
+              <li dangerouslySetInnerHTML={{ __html: t('install.iosStep4') }} />
             </>
           )}
-          <li>목록 하단의 <strong>홈 화면에 추가</strong> 선택 후 추가</li>
-          <li>홈 화면의 GMCAuto 아이콘으로 실행 후 알림 허용</li>
+          <li dangerouslySetInnerHTML={{ __html: t('install.iosStep5') }} />
+          <li dangerouslySetInnerHTML={{ __html: t('install.iosStep6') }} />
         </ol>
       </div>
     )
@@ -70,13 +71,13 @@ function InstallGuide({ os }: { os: OsType }) {
     return (
       <div>
         <p style={{ margin: '0 0 12px', fontSize: '14px', color: 'var(--text)' }}>
-          Android에서 앱을 설치하면 푸시 알림을 받을 수 있습니다.
+          {t('install.androidTitle')}
         </p>
         <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text)', lineHeight: 2 }}>
-          <li>Chrome 브라우저로 gmc.akademiya.kr 접속</li>
-          <li>우측 상단 메뉴(⋮) 탭</li>
-          <li><strong>홈 화면에 추가</strong> 또는 <strong>앱 설치</strong> 선택</li>
-          <li>설치된 앱 실행 후 알림 허용</li>
+          <li dangerouslySetInnerHTML={{ __html: t('install.androidStep1') }} />
+          <li dangerouslySetInnerHTML={{ __html: t('install.androidStep2') }} />
+          <li dangerouslySetInnerHTML={{ __html: t('install.androidStep3') }} />
+          <li dangerouslySetInnerHTML={{ __html: t('install.androidStep4') }} />
         </ol>
       </div>
     )
@@ -85,13 +86,13 @@ function InstallGuide({ os }: { os: OsType }) {
   return (
     <div>
       <p style={{ margin: '0 0 12px', fontSize: '14px', color: 'var(--text)' }}>
-        PC에서 앱을 설치하면 푸시 알림을 받을 수 있습니다.
+        {t('install.pcTitle')}
       </p>
       <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text)', lineHeight: 2 }}>
-        <li>Chrome 또는 Edge로 gmc.akademiya.kr 접속</li>
-        <li>주소창 오른쪽 <strong>설치(📥) 아이콘</strong> 클릭</li>
-        <li>또는 브라우저 메뉴 → <strong>앱 설치</strong> 선택</li>
-        <li>설치된 앱 실행 후 알림 허용</li>
+        <li dangerouslySetInnerHTML={{ __html: t('install.pcStep1') }} />
+        <li dangerouslySetInnerHTML={{ __html: t('install.pcStep2') }} />
+        <li dangerouslySetInnerHTML={{ __html: t('install.pcStep3') }} />
+        <li dangerouslySetInnerHTML={{ __html: t('install.pcStep4') }} />
       </ol>
     </div>
   )
@@ -341,7 +342,7 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
         <div className="header-left">
           <img src="/logo_gmc.png" alt="GMCAuto" style={{ height: '30px', objectFit: 'contain' }} />
           <h1>GMCAuto 2</h1>
-          <span className="version">v2.8.1</span>
+          <span className="version">{t('app.version')}</span>
         </div>
         <div className="header-right">
           <button
@@ -412,7 +413,7 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
                   borderRadius: '12px', padding: '24px', maxWidth: '400px', width: '100%',
                 }}>
                   <h3 style={{ margin: '0 0 16px', color: 'var(--text)', fontSize: '16px' }}>
-                    앱 설치 후 알림 가능
+                    {t('install.modalTitle')}
                   </h3>
                   <InstallGuide os={installOs} />
                   <button
@@ -420,7 +421,7 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
                     onClick={() => setShowInstallModal(false)}
                     style={{ marginTop: '20px', width: '100%' }}
                   >
-                    확인
+                    {t('install.modalClose')}
                   </button>
                 </div>
               </div>
@@ -438,7 +439,7 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
                       disabled={notifLoading}
                       style={{ fontSize: '12px', padding: '5px 11px' }}
                     >
-                      {notifLoading ? '...' : notifEnabled ? '알림: ON' : '알림: OFF'}
+                      {notifLoading ? t('common.cancel', '...') : notifEnabled ? t('home.notifOn') : t('home.notifOff')}
                     </button>
                     <button className="btn btn-danger" onClick={handleCancel} style={{ fontSize: '12px', padding: '5px 11px' }}>
                       {t('home.cancelBtn')}
@@ -666,7 +667,7 @@ function PassHistory({ session }: PassHistoryProps) {
         setError(data.message || '')
       }
     } catch {
-      setError('내역을 불러올 수 없습니다.')
+      setError(t('history.fetchError'))
     } finally {
       setLoading(false)
     }

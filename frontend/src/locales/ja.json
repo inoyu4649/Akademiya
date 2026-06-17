@@ -213,6 +213,13 @@
       "success": "組織を退会しました。",
       "lastAdmin": "唯一の管理者は退会できません。他のメンバーに管理者権限を付与してください。",
       "serverError": "エラーが発生しました。しばらくしてからもう一度お試しください。"
+    },
+    "delete": {
+      "btn": "組織を削除",
+      "title": "組織削除",
+      "warning": "{{name}} を削除します。組織内のすべての班、課題、提出物が完全に削除され、復元できません。",
+      "confirm": "削除を確認",
+      "serverError": "エラーが発生しました。しばらくしてからもう一度お試しください。"
     }
   },
   "class": {
@@ -280,6 +287,13 @@
       "confirm": "退会を確認",
       "success": "班を退会しました。",
       "lastLeader": "唯一の班長は退会できません。他のメンバーを班長に指定してください。",
+      "serverError": "エラーが発生しました。しばらくしてからもう一度お試しください。"
+    },
+    "delete": {
+      "btn": "班を削除",
+      "title": "班削除",
+      "warning": "{{name}} を削除します。班内のすべての課題と提出物が完全に削除され、復元できません。",
+      "confirm": "削除を確認",
       "serverError": "エラーが発生しました。しばらくしてからもう一度お試しください。"
     }
   },
@@ -364,6 +378,17 @@
       "escalate": "上位にエスカレーション",
       "ban": "永久BAN"
     }
+  },
+  "kick": {
+    "btn": "除名",
+    "modalTitle": "メンバー除名",
+    "targetLabel": "対象メンバー",
+    "reasonLabel": "除名理由",
+    "reasonPlaceholder": "除名理由を入力してください。",
+    "reasonRequired": "除名理由を入力してください。",
+    "submitBtn": "除名する",
+    "success": "除名しました。",
+    "serverError": "エラーが発生しました。しばらくしてからもう一度お試しください。"
   },
   "assignment": {
     "list": {
@@ -455,8 +480,12 @@
       "broadcast": "お知らせ",
       "org_rejected": "組織申請却下",
       "class_rejected": "クラス申請却下",
-      "new_survey": "新しいアンケート"
+      "new_survey": "新しいアンケート",
+      "org_kicked": "組織から除名",
+      "class_kicked": "班から除名"
     },
+    "pushOn": "通知: ON",
+    "pushOff": "通知: OFF",
     "broadcast": {
       "title": "お知らせを送る",
       "titleLabel": "タイトル",

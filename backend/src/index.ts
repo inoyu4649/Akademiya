@@ -24,6 +24,7 @@ import termsRouter from "./routes/terms.js";
 import intlTransferRouter from "./routes/intl-transfer.js";
 import resourcesRouter from "./routes/resources.js";
 import filesRouter from "./routes/files.js";
+import pushRouter from "./routes/push.js";
 import { startDeadlineScheduler } from "./scheduler/deadlines.js";
 import { preloadHolidays } from "./utils/holidays.js";
 
@@ -141,6 +142,7 @@ app.use("/api/terms",        termsRouter);
 app.use("/api/intl-transfer", intlTransferRouter);
 app.use("/api/resources",    resourcesRouter);
 app.use("/api/files",        filesRouter);     // 인증·멤버십 검사 업로드 파일 다운로드
+app.use("/api/push",         pushRouter);
 
 // ── 헬스체크 ─────────────────────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {

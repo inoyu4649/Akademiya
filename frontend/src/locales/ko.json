@@ -213,6 +213,13 @@
       "success": "조직에서 탈퇴했습니다.",
       "lastAdmin": "유일한 관리자는 탈퇴할 수 없습니다. 다른 멤버에게 관리자 권한을 부여하세요.",
       "serverError": "오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+    },
+    "delete": {
+      "btn": "조직 삭제",
+      "title": "조직 삭제",
+      "warning": "{{name}} 조직을 삭제합니다. 조직의 모든 반, 과제, 제출물이 함께 삭제되며 복구할 수 없습니다.",
+      "confirm": "삭제 확인",
+      "serverError": "오류가 발생했습니다. 잠시 후 다시 시도해주세요."
     }
   },
   "class": {
@@ -280,6 +287,13 @@
       "confirm": "탈퇴 확인",
       "success": "반에서 탈퇴했습니다.",
       "lastLeader": "유일한 반장은 탈퇴할 수 없습니다. 다른 멤버를 반장으로 지정하세요.",
+      "serverError": "오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+    },
+    "delete": {
+      "btn": "반 삭제",
+      "title": "반 삭제",
+      "warning": "{{name}} 반을 삭제합니다. 반의 모든 과제와 제출물이 함께 삭제되며 복구할 수 없습니다.",
+      "confirm": "삭제 확인",
       "serverError": "오류가 발생했습니다. 잠시 후 다시 시도해주세요."
     }
   },
@@ -364,6 +378,17 @@
       "escalate": "상위 단계로 에스컬레이션",
       "ban": "영구 밴"
     }
+  },
+  "kick": {
+    "btn": "강퇴",
+    "modalTitle": "구성원 강퇴",
+    "targetLabel": "강퇴 대상",
+    "reasonLabel": "강퇴 사유",
+    "reasonPlaceholder": "강퇴 사유를 입력해주세요.",
+    "reasonRequired": "강퇴 사유를 입력해주세요.",
+    "submitBtn": "강퇴하기",
+    "success": "강퇴되었습니다.",
+    "serverError": "서버 오류가 발생했습니다."
   },
   "assignment": {
     "list": {
@@ -455,8 +480,12 @@
       "broadcast": "공지",
       "org_rejected": "조직 개설 거절",
       "class_rejected": "반 개설 거절",
-      "new_survey": "새 설문"
+      "new_survey": "새 설문",
+      "org_kicked": "조직 강퇴",
+      "class_kicked": "반 강퇴"
     },
+    "pushOn": "알림: ON",
+    "pushOff": "알림: OFF",
     "broadcast": {
       "title": "공지 보내기",
       "titleLabel": "제목",

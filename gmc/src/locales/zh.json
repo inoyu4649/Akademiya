@@ -4,7 +4,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS 自动申请程序",
-    "version": "v2.7",
+    "version": "v2.8.2",
     "contact": "联系方式: 022207@hafs.hs.kr",
     "madeWith": "由 Claude Code 制作",
     "loading": "正在验证登录信息...",
@@ -86,7 +86,33 @@
     "logTitle": "活动日志",
     "suspendRegisterNotice": "📅 GMC PASS 暂停期间，将在恢复日（{{date}}）自动申请。",
     "slotsResumeDate": "下一个 GMC PASS 恢复日（{{date}}）",
-    "suspendLabel": "🚫 暂停中"
+    "suspendLabel": "🚫 暂停中",
+    "notifOn": "通知: ON",
+    "notifOff": "通知: OFF"
+  },
+  "install": {
+    "modalTitle": "安装应用以启用通知",
+    "modalClose": "确认",
+    "iosTitle": "要在{{device}}上接收推送通知，需要通过 <strong>Safari</strong> 将页面添加到主屏幕。",
+    "iosNotSafari": "⚠️ 当前不是 Safari 浏览器。请务必使用 <strong>Safari</strong> 浏览器访问。",
+    "step1": "用 Safari 打开 <strong>gmc.akademiya.kr</strong>",
+    "iosIpadStep2": "点击地址栏旁边的分享按钮(□↑)",
+    "iosIpadStep3": "点击<strong>更多</strong>",
+    "iosStep2": "点击地址栏右侧的 <strong>···</strong> 按钮",
+    "iosStep3": "点击<strong>分享</strong>",
+    "iosStep4": "点击<strong>更多</strong>",
+    "iosStep5": "在列表底部选择<strong>添加到主屏幕</strong>并确认",
+    "iosStep6": "从主屏幕启动 GMCAuto 图标并允许通知",
+    "androidTitle": "在 Android 上安装应用即可接收推送通知。",
+    "androidStep1": "用 Chrome 浏览器打开 gmc.akademiya.kr",
+    "androidStep2": "点击右上角菜单(⋮)",
+    "androidStep3": "选择<strong>添加到主屏幕</strong>或<strong>安装应用</strong>",
+    "androidStep4": "启动已安装的应用并允许通知",
+    "pcTitle": "在 PC 上安装应用即可接收推送通知。",
+    "pcStep1": "用 Chrome 或 Edge 打开 gmc.akademiya.kr",
+    "pcStep2": "点击地址栏右侧的<strong>安装(📥)图标</strong>",
+    "pcStep3": "或在浏览器菜单中选择<strong>安装应用</strong>",
+    "pcStep4": "启动已安装的应用并允许通知"
   },
   "pass": {
     "title": "GMC PASS 申请",
@@ -111,7 +137,8 @@
     "colType": "类型",
     "colTime": "时间",
     "colConfirmed": "确认状态",
-    "colTeacher": "确认教师"
+    "colTeacher": "确认教师",
+    "fetchError": "无法加载申请记录。"
   },
   "admin": {
     "title": "管理员面板",

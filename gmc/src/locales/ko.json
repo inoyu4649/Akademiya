@@ -9,7 +9,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS 자동신청 프로그램",
-    "version": "v2.7",
+    "version": "v2.8.2",
     "contact": "문의: 022207@hafs.hs.kr",
     "madeWith": "Claude Code로 제작됨",
     "loading": "로그인 정보 확인 중...",
@@ -91,7 +91,33 @@
     "logTitle": "활동 로그",
     "suspendRegisterNotice": "📅 GMC PASS 중단 기간입니다. 재개일({{date}})에 자동으로 신청됩니다.",
     "slotsResumeDate": "다음 GMC PASS 재개일({{date}}) 기준",
-    "suspendLabel": "🚫 중단"
+    "suspendLabel": "🚫 중단",
+    "notifOn": "알림: ON",
+    "notifOff": "알림: OFF"
+  },
+  "install": {
+    "modalTitle": "앱 설치 후 알림 가능",
+    "modalClose": "확인",
+    "iosTitle": "{{device}}에서 푸시 알림을 받으려면 <strong>Safari</strong>로 홈 화면에 추가해야 합니다.",
+    "iosNotSafari": "⚠️ 현재 Safari가 아닙니다. 반드시 <strong>Safari</strong> 브라우저로 접속해주세요.",
+    "step1": "Safari로 <strong>gmc.akademiya.kr</strong> 접속",
+    "iosIpadStep2": "주소창 옆 공유 버튼(□↑)을 탭",
+    "iosIpadStep3": "<strong>더 보기</strong> 탭",
+    "iosStep2": "주소창 오른쪽 <strong>···</strong> 버튼 탭",
+    "iosStep3": "<strong>공유</strong> 탭",
+    "iosStep4": "<strong>더 보기</strong> 탭",
+    "iosStep5": "목록 하단의 <strong>홈 화면에 추가</strong> 선택 후 추가",
+    "iosStep6": "홈 화면의 GMCAuto 아이콘으로 실행 후 알림 허용",
+    "androidTitle": "Android에서 앱을 설치하면 푸시 알림을 받을 수 있습니다.",
+    "androidStep1": "Chrome 브라우저로 gmc.akademiya.kr 접속",
+    "androidStep2": "우측 상단 메뉴(⋮) 탭",
+    "androidStep3": "<strong>홈 화면에 추가</strong> 또는 <strong>앱 설치</strong> 선택",
+    "androidStep4": "설치된 앱 실행 후 알림 허용",
+    "pcTitle": "PC에서 앱을 설치하면 푸시 알림을 받을 수 있습니다.",
+    "pcStep1": "Chrome 또는 Edge로 gmc.akademiya.kr 접속",
+    "pcStep2": "주소창 오른쪽 <strong>설치(📥) 아이콘</strong> 클릭",
+    "pcStep3": "또는 브라우저 메뉴 → <strong>앱 설치</strong> 선택",
+    "pcStep4": "설치된 앱 실행 후 알림 허용"
   },
   "pass": {
     "title": "GMC PASS 신청",
@@ -116,7 +142,8 @@
     "colType": "구분",
     "colTime": "시간",
     "colConfirmed": "확인여부",
-    "colTeacher": "확인교사"
+    "colTeacher": "확인교사",
+    "fetchError": "내역을 불러올 수 없습니다."
   },
   "admin": {
     "title": "관리자 대시보드",

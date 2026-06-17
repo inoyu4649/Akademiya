@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { pool } from "../db/pool.js";
 import { requireAuth } from "../middleware/auth.js";
+import { sendPushToUser } from "../lib/push.js";
 
 const router: IRouter = Router();
 
@@ -326,6 +327,89 @@ router.delete("/:id/leave", requireAuth, async (req, res) => {
     [classId, userId]
   );
   res.json({ ok: true });
+});
+
+// ── DELETE /api/classes/:id — 반 삭제 (permission 1+) ────────────────────────
+router.delete("/:id", requireAuth, async (req, res) => {
+  const classId = Number(req.params.id);
+  const userId  = req.user!.id;
+
+  const perm = await getClassPermission(userId, classId);
+  if (perm === null || perm < 1) {
+    res.status(403).json({ error: "forbidden" });
+    return;
+  }
+
+  const [classes] = await pool.execute(
+    "SELECT id, name FROM classes WHERE id = ? AND status = 'approved'",
+    [classId]
+  ) as any[];
+  if (!(classes as any[]).length) {
+    res.status(404).json({ error: "notFound" });
+    return;
+  }
+
+  await pool.execute("DELETE FROM classes WHERE id = ?", [classId]);
+  res.json({ ok: true });
+});
+
+// ── DELETE /api/classes/:id/members/:targetId — 강퇴 (permission 1+) ─────────
+router.delete("/:id/members/:targetId", requireAuth, async (req, res) => {
+  const classId  = Number(req.params.id);
+  const targetId = Number(req.params.targetId);
+  const userId   = req.user!.id;
+  const { reason } = req.body as { reason?: string };
+
+  const perm = await getClassPermission(userId, classId);
+  if (perm === null || perm < 1) {
+    res.status(403).json({ error: "forbidden" });
+    return;
+  }
+  if (targetId === userId) {
+    res.status(400).json({ error: "cannotKickSelf" });
+    return;
+  }
+
+  const [classes] = await pool.execute(
+    "SELECT id, name FROM classes WHERE id = ? AND status = 'approved'",
+    [classId]
+  ) as any[];
+  if (!(classes as any[]).length) {
+    res.status(404).json({ error: "notFound" });
+    return;
+  }
+  const cls = (classes as any[])[0];
+
+  const [members] = await pool.execute(
+    "SELECT id FROM class_members WHERE class_id = ? AND user_id = ?",
+    [classId, targetId]
+  ) as any[];
+  if (!(members as any[]).length) {
+    res.status(404).json({ error: "memberNotFound" });
+    return;
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.execute("DELETE FROM class_members WHERE class_id = ? AND user_id = ?", [classId, targetId]);
+    const kickTitle = `반 [${cls.name}]에서 강퇴되었습니다.`;
+    const kickBody  = reason?.trim() || "반장에 의해 강퇴되었습니다.";
+    await conn.execute(
+      `INSERT INTO notifications (user_id, type, title, body)
+       VALUES (?, 'class_kicked', ?, ?)`,
+      [targetId, kickTitle, kickBody]
+    );
+    await conn.commit();
+    // 푸시 알림 (fire & forget)
+    sendPushToUser(targetId, { title: kickTitle, body: kickBody }).catch(() => { /* ignore */ });
+    res.json({ ok: true });
+  } catch (e) {
+    try { await conn.rollback(); } catch { /* ignore */ }
+    throw e;
+  } finally {
+    try { conn.release(); } catch { /* ignore */ }
+  }
 });
 
 // ── PATCH /api/classes/:id/members/:targetId/permission ───────────────────────

@@ -76,6 +76,12 @@ export const classApi = {
   leave: (classId: number) =>
     client.delete(`/classes/${classId}/leave`),
 
+  deleteClass: (classId: number) =>
+    client.delete(`/classes/${classId}`),
+
+  kickMember: (classId: number, userId: number, reason: string) =>
+    client.delete(`/classes/${classId}/members/${userId}`, { data: { reason } }),
+
   // Org admin: class creation requests
   orgClassRequests: (orgId: number) =>
     client.get<{ requests: ClassRequest[] }>(`/orgs/${orgId}/class-requests`),

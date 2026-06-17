@@ -305,6 +305,56 @@
   cursor: not-allowed;
 }
 
+/* ── Kick / delete buttons ── */
+.kickBtn {
+  padding: 4px 10px;
+  background: rgba(244, 67, 54, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(244, 67, 54, 0.25);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.kickBtn:hover { background: rgba(244, 67, 54, 0.2); }
+
+.btnDelete {
+  padding: 6px 14px;
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid rgba(244, 67, 54, 0.4);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btnDelete:hover {
+  background: rgba(244, 67, 54, 0.08);
+  border-color: rgba(244, 67, 54, 0.7);
+}
+
+/* modal textarea / input for kick reason */
+.modalTextarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  resize: vertical;
+  min-height: 80px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  box-sizing: border-box;
+}
+
+.modalError {
+  font-size: 12.5px;
+  color: var(--danger);
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .page    { padding: 16px; }

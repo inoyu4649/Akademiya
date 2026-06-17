@@ -10,7 +10,10 @@ export interface Notification {
     | "deadline_10m"
     | "broadcast"
     | "org_rejected"
-    | "class_rejected";
+    | "class_rejected"
+    | "new_survey"
+    | "org_kicked"
+    | "class_kicked";
   title: string;
   body: string | null;
   link: string | null;

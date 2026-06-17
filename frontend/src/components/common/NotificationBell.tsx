@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { notificationApi, type Notification } from "../../api/notification.api";
+import { pushApi } from "../../api/push.api";
 import styles from "./NotificationBell.module.css";
 
 // ── 상대 시간 포맷 ────────────────────────────────────────────────────────────
@@ -31,6 +32,9 @@ function TypeBadge({ type }: { type: Notification["type"] }) {
     broadcast:      styles.badgeBroadcast,
     org_rejected:   styles.badgeSystem,
     class_rejected: styles.badgeSystem,
+    new_survey:     styles.badgeNew,
+    org_kicked:     styles.badgeUrgent,
+    class_kicked:   styles.badgeUrgent,
   };
   return (
     <span className={`${styles.badge} ${classMap[type]}`}>
@@ -61,6 +65,11 @@ export default function NotificationBell() {
   const [dropStyle, setDropStyle]         = useState<CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // 푸시 알림 상태
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushEnabled, setPushEnabled]     = useState(false);
+  const [pushLoading, setPushLoading]     = useState(false);
+
   // 알림 목록 조회
   const fetchNotifications = useCallback(async () => {
     try {
@@ -78,6 +87,54 @@ export default function NotificationBell() {
     const interval = setInterval(fetchNotifications, 60_000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
+
+  // 푸시 지원 여부 + 현재 구독 상태 확인
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    setPushSupported(true);
+    navigator.serviceWorker.getRegistration("/sw.js").then(async (reg) => {
+      if (!reg) return;
+      const sub = await reg.pushManager.getSubscription();
+      setPushEnabled(!!sub);
+    }).catch(() => { /* ignore */ });
+  }, []);
+
+  async function handleTogglePush() {
+    if (pushLoading) return;
+    setPushLoading(true);
+    try {
+      if (pushEnabled) {
+        // OFF: 구독 해제
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await pushApi.unsubscribe(sub.endpoint).catch(() => { /* ignore */ });
+          await sub.unsubscribe();
+        }
+        setPushEnabled(false);
+      } else {
+        // ON: 권한 요청 → 구독 → 백엔드 저장
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") return;
+        let reg = await navigator.serviceWorker.getRegistration("/sw.js");
+        if (!reg) {
+          reg = await navigator.serviceWorker.register("/sw.js");
+        }
+        await navigator.serviceWorker.ready;
+        const publicKey = await pushApi.getVapidPublicKey();
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: publicKey,
+        });
+        await pushApi.subscribe(sub.toJSON());
+        setPushEnabled(true);
+      }
+    } catch {
+      /* ignore — 사용자가 권한 거부하거나 서버 오류 */
+    } finally {
+      setPushLoading(false);
+    }
+  }
 
   // 드롭다운 열릴 때 읽음 처리 (mark-all) 대신, 드롭다운에서 직접 클릭 시만 읽음 처리
 
@@ -182,11 +239,26 @@ export default function NotificationBell() {
         <div className={styles.dropdown} style={dropStyle}>
           <div className={styles.dropdownHeader}>
             <span className={styles.dropdownTitle}>{t("notification.title")}</span>
-            {unreadCount > 0 && (
-              <button className={styles.markAllBtn} onClick={handleMarkAllRead}>
-                {t("notification.markAllRead")}
-              </button>
-            )}
+            <div className={styles.headerRight}>
+              {unreadCount > 0 && (
+                <button className={styles.markAllBtn} onClick={handleMarkAllRead}>
+                  {t("notification.markAllRead")}
+                </button>
+              )}
+              {pushSupported && (
+                <button
+                  className={`${styles.pushToggle} ${pushEnabled ? styles.pushToggleOn : ""}`}
+                  onClick={handleTogglePush}
+                  disabled={pushLoading}
+                >
+                  {pushLoading
+                    ? "..."
+                    : pushEnabled
+                    ? t("notification.pushOn")
+                    : t("notification.pushOff")}
+                </button>
+              )}
+            </div>
           </div>
 
           <div className={styles.list}>

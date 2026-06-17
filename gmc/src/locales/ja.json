@@ -4,7 +4,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS 自動申請プログラム",
-    "version": "v2.7",
+    "version": "v2.8.2",
     "contact": "お問い合わせ: 022207@hafs.hs.kr",
     "madeWith": "Claude Code で制作",
     "loading": "ログイン情報を確認中...",
@@ -86,7 +86,33 @@
     "logTitle": "アクティビティログ",
     "suspendRegisterNotice": "📅 GMC PASS 休止期間中です。再開日（{{date}}）に自動申請されます。",
     "slotsResumeDate": "次の GMC PASS 再開日（{{date}}）基準",
-    "suspendLabel": "🚫 休止中"
+    "suspendLabel": "🚫 休止中",
+    "notifOn": "通知: ON",
+    "notifOff": "通知: OFF"
+  },
+  "install": {
+    "modalTitle": "アプリをインストールして通知を有効にする",
+    "modalClose": "OK",
+    "iosTitle": "{{device}}でプッシュ通知を受け取るには、<strong>Safari</strong> からホーム画面に追加する必要があります。",
+    "iosNotSafari": "⚠️ 現在 Safari ではありません。必ず <strong>Safari</strong> ブラウザでアクセスしてください。",
+    "step1": "Safari で <strong>gmc.akademiya.kr</strong> を開く",
+    "iosIpadStep2": "アドレスバー横の共有ボタン(□↑)をタップ",
+    "iosIpadStep3": "<strong>その他</strong> をタップ",
+    "iosStep2": "アドレスバー右の <strong>···</strong> ボタンをタップ",
+    "iosStep3": "<strong>共有</strong> をタップ",
+    "iosStep4": "<strong>その他</strong> をタップ",
+    "iosStep5": "リスト下部の <strong>ホーム画面に追加</strong> を選択して追加",
+    "iosStep6": "ホーム画面の GMCAuto アイコンから起動し、通知を許可",
+    "androidTitle": "Android でアプリをインストールするとプッシュ通知が受け取れます。",
+    "androidStep1": "Chrome ブラウザで gmc.akademiya.kr を開く",
+    "androidStep2": "右上メニュー(⋮)をタップ",
+    "androidStep3": "<strong>ホーム画面に追加</strong> または <strong>アプリをインストール</strong> を選択",
+    "androidStep4": "インストールしたアプリを起動し、通知を許可",
+    "pcTitle": "PC にアプリをインストールするとプッシュ通知が受け取れます。",
+    "pcStep1": "Chrome または Edge で gmc.akademiya.kr を開く",
+    "pcStep2": "アドレスバー右の <strong>インストール(📥) アイコン</strong> をクリック",
+    "pcStep3": "またはブラウザメニュー → <strong>アプリをインストール</strong> を選択",
+    "pcStep4": "インストールしたアプリを起動し、通知を許可"
   },
   "pass": {
     "title": "GMC PASS 申請",
@@ -111,7 +137,8 @@
     "colType": "区分",
     "colTime": "時間",
     "colConfirmed": "確認状況",
-    "colTeacher": "確認教師"
+    "colTeacher": "確認教師",
+    "fetchError": "履歴を読み込めませんでした。"
   },
   "admin": {
     "title": "管理者ダッシュボード",

@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { pool } from "../db/pool.js";
 import { requireAuth } from "../middleware/auth.js";
+import { sendPushToUser } from "../lib/push.js";
 
 const router: IRouter = Router();
 
@@ -177,6 +178,12 @@ router.post("/broadcast", requireAuth, async (req, res) => {
     `INSERT INTO notifications (user_id, type, title, body, link) VALUES ${placeholders}`,
     params
   );
+
+  // 푸시 알림 발송 (fire & forget)
+  const pushPayload = { title: title.trim(), body: msgBody?.trim() || undefined, link: link?.trim() || undefined };
+  for (const uid of targetUserIds) {
+    sendPushToUser(uid, pushPayload).catch(() => { /* ignore */ });
+  }
 
   res.json({ message: "ok", sent: targetUserIds.length });
 });

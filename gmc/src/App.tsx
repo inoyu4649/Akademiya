@@ -74,6 +74,18 @@ function App() {
             }
           } else {
             localStorage.removeItem(SESSION_KEY)
+            // PWA + Akademiya 로그인이었다면 자동으로 재인증 (무한루프는 sessionStorage flag로 방지)
+            const authMethod = localStorage.getItem('gmcauto_auth_method')
+            const isPwaMode =
+              window.matchMedia('(display-mode: standalone)').matches ||
+              (navigator as Navigator & { standalone?: boolean }).standalone === true
+            const autoRedirAttempted = sessionStorage.getItem('gmcauto_auto_redir') === '1'
+            if (isPwaMode && authMethod === 'akademiya' && !autoRedirAttempted) {
+              sessionStorage.setItem('gmcauto_auto_redir', '1')
+              const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback')
+              window.location.href = `https://akademiya.kr/auth/gmcauto-oauth?redirect_uri=${redirectUri}`
+              return
+            }
             setSessionExpired(true)
           }
         })
@@ -89,6 +101,7 @@ function App() {
   }, [])
 
   const handleLogin = useCallback((sessionData: SessionData) => {
+    sessionStorage.removeItem('gmcauto_auto_redir') // 자동 재인증 성공 → 루프 방지 플래그 초기화
     localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData))
     setSessionExpired(false)
     setSession(sessionData)

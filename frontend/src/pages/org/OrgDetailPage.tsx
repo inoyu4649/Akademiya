@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useAuthStore } from "../../store/auth.store";
 import { orgApi, type Org, type OrgMember, type OrgJoinRequest } from "../../api/org.api";
 import { classApi, type ClassRequest } from "../../api/class.api";
 import { surveyApi, type Survey } from "../../api/survey.api";
+import KickModal from "../common/KickModal";
 import styles from "./OrgDetailPage.module.css";
 
 function PermissionBadge({ perm }: { perm: number }) {
@@ -21,6 +23,7 @@ export default function OrgDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const currentUser = useAuthStore((s) => s.user);
   const orgId = Number(id);
 
   const [org, setOrg] = useState<Org | null>(null);
@@ -35,6 +38,9 @@ export default function OrgDetailPage() {
   const [permEdits, setPermEdits] = useState<Record<number, number>>({});
   const [leaveConfirm, setLeaveConfirm] = useState(false);
   const [leaveLoading, setLeaveLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [kickTarget, setKickTarget] = useState<{ id: number; name: string } | null>(null);
   const [orgSurveys, setOrgSurveys] = useState<Survey[]>([]);
 
   useEffect(() => {
@@ -107,6 +113,27 @@ export default function OrgDetailPage() {
     }
   }
 
+  async function handleDelete() {
+    setDeleteLoading(true);
+    try {
+      await orgApi.deleteOrg(orgId);
+      navigate("/");
+    } catch {
+      setDeleteConfirm(false);
+      showToast(t("org.delete.serverError"));
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
+  async function handleKick(reason: string) {
+    if (!kickTarget) return;
+    await orgApi.kickMember(orgId, kickTarget.id, reason);
+    setMembers((prev) => prev.filter((m) => m.id !== kickTarget.id));
+    setKickTarget(null);
+    showToast(t("kick.success"));
+  }
+
   async function handleSavePerm(userId: number) {
     const newPerm = permEdits[userId];
     if (newPerm === undefined) return;
@@ -130,6 +157,35 @@ export default function OrgDetailPage() {
   return (
     <div className={styles.page}>
       {toast && <div className={styles.toast}>{toast}</div>}
+
+      {/* 강퇴 모달 */}
+      {kickTarget && (
+        <KickModal
+          targetName={kickTarget.name}
+          onClose={() => setKickTarget(null)}
+          onSubmit={handleKick}
+        />
+      )}
+
+      {/* 조직 삭제 확인 모달 */}
+      {deleteConfirm && (
+        <div className={styles.modalOverlay} onClick={() => setDeleteConfirm(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>⚠ {t("org.delete.title")}</h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 18, lineHeight: 1.6 }}>
+              {t("org.delete.warning", { name: org?.name })}
+            </p>
+            <div className={styles.modalActions}>
+              <button className={styles.btnModalCancel} onClick={() => setDeleteConfirm(false)}>
+                {t("common.cancel")}
+              </button>
+              <button className={styles.btnModalDanger} onClick={handleDelete} disabled={deleteLoading}>
+                {deleteLoading ? t("common.loading") : t("org.delete.confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 조직 탈퇴 확인 모달 */}
       {leaveConfirm && (
@@ -176,6 +232,11 @@ export default function OrgDetailPage() {
               📊 {t("stats.orgTitle")}
             </button>
           )}
+          {myPerm >= 3 && (
+            <button className={styles.btnDelete} onClick={() => setDeleteConfirm(true)}>
+              {t("org.delete.btn")}
+            </button>
+          )}
           <button className={styles.btnLeave} onClick={() => setLeaveConfirm(true)}>
             {t("org.leave.btn")}
           </button>
@@ -196,6 +257,7 @@ export default function OrgDetailPage() {
             <span>Email</span>
             <span>{t("org.detail.permissionLabel")}</span>
             {myPerm >= 3 && <span>{t("org.detail.changePermission")}</span>}
+            {myPerm >= 3 && <span></span>}
           </div>
           {members.map((m) => (
             <div key={m.id} className={styles.tableRow}>
@@ -223,6 +285,18 @@ export default function OrgDetailPage() {
                       onClick={() => handleSavePerm(m.id)}
                     >
                       {t("org.detail.save")}
+                    </button>
+                  )}
+                </span>
+              )}
+              {myPerm >= 3 && (
+                <span>
+                  {m.id !== currentUser?.id && (
+                    <button
+                      className={styles.kickBtn}
+                      onClick={() => setKickTarget({ id: m.id, name: m.display_name })}
+                    >
+                      {t("kick.btn")}
                     </button>
                   )}
                 </span>

@@ -213,6 +213,13 @@
       "success": "已退出该组织。",
       "lastAdmin": "您是唯一的管理员，无法退出。请先将管理员权限授予其他成员。",
       "serverError": "操作失败，请稍后再试。"
+    },
+    "delete": {
+      "btn": "删除组织",
+      "title": "删除组织",
+      "warning": "您即将删除 {{name}}。组织内所有班级、作业和提交记录将被永久删除，无法恢复。",
+      "confirm": "确认删除",
+      "serverError": "操作失败，请稍后再试。"
     }
   },
   "class": {
@@ -280,6 +287,13 @@
       "confirm": "确认退出",
       "success": "已退出该班级。",
       "lastLeader": "您是唯一的班长，无法退出。请先指定其他成员为班长。",
+      "serverError": "操作失败，请稍后再试。"
+    },
+    "delete": {
+      "btn": "删除班级",
+      "title": "删除班级",
+      "warning": "您即将删除 {{name}}。班级内所有作业和提交记录将被永久删除，无法恢复。",
+      "confirm": "确认删除",
       "serverError": "操作失败，请稍后再试。"
     }
   },
@@ -364,6 +378,17 @@
       "escalate": "上报至上级",
       "ban": "永久封禁"
     }
+  },
+  "kick": {
+    "btn": "移除",
+    "modalTitle": "移除成员",
+    "targetLabel": "目标成员",
+    "reasonLabel": "移除原因",
+    "reasonPlaceholder": "请输入移除该成员的原因。",
+    "reasonRequired": "请输入移除原因。",
+    "submitBtn": "确认移除",
+    "success": "已移除该成员。",
+    "serverError": "操作失败，请稍后再试。"
   },
   "assignment": {
     "list": {
@@ -455,8 +480,12 @@
       "broadcast": "公告",
       "org_rejected": "组织申请被拒",
       "class_rejected": "班级申请被拒",
-      "new_survey": "新问卷"
+      "new_survey": "新问卷",
+      "org_kicked": "已被移出组织",
+      "class_kicked": "已被移出班级"
     },
+    "pushOn": "通知: ON",
+    "pushOff": "通知: OFF",
     "broadcast": {
       "title": "发送公告",
       "titleLabel": "标题",

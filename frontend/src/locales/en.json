@@ -213,6 +213,13 @@
       "success": "You have left the organization.",
       "lastAdmin": "You are the only admin and cannot leave. Assign another admin first.",
       "serverError": "An error occurred. Please try again."
+    },
+    "delete": {
+      "btn": "Delete Organization",
+      "title": "Delete Organization",
+      "warning": "You are about to delete {{name}}. All classes, assignments, and submissions will be permanently deleted and cannot be recovered.",
+      "confirm": "Confirm Delete",
+      "serverError": "An error occurred. Please try again."
     }
   },
   "class": {
@@ -280,6 +287,13 @@
       "confirm": "Confirm Leave",
       "success": "You have left the class.",
       "lastLeader": "You are the only leader and cannot leave. Assign another leader first.",
+      "serverError": "An error occurred. Please try again."
+    },
+    "delete": {
+      "btn": "Delete Class",
+      "title": "Delete Class",
+      "warning": "You are about to delete {{name}}. All assignments and submissions will be permanently deleted and cannot be recovered.",
+      "confirm": "Confirm Delete",
       "serverError": "An error occurred. Please try again."
     }
   },
@@ -364,6 +378,17 @@
       "escalate": "Escalate",
       "ban": "Permanent Ban"
     }
+  },
+  "kick": {
+    "btn": "Kick",
+    "modalTitle": "Remove Member",
+    "targetLabel": "Member",
+    "reasonLabel": "Reason",
+    "reasonPlaceholder": "Enter a reason for removing this member.",
+    "reasonRequired": "Please provide a reason.",
+    "submitBtn": "Remove Member",
+    "success": "Member has been removed.",
+    "serverError": "An error occurred. Please try again."
   },
   "assignment": {
     "list": {
@@ -455,8 +480,12 @@
       "broadcast": "Announcement",
       "org_rejected": "Org Rejected",
       "class_rejected": "Class Rejected",
-      "new_survey": "New Survey"
+      "new_survey": "New Survey",
+      "org_kicked": "Removed from Organization",
+      "class_kicked": "Removed from Class"
     },
+    "pushOn": "Alerts: ON",
+    "pushOff": "Alerts: OFF",
     "broadcast": {
       "title": "Send Announcement",
       "titleLabel": "Title",

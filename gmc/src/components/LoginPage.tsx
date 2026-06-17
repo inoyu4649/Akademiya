@@ -83,6 +83,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
         return
       }
       if (data.linked && !data.loginFailed) {
+        localStorage.setItem('gmcauto_auth_method', 'akademiya')
         onLogin({
           sessionId: data.sessionId!,
           studentNo: data.studentNo!,
@@ -181,6 +182,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
         role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
       }
       if (data.success) {
+        localStorage.setItem('gmcauto_auth_method', 'akademiya')
         onLogin({
           sessionId: data.sessionId,
           studentNo: data.studentNo,

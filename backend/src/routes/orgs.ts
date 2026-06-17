@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { pool } from "../db/pool.js";
 import { requireAuth } from "../middleware/auth.js";
+import { sendPushToUser } from "../lib/push.js";
 
 const router: IRouter = Router();
 
@@ -340,6 +341,89 @@ router.delete("/:id/leave", requireAuth, async (req, res) => {
     [orgId, userId]
   );
   res.json({ ok: true });
+});
+
+// ── DELETE /api/orgs/:id — 조직 삭제 (permission 3+) ──────────────────────────
+router.delete("/:id", requireAuth, async (req, res) => {
+  const orgId  = Number(req.params.id);
+  const userId = req.user!.id;
+
+  const perm = await getOrgPermission(userId, orgId);
+  if (perm === null || perm < 3) {
+    res.status(403).json({ error: "forbidden" });
+    return;
+  }
+
+  const [orgs] = await pool.execute(
+    "SELECT id, name FROM organizations WHERE id = ? AND status = 'approved'",
+    [orgId]
+  ) as any[];
+  if (!(orgs as any[]).length) {
+    res.status(404).json({ error: "notFound" });
+    return;
+  }
+
+  await pool.execute("DELETE FROM organizations WHERE id = ?", [orgId]);
+  res.json({ ok: true });
+});
+
+// ── DELETE /api/orgs/:id/members/:targetId — 강퇴 (permission 3+) ─────────────
+router.delete("/:id/members/:targetId", requireAuth, async (req, res) => {
+  const orgId    = Number(req.params.id);
+  const targetId = Number(req.params.targetId);
+  const userId   = req.user!.id;
+  const { reason } = req.body as { reason?: string };
+
+  const perm = await getOrgPermission(userId, orgId);
+  if (perm === null || perm < 3) {
+    res.status(403).json({ error: "forbidden" });
+    return;
+  }
+  if (targetId === userId) {
+    res.status(400).json({ error: "cannotKickSelf" });
+    return;
+  }
+
+  const [orgs] = await pool.execute(
+    "SELECT id, name FROM organizations WHERE id = ? AND status = 'approved'",
+    [orgId]
+  ) as any[];
+  if (!(orgs as any[]).length) {
+    res.status(404).json({ error: "notFound" });
+    return;
+  }
+  const org = (orgs as any[])[0];
+
+  const [members] = await pool.execute(
+    "SELECT id FROM org_members WHERE org_id = ? AND user_id = ?",
+    [orgId, targetId]
+  ) as any[];
+  if (!(members as any[]).length) {
+    res.status(404).json({ error: "memberNotFound" });
+    return;
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.execute("DELETE FROM org_members WHERE org_id = ? AND user_id = ?", [orgId, targetId]);
+    const kickTitle = `조직 [${org.name}]에서 강퇴되었습니다.`;
+    const kickBody  = reason?.trim() || "관리자에 의해 강퇴되었습니다.";
+    await conn.execute(
+      `INSERT INTO notifications (user_id, type, title, body)
+       VALUES (?, 'org_kicked', ?, ?)`,
+      [targetId, kickTitle, kickBody]
+    );
+    await conn.commit();
+    // 푸시 알림 (fire & forget)
+    sendPushToUser(targetId, { title: kickTitle, body: kickBody }).catch(() => { /* ignore */ });
+    res.json({ ok: true });
+  } catch (e) {
+    try { await conn.rollback(); } catch { /* ignore */ }
+    throw e;
+  } finally {
+    try { conn.release(); } catch { /* ignore */ }
+  }
 });
 
 // ── GET /api/orgs/:id/class-requests ─────────────────────────────────────────
