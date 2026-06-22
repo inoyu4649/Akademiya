@@ -242,10 +242,10 @@ export default function AppLayout() {
   const { t } = useTranslation();
   const { user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
-  const [mobileOpen, setMobileOpen]       = useState(false);
+  const [mobileOpen, setMobileOpen]           = useState(false);
   const [isHafsOrgMember, setIsHafsOrgMember] = useState(false);
-  const [gmcLoading, setGmcLoading]       = useState(false);
-  const { theme, toggle: toggleTheme }    = useTheme();
+  const [gmcLoading, setGmcLoading]           = useState(false);
+  const { theme, toggle: toggleTheme }        = useTheme();
   const [privacyNeedsConsent, setPrivacyNeedsConsent] = useState(false);
   const [termsNeedsConsent, setTermsNeedsConsent] = useState(false);
   const [privacyConsentedVersion, setPrivacyConsentedVersion] = useState(0);
@@ -309,6 +309,7 @@ export default function AppLayout() {
       setGmcLoading(false);
     }
   }
+
 
   return (
     <>

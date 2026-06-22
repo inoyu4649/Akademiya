@@ -4,15 +4,45 @@ version: "3.9"
 #  Akademiya — Docker Compose 프로덕션 구성
 #
 #  사전 준비:
-#    1. backend/.env 파일 작성 (NODE_ENV=production 포함)
-#    2. nginx/ssl/ 폴더에 SSL 인증서 배치
-#         fullchain.pem  ← 인증서 체인
-#         privkey.pem    ← 개인키
-#    3. docker-compose up -d --build
+#    1. .env 파일 작성 (루트의 .env.example 참고)
+#    2. backend/.env, gmc/.env 파일 작성
+#    3. nginx/ssl/ 에 SSL 인증서 배치 (fullchain.pem, privkey.pem)
+#    4. docker compose up -d --build
+#
+#  DB 마이그레이션 (최초 배포):
+#    scripts/migrate-to-unified-mysql.sh 실행 후 컨테이너 시작
 # ──────────────────────────────────────────────────────────────────────────────
 
 services:
-  # ── Backend (Node.js / Express 5) ──────────────────────────────────────────
+
+  # ── MySQL (통합 DB: akademiya) ────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE:      akademiya
+      MYSQL_USER:          ${MYSQL_APP_USER}
+      MYSQL_PASSWORD:      ${MYSQL_APP_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - akademiya_net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost",
+             "-u", "root", "--password=${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Backend (Akademiya) ────────────────────────────────────────────────────
   backend:
     build:
       context: ./backend
@@ -20,21 +50,61 @@ services:
     restart: unless-stopped
     env_file: ./backend/.env
     environment:
-      NODE_ENV: production
-    extra_hosts:
-      - "host.docker.internal:host-gateway"   # 컨테이너 → 호스트 MySQL 접근 (Linux)
+      NODE_ENV:    production
+      DB_HOST:     mysql
+      DB_PORT:     "3306"
+      DB_USER:     ${MYSQL_APP_USER}
+      DB_PASSWORD: ${MYSQL_APP_PASSWORD}
+      DB_NAME:     akademiya
+    depends_on:
+      mysql:
+        condition: service_healthy
     volumes:
       - uploads_data:/app/uploads
     networks:
       - akademiya_net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 20s
 
-  # ── Frontend (Nginx + Vite 빌드 결과) ──────────────────────────────────────
+  # ── GMCAuto ────────────────────────────────────────────────────────────────
+  gmcauto:
+    build:
+      context: ./gmc
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./gmc/.env
+    environment:
+      PORT:              "3001"
+      NODE_ENV:          production
+      TZ:                Asia/Seoul
+      AKADEMIYA_API_URL: "http://backend:3000/api"
+    volumes:
+      - gmc_data:/app/data
+    networks:
+      - akademiya_net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "node", "-e",
+             "fetch('http://127.0.0.1:3001/api/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ── Frontend / Nginx ───────────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
@@ -54,35 +124,10 @@ services:
     networks:
       - akademiya_net
 
-  # ── GMCAuto (GMC PASS 자동신청 — gmc.akademiya.kr) ─────────────────────────
-  gmcauto:
-    build:
-      context: ./gmc
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    env_file: ./gmc/.env          # GMC_DB_HOST, GMC_DB_USER, GMC_DB_PASSWORD 등
-    environment:
-      PORT: "3001"
-      NODE_ENV: production
-      TZ: Asia/Seoul          # new Date().getHours() 등이 KST 기준으로 동작
-      # Akademiya OAuth 연동 설정
-      AKADEMIYA_API_URL: "http://backend:3000/api"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - gmc_backup:/app/backup
-    networks:
-      - akademiya_net
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-
 volumes:
+  mysql_data:
   uploads_data:
-  gmc_backup:
+  gmc_data:
 
 networks:
   akademiya_net:

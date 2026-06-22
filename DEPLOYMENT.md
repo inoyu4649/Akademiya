@@ -158,150 +158,61 @@ scp -r ./Akademiya ubuntu@<OCI_IP>:/home/ubuntu/Akademiya
 
 ---
 
-## 3. MySQL 8.0 설치 및 설정
+## 3. MySQL 설정 (Docker 컨테이너)
 
-> Akademiya의 MySQL은 **Docker 외부**에서 호스트에 직접 설치합니다.  
-> (DB 볼륨을 컨테이너 재생성과 분리하여 데이터 안전성을 높임)
+> Akademiya의 MySQL은 **docker-compose의 `mysql` 서비스**로 운영합니다.  
+> 데이터는 `mysql_data` named volume에 영속화되므로 컨테이너 재생성에 안전합니다.
 
-### 3-1. MySQL 8.0 설치 (ARM64/Ubuntu 22.04)
+### 3-1. 루트 `.env` 파일 작성
 
-```bash
-# Ubuntu 공식 저장소의 MySQL 8.0
-sudo apt install -y mysql-server-8.0
-
-# 서비스 시작 및 자동 시작 등록
-sudo systemctl start mysql
-sudo systemctl enable mysql
-
-# 설치 확인
-mysql --version
-# mysql  Ver 8.0.xx Distrib 8.0.xx, for Linux (aarch64)
-```
-
-### 3-2. 보안 초기 설정
+`docker-compose.yml`과 같은 위치에 `.env`를 생성합니다 (`.env.example` 참고).
 
 ```bash
-sudo mysql_secure_installation
+cp .env.example .env
+nano .env
 ```
 
-대화형 질문 답변:
-```
-VALIDATE PASSWORD component? → Y
-Password strength policy     → 1 (MEDIUM, 대문자+숫자+특수문자 8자 이상)
-Remove anonymous users?      → Y
-Disallow root login remotely?→ Y
-Remove test database?        → Y
-Reload privilege tables?     → Y
+```dotenv
+MYSQL_ROOT_PASSWORD=강력한_루트_비밀번호_변경필수
+MYSQL_APP_USER=akademiya_app
+MYSQL_APP_PASSWORD=강력한_앱_비밀번호_변경필수
 ```
 
-### 3-3. DB 및 사용자 생성
+### 3-2. mysql 컨테이너만 먼저 기동
 
 ```bash
-sudo mysql -u root -p
+docker compose up -d mysql
+
+# 준비 완료까지 대기 (약 30초)
+until docker compose exec mysql mysqladmin ping -u root -p"$MYSQL_ROOT_PASSWORD" --silent 2>/dev/null; do
+  echo "mysql 대기 중..."; sleep 5
+done
+echo "mysql 준비 완료"
 ```
 
-```sql
--- 데이터베이스 생성
-CREATE DATABASE IF NOT EXISTS akademiya
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
+### 3-3. 기존 데이터 마이그레이션 (첫 배포 시만)
 
--- 전용 사용자 생성
--- ⚠️  비밀번호는 반드시 강력한 값으로 변경하세요
-CREATE USER 'akademiya'@'172.%.%.%' IDENTIFIED BY 'YourStrongPassword123!';
-CREATE USER 'akademiya'@'localhost' IDENTIFIED BY 'YourStrongPassword123!';
-
--- 권한 부여
-GRANT ALL PRIVILEGES ON akademiya.* TO 'akademiya'@'172.%.%.%';
-GRANT ALL PRIVILEGES ON akademiya.* TO 'akademiya'@'localhost';
-FLUSH PRIVILEGES;
-
--- 확인
-SHOW DATABASES;
-SELECT user, host FROM mysql.user WHERE user = 'akademiya';
-EXIT;
-```
-
-> **Docker 내부 → 호스트 MySQL 연결**  
-> `DB_HOST`에 `host.docker.internal` 또는 Docker bridge 게이트웨이 IP(`172.17.0.1`)를 사용합니다.  
-> Ubuntu에서 `host.docker.internal`이 기본 미지원인 경우 아래를 확인하세요:
+호스트에 기존 `akademiya` MySQL DB가 있는 경우 마이그레이션 스크립트를 실행합니다.
 
 ```bash
-# Docker bridge 게이트웨이 IP 확인
-docker network inspect bridge | grep Gateway
-# → "172.17.0.1" 형태
+# 마이그레이션 스크립트 실행 (소스 DB 접속 정보 필요)
+SRC_USER=root SRC_PASS=기존_루트_비밀번호 \
+  bash scripts/migrate-to-unified-mysql.sh
 ```
 
-### 3-4. MySQL 외부 연결 허용 (Docker → 호스트)
+스크립트는 다음을 자동 처리합니다:
+- 소스 MySQL에서 `akademiya` 덤프
+- `mysql` 컨테이너로 복원
+- 행 수 검증 및 롤백 가이드 출력
+
+**최초 배포 (데이터 없음)** 라면 이 단계를 건너뜁니다.  
+Backend 컨테이너가 시작될 때 `migrate.js`가 스키마를 자동 생성합니다.
+
+### 3-4. 마이그레이션 검증
 
 ```bash
-sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
-```
-
-변경 전:
-```ini
-bind-address = 127.0.0.1
-```
-
-변경 후:
-```ini
-bind-address = 0.0.0.0    # 또는 Docker bridge IP: 172.17.0.1
-```
-
-```bash
-sudo systemctl restart mysql
-```
-
-### 3-5. 마이그레이션 실행 (서버에서)
-
-```bash
-cd /home/ubuntu/Akademiya/backend
-
-# 의존성 설치 (pnpm)
-npm install -g pnpm
-pnpm install
-
-# .env가 올바르게 작성된 상태에서 실행
-pnpm migrate
-```
-
-또는 Docker 컨테이너 안에서 실행:
-
-```bash
-docker compose run --rm backend node dist/db/migrate.js
-```
-
-### 3-6. 마이그레이션 검증
-
-```bash
-sudo mysql -u akademiya -p akademiya -e "SHOW TABLES;"
-```
-
-예상 출력:
-```
-+----------------------------+
-| Tables_in_akademiya        |
-+----------------------------+
-| assignments                |
-| bug_reports                |
-| class_join_requests        |
-| class_members              |
-| classes                    |
-| comments                   |
-| notification_dedup         |
-| notifications              |
-| org_daily_stats            |
-| org_join_requests          |
-| org_members                |
-| organizations              |
-| password_reset_tokens      |
-| profanity_words            |
-| refresh_tokens             |
-| report_escalations         |
-| submissions                |
-| user_reports               |
-| users                      |
-+----------------------------+
+docker compose exec mysql mysql -u root -p"${MYSQL_ROOT_PASSWORD}" \
+  -e "USE akademiya; SHOW TABLES;"
 ```
 
 ---
@@ -399,14 +310,13 @@ NODE_ENV=production
 FRONTEND_URL=https://akademiya.kr
 
 # ── MySQL 데이터베이스 ─────────────────────────────────────────────────────────
-# Docker 컨테이너 → 호스트 MySQL 연결
-# Ubuntu Docker 기본 bridge 게이트웨이: 172.17.0.1
-DB_HOST=172.17.0.1
+# docker-compose.yml이 DB_HOST=mysql / DB_USER / DB_PASSWORD를 override하므로
+# 여기서는 기본값만 작성해도 됩니다. (compose .env에서 MYSQL_APP_* 가 주입됨)
+DB_HOST=mysql
 DB_PORT=3306
-DB_USER=akademiya
-DB_PASSWORD=YourStrongPassword123!    # 3-3에서 설정한 비밀번호
+DB_USER=akademiya_app
+DB_PASSWORD=compose_.env의_MYSQL_APP_PASSWORD와_동일
 DB_NAME=akademiya
-# NODE_ENV=production이면 pool.ts에서 SSL 자동 활성화
 
 # ── JWT 시크릿 ────────────────────────────────────────────────────────────────
 # 반드시 32자 이상의 무작위 문자열! 절대 기본값 그대로 사용 금지

@@ -1,0 +1,12 @@
+.header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 12px; height: 48px;
+  border-bottom: 1px solid var(--border); background: var(--bg-sidebar); flex-shrink: 0;
+}
+.menuBtn, .themeBtn {
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; color: var(--text-secondary);
+  border-radius: var(--radius-sm); cursor: pointer; transition: background 0.12s, color 0.12s;
+}
+.menuBtn:hover, .themeBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.title { flex: 1; font-size: 14px; font-weight: 600; color: var(--text-primary); }

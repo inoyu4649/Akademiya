@@ -1,0 +1,32 @@
+.container { display: flex; height: 100vh; overflow: hidden; background: var(--bg-base); }
+
+.sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.2s ease;
+}
+.sidebarHidden { width: 0; border-right: none; }
+
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+.overlay { display: none; }
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; z-index: 200;
+    transform: translateX(-100%); transition: transform 0.22s ease;
+    width: var(--sidebar-width) !important; border-right: 1px solid var(--border) !important;
+  }
+  .sidebarMobileOpen { transform: translateX(0); }
+  .overlay {
+    display: block; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 199;
+    opacity: 0; pointer-events: none; transition: opacity 0.22s ease;
+  }
+  .overlayVisible { opacity: 1; pointer-events: auto; }
+}

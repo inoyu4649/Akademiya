@@ -1,0 +1,33 @@
+.container { flex: 1; overflow-y: auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 16px; }
+.empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); gap: 8px; }
+.emptyTitle { font-size: 20px; font-weight: 600; color: var(--text-secondary); }
+.emptyHint  { font-size: 13px; }
+
+.row { display: flex; flex-direction: column; max-width: 780px; width: 100%; margin: 0 auto; }
+.rowUser      { align-items: flex-end; }
+.rowAssistant { align-items: flex-start; }
+
+.bubble { padding: 10px 14px; border-radius: var(--radius-md); font-size: 14px; line-height: 1.65; word-break: break-word; }
+.bubbleUser      { background: var(--accent-dark); color: #fff; border-bottom-right-radius: 4px; max-width: 75%; white-space: pre-wrap; }
+.bubbleAssistant { background: var(--bg-panel); color: var(--text-primary); border: 1px solid var(--border); border-bottom-left-radius: 4px; width: 100%; }
+
+.cursor { display: inline-block; width: 2px; height: 1em; background: var(--accent); margin-left: 2px; vertical-align: text-bottom; animation: blink 0.8s step-end infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+.errorRow    { max-width: 780px; margin: 0 auto; width: 100%; }
+.errorBubble { background: rgba(244,67,54,0.1); border: 1px solid rgba(244,67,54,0.3); color: #ef5350; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; }
+
+.bubbleAssistant p { margin: 0 0 8px; }
+.bubbleAssistant p:last-child { margin-bottom: 0; }
+.bubbleAssistant pre { background: var(--bg-base); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px; margin: 8px 0; }
+.bubbleAssistant code { font-family: var(--font-mono); font-size: 12.5px; }
+.bubbleAssistant :not(pre) > code { background: var(--bg-input); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.bubbleAssistant ul, .bubbleAssistant ol { padding-left: 20px; margin: 6px 0; }
+.bubbleAssistant li { margin: 2px 0; }
+.bubbleAssistant blockquote { border-left: 3px solid var(--accent-dark); padding-left: 12px; color: var(--text-secondary); margin: 8px 0; }
+.bubbleAssistant table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 13px; }
+.bubbleAssistant th, .bubbleAssistant td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+.bubbleAssistant th { background: var(--bg-input); font-weight: 600; }
+.bubbleAssistant a { color: var(--accent); }
+.bubbleAssistant h1, .bubbleAssistant h2, .bubbleAssistant h3 { margin: 12px 0 6px; line-height: 1.3; }
+.bubbleAssistant h1 { font-size: 18px; } .bubbleAssistant h2 { font-size: 16px; } .bubbleAssistant h3 { font-size: 14px; }
