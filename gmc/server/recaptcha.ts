@@ -18,7 +18,12 @@ export async function generateRecaptchaToken(executablePath: string | null): Pro
       executablePath?: string;
     } = {
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+      ],
     };
 
     if (executablePath) {
