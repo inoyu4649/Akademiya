@@ -76,6 +76,9 @@ app.use(
 // ── CORS ──────────────────────────────────────────────────────────────────────
 const allowedOrigins = [
   process.env.FRONTEND_URL ?? "http://localhost:5173",
+  "https://akademiya.kr",
+  "https://www.akademiya.kr",
+  "https://ai.akademiya.kr",
   "https://gmc.akademiya.kr",
   "http://localhost:5174",
   "http://localhost:3001",
