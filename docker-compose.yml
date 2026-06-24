@@ -114,7 +114,7 @@ services:
     networks:
       - akademiya_net
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO /dev/null http://localhost/ || exit 1"]
+      test: ["CMD", "curl", "-sf", "http://localhost/"]
       interval: 30s
       timeout: 10s
       retries: 3
