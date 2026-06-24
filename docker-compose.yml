@@ -114,11 +114,11 @@ services:
     networks:
       - akademiya_net
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:80/"]
+      test: ["CMD-SHELL", "wget -qO /dev/null http://localhost/ || exit 1"]
       interval: 30s
-      timeout: 5s
+      timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
 
   # ── Frontend / Nginx ───────────────────────────────────────────────────────
   frontend:
