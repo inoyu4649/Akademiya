@@ -18,24 +18,40 @@ export default function OAuthCallbackPage() {
     const code = params.get("code");
     const gmcRedirectRaw = params.get("gmcRedirect");
     const gmcRedirect = isSafeGmcRedirect(gmcRedirectRaw) ? gmcRedirectRaw : null;
+    const aiRedirectStored = sessionStorage.getItem("ai_redirect");
+    const safeAiCallbacks = [
+      "https://ai.akademiya.kr/auth/callback",
+      "http://localhost:5175/auth/callback",
+    ];
+    const aiRedirect = aiRedirectStored && safeAiCallbacks.includes(aiRedirectStored)
+      ? aiRedirectStored
+      : null;
+
     if (!code) {
       navigate("/auth/login?error=oauth_failed");
       return;
     }
     authApi
       .oauthExchange(code)
-      .then((res) => {
+      .then(async (res) => {
         setAuth(res.data.user, res.data.accessToken);
         const user = res.data.user;
+
+        // AkashaAlt SSO: 로그인 완료 후 ai.akademiya.kr로 복귀
+        if (aiRedirect && user.country && user.phone) {
+          sessionStorage.removeItem("ai_redirect");
+          const codeRes = await authApi.aiCode();
+          window.location.href = `${aiRedirect}?code=${codeRes.data.code}`;
+          return;
+        }
+
         if (!user.country || !user.phone) {
-          // 신규 가입(필수 정보 미입력) → 가입 절차 완료 후 GMCAuto로 복귀하도록 전달
           navigate(
             gmcRedirect
               ? `/auth/complete-profile?gmcRedirect=${encodeURIComponent(gmcRedirect)}`
               : "/auth/complete-profile"
           );
         } else if (gmcRedirect) {
-          // 기존 사용자 로그인 완료 → Akademiya 메인이 아니라 곧바로 GMCAuto로 복귀
           redirectToGmcAuto(gmcRedirect);
         } else {
           navigate("/");

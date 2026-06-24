@@ -51,4 +51,7 @@ export const authApi = {
   // 페이지 리프레시 시 세션 복원용 (인터셉터 없이 직접 호출)
   refresh: () =>
     axios.post<AuthResponse>("/api/auth/refresh", {}, { withCredentials: true }),
+
+  // AkashaAlt SSO: 로그인된 사용자의 단기 OAuth 코드 발급
+  aiCode: () => client.post<{ code: string }>("/auth/ai-code"),
 };

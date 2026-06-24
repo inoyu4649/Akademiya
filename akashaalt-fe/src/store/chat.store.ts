@@ -1,30 +1,27 @@
 import { create } from "zustand";
 import { fetchModels, streamInfer, type ModelInfo } from "../api/chat.api";
 import { useSettingsStore } from "./settings.store";
+import { useAuthStore } from "./auth.store";
+import {
+  listConversations, createConversation, deleteConversation,
+  listMessages, saveMessage, type ConvSummary, type BackendMessage,
+} from "../api/history.api";
 import { v4 as uuid } from "uuid";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-
 export interface ChatMessage {
-  id:      string;
-  role:    "user" | "assistant";
+  id: string;
+  role: "user" | "assistant";
   content: string;
   modelId?: string;
-}
-
-export interface InMemoryConv {
-  id:        string;
-  title:     string;
-  messages:  ChatMessage[];
-  updatedAt: Date;
 }
 
 // ── State ──────────────────────────────────────────────────────────────────────
 
 interface ChatState {
   sidebarOpen:      boolean;
-  conversations:    InMemoryConv[];
-  currentConvId:    string | null;
+  conversations:    ConvSummary[];   // 사이드바 목록 (백엔드 DB)
+  currentConvId:    number | null;
+  loadedMessages:   ChatMessage[];   // 현재 대화 메시지 (백엔드 DB 로드)
   isStreaming:      boolean;
   streamingContent: string;
   streamError:      string | null;
@@ -36,13 +33,27 @@ interface ChatState {
   setSidebarOpen:     (open: boolean) => void;
   setModel:           (modelId: string) => void;
   init:               () => Promise<void>;
-  loadConversation:   (id: string) => void;
+  loadConversation:   (id: number) => Promise<void>;
   startNewChat:       () => void;
   sendMessage:        (content: string) => Promise<void>;
-  deleteConversation: (id: string) => void;
+  deleteConversation: (id: number) => Promise<void>;
 
-  // Derived helpers
+  // ChatMessages.tsx 인터페이스 호환
   currentMessages:    () => ChatMessage[];
+}
+
+// 401 → 인증 초기화 후 로그인 페이지로
+function handleUnauthorized() {
+  useAuthStore.getState().clearAuth();
+  window.location.href = "/auth/login";
+}
+
+function getToken(): string | null {
+  return useAuthStore.getState().accessToken;
+}
+
+function toLocalMsg(m: BackendMessage): ChatMessage {
+  return { id: String(m.id), role: m.role, content: m.content, modelId: m.model_id ?? undefined };
 }
 
 // ── Store ──────────────────────────────────────────────────────────────────────
@@ -51,6 +62,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sidebarOpen:      true,
   conversations:    [],
   currentConvId:    null,
+  loadedMessages:   [],
   isStreaming:      false,
   streamingContent: "",
   streamError:      null,
@@ -62,95 +74,128 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   setModel:       (modelId) => set({ selectedModel: modelId }),
 
-  currentMessages: () => {
-    const { conversations, currentConvId } = get();
-    if (!currentConvId) return [];
-    return conversations.find((c) => c.id === currentConvId)?.messages ?? [];
-  },
+  currentMessages: () => get().loadedMessages,
 
+  // 앱 초기화: 대화 목록 + 모델 목록 로드
   init: async () => {
+    const token = getToken();
+    if (!token) return;
     const { serverUrl } = useSettingsStore.getState();
+
+    // 대화 목록
     try {
-      const models = await fetchModels(serverUrl);
-      const first  = models[0]?.modelId ?? "";
-      set((s) => ({ availableModels: models, selectedModel: s.selectedModel || first }));
-    } catch {
-      set({ availableModels: [], streamError: null });
+      const convs = await listConversations(token);
+      set({ conversations: convs });
+    } catch (err) {
+      if ((err as { status?: number }).status === 401) { handleUnauthorized(); return; }
+    }
+
+    // 모델 목록
+    if (serverUrl) {
+      try {
+        const models = await fetchModels(token, serverUrl);
+        const first  = models[0]?.modelId ?? "";
+        set((s) => ({ availableModels: models, selectedModel: s.selectedModel || first }));
+      } catch {
+        set({ availableModels: [] });
+      }
     }
   },
 
-  loadConversation: (id) => {
+  // 대화 전환: 메시지 로드
+  loadConversation: async (id) => {
     get()._streamAbort?.abort();
-    set({ currentConvId: id, streamError: null, streamingContent: "", isStreaming: false, _streamAbort: null });
+    set({ currentConvId: id, loadedMessages: [], streamError: null, streamingContent: "", isStreaming: false, _streamAbort: null });
+    const token = getToken();
+    if (!token) return;
+    try {
+      const msgs = await listMessages(token, id);
+      set({ loadedMessages: msgs.map(toLocalMsg) });
+    } catch (err) {
+      if ((err as { status?: number }).status === 401) handleUnauthorized();
+    }
   },
 
+  // 새 대화 시작 (DB 생성은 첫 메시지 전송 시)
   startNewChat: () => {
     get()._streamAbort?.abort();
-    set({ currentConvId: null, streamError: null, streamingContent: "", isStreaming: false, _streamAbort: null });
+    set({ currentConvId: null, loadedMessages: [], streamError: null, streamingContent: "", isStreaming: false, _streamAbort: null });
   },
 
-  deleteConversation: (id) => {
+  // 대화 삭제
+  deleteConversation: async (id) => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      await deleteConversation(token, id);
+    } catch (err) {
+      if ((err as { status?: number }).status === 401) { handleUnauthorized(); return; }
+    }
     set((s) => ({
       conversations: s.conversations.filter((c) => c.id !== id),
-      ...(s.currentConvId === id ? { currentConvId: null } : {}),
+      ...(s.currentConvId === id ? { currentConvId: null, loadedMessages: [] } : {}),
     }));
   },
 
+  // 메시지 전송: 생성 → 저장 → LLM 스트리밍 → 저장
   sendMessage: async (content: string) => {
     const trimmed = content.trim();
     if (!trimmed || get().isStreaming) return;
 
-    const { selectedModel, currentConvId } = get();
+    const token = getToken();
+    if (!token) { handleUnauthorized(); return; }
+
     const { serverUrl } = useSettingsStore.getState();
-    const modelId = selectedModel || get().availableModels[0]?.modelId;
+    if (!serverUrl) {
+      set({ streamError: "SERVER_URL_MISSING" });
+      return;
+    }
+
+    const { selectedModel, availableModels } = get();
+    const modelId = selectedModel || availableModels[0]?.modelId;
     if (!modelId) { set({ streamError: "MODEL_NOT_FOUND" }); return; }
 
     // ── 대화 세션 결정 ──────────────────────────────────────────────────────
-    let convId = currentConvId;
+    let convId = get().currentConvId;
     if (!convId) {
-      convId = uuid();
-      const newConv: InMemoryConv = {
-        id:        convId,
-        title:     trimmed.slice(0, 60),
-        messages:  [],
-        updatedAt: new Date(),
-      };
-      set((s) => ({ conversations: [newConv, ...s.conversations], currentConvId: convId }));
+      try {
+        const conv = await createConversation(token, trimmed.slice(0, 60), serverUrl, modelId);
+        convId = conv.id;
+        set((s) => ({ conversations: [conv, ...s.conversations], currentConvId: conv.id }));
+      } catch (err) {
+        if ((err as { status?: number }).status === 401) { handleUnauthorized(); return; }
+        set({ streamError: "SERVER_ERROR" });
+        return;
+      }
     }
 
-    // ── 현재 메시지 히스토리 + 새 메시지 ────────────────────────────────────
-    const prevMessages = get().conversations.find((c) => c.id === convId)?.messages ?? [];
+    // ── 사용자 메시지 낙관적 표시 ───────────────────────────────────────────
     const userMsg: ChatMessage = { id: uuid(), role: "user", content: trimmed };
-
-    // 낙관적 업데이트
     set((s) => ({
-      conversations: s.conversations.map((c) =>
-        c.id === convId
-          ? { ...c, messages: [...c.messages, userMsg], updatedAt: new Date() }
-          : c
-      ),
-      isStreaming:      true,
-      streamingContent: "",
-      streamError:      null,
+      loadedMessages: [...s.loadedMessages, userMsg],
+      isStreaming: true, streamingContent: "", streamError: null,
     }));
 
-    const allMessages = [
-      ...prevMessages.map((m) => ({ role: m.role, content: m.content })),
-      { role: "user" as const, content: trimmed },
-    ];
+    // ── 사용자 메시지 DB 저장 ───────────────────────────────────────────────
+    try {
+      await saveMessage(token, convId, "user", trimmed, modelId);
+    } catch (err) {
+      if ((err as { status?: number }).status === 401) { handleUnauthorized(); return; }
+      // 저장 실패해도 스트리밍은 계속
+    }
+
+    // ── LLM 스트리밍 ────────────────────────────────────────────────────────
+    const historyMsgs = get().loadedMessages.map((m) => ({ role: m.role, content: m.content }));
 
     const ac = new AbortController();
     set({ _streamAbort: ac });
 
-    // ── fetch ──────────────────────────────────────────────────────────────
     let response: Response;
     try {
-      response = await streamInfer(serverUrl, { modelId, messages: allMessages }, ac.signal);
+      response = await streamInfer(token, serverUrl, { modelId, messages: historyMsgs }, ac.signal);
     } catch {
       set((s) => ({
-        conversations: s.conversations.map((c) =>
-          c.id === convId ? { ...c, messages: c.messages.slice(0, -1) } : c
-        ),
+        loadedMessages: s.loadedMessages.slice(0, -1),
         isStreaming: false,
         streamError: ac.signal.aborted ? null : "NETWORK_ERROR",
         _streamAbort: null,
@@ -162,12 +207,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       let errCode = "UNKNOWN";
       try { const b = await response.json() as { error?: string }; errCode = b.error ?? "UNKNOWN"; } catch { /**/ }
       set((s) => ({
-        conversations: s.conversations.map((c) =>
-          c.id === convId ? { ...c, messages: c.messages.slice(0, -1) } : c
-        ),
-        isStreaming: false,
-        streamError: errCode,
-        _streamAbort: null,
+        loadedMessages: s.loadedMessages.slice(0, -1),
+        isStreaming: false, streamError: errCode, _streamAbort: null,
       }));
       return;
     }
@@ -182,7 +223,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       outer: while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() ?? "";
@@ -201,9 +241,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             break outer;
           } else if (event.type === "error") {
             set((s) => ({
-              conversations: s.conversations.map((c) =>
-                c.id === convId ? { ...c, messages: c.messages.slice(0, -1) } : c
-              ),
+              loadedMessages: s.loadedMessages.slice(0, -1),
               streamingContent: "", isStreaming: false, _streamAbort: null,
               streamError: event.error ?? "INFERENCE_FAILED",
             }));
@@ -213,22 +251,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       }
 
-      // 어시스턴트 메시지 저장
+      // ── 어시스턴트 메시지 저장 ──────────────────────────────────────────────
       const assistantMsg: ChatMessage = { id: uuid(), role: "assistant", content: accumulated, modelId };
+      const now = new Date().toISOString();
       set((s) => ({
+        loadedMessages: [...s.loadedMessages, assistantMsg],
+        streamingContent: "", isStreaming: false, _streamAbort: null,
+        // 대화 목록의 updated_at 업데이트
         conversations: s.conversations.map((c) =>
-          c.id === convId ? { ...c, messages: [...c.messages, assistantMsg], updatedAt: new Date() } : c
+          c.id === convId ? { ...c, updated_at: now } : c
         ),
-        streamingContent: "",
-        isStreaming:      false,
-        _streamAbort:     null,
       }));
+
+      // DB 저장 (비동기, 실패해도 무시)
+      saveMessage(token, convId!, "assistant", accumulated, modelId).catch(() => {});
     } catch (err) {
       const isAbort = (err as Error).name === "AbortError";
       set((s) => ({
-        conversations: s.conversations.map((c) =>
-          c.id === convId ? { ...c, messages: c.messages.slice(0, -1) } : c
-        ),
+        loadedMessages: s.loadedMessages.slice(0, -1),
         streamingContent: "", isStreaming: false, _streamAbort: null,
         streamError: isAbort ? null : "STREAM_ERROR",
       }));

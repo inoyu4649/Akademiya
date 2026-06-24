@@ -105,6 +105,21 @@ services:
       retries: 5
       start_period: 60s
 
+  # ── AkashaAlt (ai.akademiya.kr) ───────────────────────────────────────────
+  akashaalt:
+    build:
+      context: ./akashaalt-fe
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - akademiya_net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   # ── Frontend / Nginx ───────────────────────────────────────────────────────
   frontend:
     build:
@@ -121,6 +136,8 @@ services:
       backend:
         condition: service_healthy
       gmcauto:
+        condition: service_healthy
+      akashaalt:
         condition: service_healthy
     networks:
       - akademiya_net

@@ -2,7 +2,8 @@ import { Link } from "react-router-dom";
 import { useChatStore } from "../../store/chat.store";
 import s from "./Sidebar.module.css";
 
-function formatDate(d: Date) {
+function formatDate(iso: string) {
+  const d    = new Date(iso);
   const now  = new Date();
   const diff = Math.floor((now.getTime() - d.getTime()) / 86400000);
   if (diff === 0) return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
@@ -18,10 +19,10 @@ export default function Sidebar() {
   const deleteConv       = useChatStore((c) => c.deleteConversation);
   const setSidebarOpen   = useChatStore((c) => c.setSidebarOpen);
 
-  const handleLoad = (id: string) => { loadConversation(id); setSidebarOpen(false); };
-  const handleDel  = (e: React.MouseEvent, id: string) => {
+  const handleLoad = (id: number) => { void loadConversation(id); setSidebarOpen(false); };
+  const handleDel  = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
-    if (confirm("대화를 삭제할까요?")) deleteConv(id);
+    if (confirm("대화를 삭제할까요?")) void deleteConv(id);
   };
 
   return (
@@ -37,7 +38,7 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* 대화 목록 (인메모리) */}
+      {/* 대화 목록 */}
       <div className={s.list}>
         {conversations.length === 0 ? (
           <p className={s.listEmpty}>대화 내역이 없습니다</p>
@@ -49,7 +50,7 @@ export default function Sidebar() {
               onClick={() => handleLoad(conv.id)}
             >
               <span className={s.convTitle}>{conv.title}</span>
-              <span className={s.convDate}>{formatDate(conv.updatedAt)}</span>
+              <span className={s.convDate}>{formatDate(conv.updated_at)}</span>
               <button className={s.deleteBtn} onClick={(e) => handleDel(e, conv.id)} aria-label="삭제">×</button>
             </div>
           ))
@@ -75,7 +76,7 @@ export default function Sidebar() {
           서버 설정
         </Link>
         <p style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center" }}>
-          대화 내역은 이 탭에서만 유지됩니다
+          대화 내역이 서버에 저장됩니다
         </p>
       </div>
     </div>

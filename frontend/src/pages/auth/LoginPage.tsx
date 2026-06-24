@@ -5,11 +5,21 @@ import AuthLayout, { css as s } from "../../components/layout/AuthLayout";
 import { authApi } from "../../api/auth.api";
 import { useAuthStore } from "../../store/auth.store";
 
+const SAFE_AI_CALLBACKS = [
+  "https://ai.akademiya.kr/auth/callback",
+  "http://localhost:5175/auth/callback",
+];
+function isSafeAiRedirect(uri: string | null): uri is string {
+  return !!uri && SAFE_AI_CALLBACKS.includes(uri);
+}
+
 export default function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const setAuth = useAuthStore((s) => s.setAuth);
+
+  const aiRedirect = params.get("ai_redirect");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,7 +35,12 @@ export default function LoginPage() {
     try {
       const res = await authApi.login({ email, password });
       setAuth(res.data.user, res.data.accessToken);
-      navigate("/");
+      if (isSafeAiRedirect(aiRedirect)) {
+        const codeRes = await authApi.aiCode();
+        window.location.href = `${aiRedirect}?code=${codeRes.data.code}`;
+      } else {
+        navigate("/");
+      }
     } catch (err: unknown) {
       const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       if (code === "INVALID_CREDENTIALS") setError(t("auth.login.invalidCredentials"));
@@ -34,6 +49,13 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    if (isSafeAiRedirect(aiRedirect)) {
+      sessionStorage.setItem("ai_redirect", aiRedirect);
+    }
+    window.location.href = "/api/auth/google";
   };
 
   const googleEnabled = true; // 백엔드 GOOGLE_CLIENT_ID 설정 후 사용
@@ -80,7 +102,7 @@ export default function LoginPage() {
       {googleEnabled && (
         <>
           <div className={s.divider}>{t("auth.login.divider")}</div>
-          <a href="/api/auth/google">
+          <a href="#" onClick={(e) => { e.preventDefault(); handleGoogleLogin(); }}>
             <button className={s.btnGoogle} type="button">
               <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
                 <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>

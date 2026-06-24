@@ -36,6 +36,17 @@ function isSafeGmcRedirect(uri: string | undefined): uri is string {
   }
 }
 
+// AkashaAlt SSO: ai.akademiya.kr 로그인 완료 후 되돌아갈 콜백 URL 화이트리스트
+const ALLOWED_AI_CALLBACKS = [
+  "https://ai.akademiya.kr/auth/callback",
+  "http://localhost:5175/auth/callback",
+];
+
+function isSafeAiRedirect(uri: string | undefined): uri is string {
+  if (!uri) return false;
+  return ALLOWED_AI_CALLBACKS.includes(uri);
+}
+
 type DbUser = Record<string, unknown>;
 
 function setRefreshCookie(res: Response, token: string) {
@@ -476,6 +487,12 @@ router.delete("/account", requireAuth, async (req, res) => {
   }
 });
 
+// ─── POST /ai-code ── AkashaAlt SSO: 로그인된 사용자의 OAuth 코드 발급 ──────────
+router.post("/ai-code", requireAuth, (req, res) => {
+  const code = createOAuthCode(req.user!.id);
+  res.json({ code });
+});
+
 // ─── Google OAuth ─────────────────────────────────────────────────────────────
 // GMCAuto에서 곧바로 진입한 경우 ?state=<gmc redirect_uri>를 전달받아 콜백까지 왕복시킨다
 // (state는 passport-oauth2가 세션으로 검증하는 게 아니라 우리가 직접 화이트리스트로 검증한다 — session:false이므로)
@@ -549,4 +566,5 @@ router.post("/oauth-exchange", async (req, res) => {
   }
 });
 
+export { isSafeAiRedirect };
 export default router;
