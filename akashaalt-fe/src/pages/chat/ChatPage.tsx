@@ -3,6 +3,7 @@ import AppLayout from "../../components/layout/AppLayout";
 import Sidebar from "../../components/chat/Sidebar";
 import ChatMessages from "../../components/chat/ChatMessages";
 import ChatInput from "../../components/chat/ChatInput";
+import UnlockPasswordModal from "../../components/chat/UnlockPasswordModal";
 import { useChatStore } from "../../store/chat.store";
 import { useTheme } from "../../hooks/useTheme";
 import s from "./ChatPage.module.css";
@@ -47,6 +48,7 @@ export default function ChatPage() {
 
       <ChatMessages />
       <ChatInput />
+      <UnlockPasswordModal />
     </AppLayout>
   );
 }
