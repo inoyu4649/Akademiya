@@ -1,8 +1,62 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ComponentPropsWithoutRef, type ReactElement } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useChatStore } from "../../store/chat.store";
+import CollapsibleBlock from "./CollapsibleBlock";
 import s from "./ChatMessages.module.css";
+
+// <think>...</think> 추론 블록을 일반 텍스트와 분리 — 스트리밍 중 아직 닫히지 않은 태그도 처리
+interface ContentPart { type: "text" | "think"; content: string }
+
+function parseThinkBlocks(content: string): ContentPart[] {
+  const parts: ContentPart[] = [];
+  const closed = /<think>([\s\S]*?)<\/think>/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = closed.exec(content))) {
+    if (match.index > lastIndex) parts.push({ type: "text", content: content.slice(lastIndex, match.index) });
+    parts.push({ type: "think", content: match[1] });
+    lastIndex = closed.lastIndex;
+  }
+  const rest = content.slice(lastIndex);
+  const openIdx = rest.indexOf("<think>");
+  if (openIdx !== -1) {
+    if (openIdx > 0) parts.push({ type: "text", content: rest.slice(0, openIdx) });
+    parts.push({ type: "think", content: rest.slice(openIdx + "<think>".length) });
+  } else if (rest) {
+    parts.push({ type: "text", content: rest });
+  }
+  return parts;
+}
+
+// 펜스 코드 블록(<pre><code>...)을 접었다 펼 수 있는 블록으로 감싸는 ReactMarkdown 컴포넌트 오버라이드
+function CodeBlock({ children, ...props }: ComponentPropsWithoutRef<"pre">) {
+  const codeEl = Array.isArray(children) ? children[0] : children;
+  const lang = (codeEl as ReactElement<{ className?: string }>)?.props?.className?.replace("language-", "");
+  return (
+    <CollapsibleBlock title={`💻 ${lang || "코드"}`} defaultOpen>
+      <pre {...props} style={{ margin: 0, overflowX: "auto" }}>{children}</pre>
+    </CollapsibleBlock>
+  );
+}
+
+function MarkdownWithThink({ content }: { content: string }) {
+  return (
+    <>
+      {parseThinkBlocks(content).map((part, i) =>
+        part.type === "think" ? (
+          <CollapsibleBlock key={i} title="💭 생각 과정">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{part.content}</ReactMarkdown>
+          </CollapsibleBlock>
+        ) : (
+          <ReactMarkdown key={i} remarkPlugins={[remarkGfm]} components={{ pre: CodeBlock }}>
+            {part.content}
+          </ReactMarkdown>
+        )
+      )}
+    </>
+  );
+}
 
 const ERROR_LABELS: Record<string, string> = {
   OUT_OF_MEMORY:       "메모리 부족으로 응답을 생성할 수 없습니다. 잠시 후 다시 시도해 주세요.",
@@ -48,9 +102,7 @@ export default function ChatMessages() {
       {messages.map((msg, i) => (
         <div key={msg.id ?? i} className={`${s.row} ${msg.role === "user" ? s.rowUser : s.rowAssistant}`}>
           <div className={`${s.bubble} ${msg.role === "user" ? s.bubbleUser : s.bubbleAssistant}`}>
-            {msg.role === "user" ? msg.content : (
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-            )}
+            {msg.role === "user" ? msg.content : <MarkdownWithThink content={msg.content} />}
           </div>
         </div>
       ))}
@@ -59,7 +111,7 @@ export default function ChatMessages() {
         <div className={`${s.row} ${s.rowAssistant}`}>
           <div className={`${s.bubble} ${s.bubbleAssistant}`}>
             {streamingContent ? (
-              <><ReactMarkdown remarkPlugins={[remarkGfm]}>{streamingContent}</ReactMarkdown><span className={s.cursor} /></>
+              <><MarkdownWithThink content={streamingContent} /><span className={s.cursor} /></>
             ) : (
               <span className={s.cursor} />
             )}
