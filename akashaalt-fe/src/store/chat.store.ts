@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { fetchModels, streamInfer, streamInferApi, type ModelInfo } from "../api/chat.api";
-import { getPresetModels } from "../data/modelCatalog";
+import { getDefaultModel } from "../data/modelCatalog";
 import { useSettingsStore } from "./settings.store";
 import { useAuthStore } from "./auth.store";
 import {
@@ -93,8 +93,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     // 모델 목록 — API 모드는 로컬 카탈로그(자체 UI)를 사용하므로 네트워크 호출 불필요
     if (mode === "api") {
-      const first = getPresetModels(apiProvider)[0]?.id ?? "";
-      set((s) => ({ availableModels: [], selectedModel: s.selectedModel || first }));
+      const def = getDefaultModel(apiProvider);
+      set((s) => ({ availableModels: [], selectedModel: s.selectedModel || def }));
       return;
     }
     try {

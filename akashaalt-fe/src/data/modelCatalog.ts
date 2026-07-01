@@ -3,7 +3,7 @@
 // 같은 모델을 vendor별로 필터링해 provider 고유 ID(접두사 없음)로 사용한다.
 
 export type AiProvider = "openrouter" | "openai" | "gemini" | "anthropic";
-export type Vendor = "openai" | "google" | "anthropic" | "deepseek" | "qwen" | "sakana" | "z-ai";
+export type Vendor = "nvidia" | "openai" | "google" | "anthropic" | "deepseek" | "qwen" | "sakana" | "z-ai";
 
 export interface CatalogModel {
   /** OpenRouter에서 사용하는 ID (vendor 접두사 포함) */
@@ -21,6 +21,9 @@ export interface CatalogModel {
 export const PRICE_AS_OF = "2026년 7월 2일";
 
 export const MODEL_CATALOG: CatalogModel[] = [
+  { openrouterId: "nvidia/nemotron-3-ultra-550b-a55b:free", nativeId: "nemotron-3-ultra-550b-a55b", displayName: "Nemotron 3 Ultra Free", vendor: "nvidia", priceIn: 0, priceOut: 0 },
+  { openrouterId: "nvidia/nemotron-3-super-120b-a12b:free", nativeId: "nemotron-3-super-120b-a12b", displayName: "Nemotron 3 Super Free", vendor: "nvidia", priceIn: 0, priceOut: 0 },
+  { openrouterId: "nvidia/nemotron-3-nano-30b-a3b:free",    nativeId: "nemotron-3-nano-30b-a3b",    displayName: "Nemotron 3 Nano Free",  vendor: "nvidia", priceIn: 0, priceOut: 0 },
   { openrouterId: "openai/gpt-5.5-pro",         nativeId: "gpt-5.5-pro",              displayName: "GPT-5.5 Pro",          vendor: "openai",    priceIn: 30,    priceOut: 180 },
   { openrouterId: "openai/gpt-5.5",             nativeId: "gpt-5.5",                  displayName: "GPT-5.5",              vendor: "openai",    priceIn: 5,     priceOut: 30 },
   { openrouterId: "openai/gpt-5.4",             nativeId: "gpt-5.4",                  displayName: "GPT-5.4",              vendor: "openai",    priceIn: 2.5,   priceOut: 15 },
@@ -66,7 +69,17 @@ export function findModelPricing(provider: AiProvider, modelId: string) {
   return preset ? { priceIn: preset.priceIn, priceOut: preset.priceOut, displayName: preset.displayName } : null;
 }
 
+// 모델 미선택 시 provider별 기본값 — OpenRouter는 무료 모델(Nemotron 3 Nano Free)을 기본값으로 사용
+const DEFAULT_MODEL_ID: Partial<Record<AiProvider, string>> = {
+  openrouter: "nvidia/nemotron-3-nano-30b-a3b:free",
+};
+
+export function getDefaultModel(provider: AiProvider): string {
+  return DEFAULT_MODEL_ID[provider] ?? getPresetModels(provider)[0]?.id ?? "";
+}
+
 export const VENDOR_LABELS: Record<Vendor, string> = {
+  nvidia: "NVIDIA",
   openai: "OpenAI",
   google: "Google",
   anthropic: "Anthropic",
