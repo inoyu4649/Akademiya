@@ -19,7 +19,14 @@ export default function Sidebar() {
   const deleteConv       = useChatStore((c) => c.deleteConversation);
   const setSidebarOpen   = useChatStore((c) => c.setSidebarOpen);
 
-  const handleLoad = (id: number) => { void loadConversation(id); setSidebarOpen(false); };
+  // 사이드바는 모바일(≤768px)에서만 오버레이로 열고 닫힘 — PC/태블릿에서는 항상 펼쳐진 고정 컬럼이므로
+  // 대화 진입 시 접으면 안 됨(AppLayout.module.css의 768px 브레이크포인트와 동일하게 유지)
+  const isMobileViewport = () => window.matchMedia("(max-width: 768px)").matches;
+
+  const handleLoad = (id: number) => {
+    void loadConversation(id);
+    if (isMobileViewport()) setSidebarOpen(false);
+  };
   const handleDel  = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
     if (confirm("대화를 삭제할까요?")) void deleteConv(id);
@@ -30,7 +37,7 @@ export default function Sidebar() {
       {/* Header */}
       <div className={s.header}>
         <div className={s.logo}>Akasha</div>
-        <button className={s.newChatBtn} onClick={() => { startNewChat(); setSidebarOpen(false); }}>
+        <button className={s.newChatBtn} onClick={() => { startNewChat(); if (isMobileViewport()) setSidebarOpen(false); }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
