@@ -14,6 +14,7 @@ export default function ChatInput() {
 
   const isStreaming     = useChatStore((c) => c.isStreaming);
   const sendMessage     = useChatStore((c) => c.sendMessage);
+  const stopStreaming   = useChatStore((c) => c.stopStreaming);
   const availableModels = useChatStore((c) => c.availableModels);
   const selectedModel   = useChatStore((c) => c.selectedModel);
   const setModel        = useChatStore((c) => c.setModel);
@@ -94,9 +95,9 @@ export default function ChatInput() {
         />
         <button
           className={s.submitBtn}
-          onClick={handleSubmit}
-          disabled={!text.trim() || isStreaming || tooLong}
-          aria-label="전송"
+          onClick={isStreaming ? stopStreaming : handleSubmit}
+          disabled={isStreaming ? false : (!text.trim() || tooLong)}
+          aria-label={isStreaming ? "중지" : "전송"}
         >
           {isStreaming ? (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">

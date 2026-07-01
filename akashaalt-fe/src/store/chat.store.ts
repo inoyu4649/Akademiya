@@ -38,6 +38,7 @@ interface ChatState {
   loadConversation:   (id: number) => Promise<void>;
   startNewChat:       () => void;
   sendMessage:        (content: string) => Promise<void>;
+  stopStreaming:      () => void;
   deleteConversation: (id: number) => Promise<void>;
 }
 
@@ -72,6 +73,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   toggleSidebar:  () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   setModel:       (modelId) => set({ selectedModel: modelId }),
+  stopStreaming:  () => get()._streamAbort?.abort(),
 
   // 앱 초기화: 대화 목록 + 모델 목록 로드
   init: async () => {
@@ -275,11 +277,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
       saveMessage(token, convId!, "assistant", accumulated, modelId).catch(() => {});
     } catch (err) {
       const isAbort = (err as Error).name === "AbortError";
-      set((s) => ({
-        loadedMessages: s.loadedMessages.slice(0, -1),
-        streamingContent: "", isStreaming: false, _streamAbort: null,
-        streamError: isAbort ? null : "STREAM_ERROR",
-      }));
+      if (isAbort) {
+        // 사용자가 직접 중지 — 지금까지 생성된 내용은 버리지 않고 어시스턴트 메시지로 확정 저장
+        if (accumulated) {
+          const assistantMsg: ChatMessage = { id: uuid(), role: "assistant", content: accumulated, modelId };
+          const now = new Date().toISOString();
+          set((s) => ({
+            loadedMessages: [...s.loadedMessages, assistantMsg],
+            streamingContent: "", isStreaming: false, _streamAbort: null,
+            conversations: s.conversations.map((c) => (c.id === convId ? { ...c, updated_at: now } : c)),
+          }));
+          saveMessage(token, convId!, "assistant", accumulated, modelId).catch(() => {});
+        } else {
+          set({ streamingContent: "", isStreaming: false, _streamAbort: null });
+        }
+      } else {
+        set((s) => ({
+          loadedMessages: s.loadedMessages.slice(0, -1),
+          streamingContent: "", isStreaming: false, _streamAbort: null,
+          streamError: "STREAM_ERROR",
+        }));
+      }
     } finally {
       reader.releaseLock();
     }
