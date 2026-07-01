@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { fetchModels, fetchProviderModels, streamInfer, streamInferApi, type ModelInfo } from "../api/chat.api";
+import { fetchModels, streamInfer, streamInferApi, type ModelInfo } from "../api/chat.api";
+import { getPresetModels } from "../data/modelCatalog";
 import { useSettingsStore } from "./settings.store";
 import { useAuthStore } from "./auth.store";
 import {
@@ -90,13 +91,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if ((err as { status?: number }).status === 401) { handleUnauthorized(); return; }
     }
 
-    // 모델 목록
+    // 모델 목록 — API 모드는 로컬 카탈로그(자체 UI)를 사용하므로 네트워크 호출 불필요
+    if (mode === "api") {
+      const first = getPresetModels(apiProvider)[0]?.id ?? "";
+      set((s) => ({ availableModels: [], selectedModel: s.selectedModel || first }));
+      return;
+    }
     try {
-      if (mode === "api") {
-        const models = await fetchProviderModels(token, apiProvider);
-        const first  = models[0]?.modelId ?? "";
-        set((s) => ({ availableModels: models, selectedModel: s.selectedModel || first }));
-      } else if (serverUrl) {
+      if (serverUrl) {
         const models = await fetchModels(token, serverUrl);
         const first  = models[0]?.modelId ?? "";
         set((s) => ({ availableModels: models, selectedModel: s.selectedModel || first }));

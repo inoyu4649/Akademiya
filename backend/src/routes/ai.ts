@@ -8,30 +8,6 @@ import { AI_PROVIDERS } from "./ai-vault.js";
 
 const router: IRouter = Router();
 
-// provider별 큐레이션된 기본 모델 목록 (라이브 카탈로그 API 의존 없이 즉시 사용 가능)
-const PROVIDER_MODELS: Record<AiProvider, Array<{ id: string; displayName: string }>> = {
-  openrouter: [
-    { id: "openai/gpt-4o", displayName: "GPT-4o (via OpenRouter)" },
-    { id: "anthropic/claude-3.5-sonnet", displayName: "Claude 3.5 Sonnet (via OpenRouter)" },
-    { id: "google/gemini-pro-1.5", displayName: "Gemini 1.5 Pro (via OpenRouter)" },
-    { id: "meta-llama/llama-3.1-70b-instruct", displayName: "Llama 3.1 70B (via OpenRouter)" },
-  ],
-  openai: [
-    { id: "gpt-4o", displayName: "GPT-4o" },
-    { id: "gpt-4o-mini", displayName: "GPT-4o mini" },
-    { id: "gpt-4-turbo", displayName: "GPT-4 Turbo" },
-  ],
-  gemini: [
-    { id: "gemini-1.5-pro", displayName: "Gemini 1.5 Pro" },
-    { id: "gemini-1.5-flash", displayName: "Gemini 1.5 Flash" },
-  ],
-  anthropic: [
-    { id: "claude-3-5-sonnet-latest", displayName: "Claude 3.5 Sonnet" },
-    { id: "claude-3-5-haiku-latest", displayName: "Claude 3.5 Haiku" },
-    { id: "claude-3-opus-latest", displayName: "Claude 3 Opus" },
-  ],
-};
-
 // URL 기본 검증 — 메타데이터 서버(169.254.x.x)와 루프백만 차단, 그 외 허용
 function isValidUrl(url: string): boolean {
   try {
@@ -231,15 +207,6 @@ router.post("/infer", requireAuth, async (req, res) => {
   } finally {
     res.end();
   }
-});
-
-// ── GET /api/ai/models-api ── API 방식 provider별 모델 목록 ─────────────────────
-router.get("/models-api", requireAuth, (req, res) => {
-  const provider = req.query.provider as string;
-  if (!AI_PROVIDERS.includes(provider as AiProvider)) {
-    res.status(400).json({ error: "UNSUPPORTED_PROVIDER" }); return;
-  }
-  res.json({ models: PROVIDER_MODELS[provider as AiProvider] });
 });
 
 // ── POST /api/ai/infer-api ── API 방식 LLM 추론 SSE (OpenRouter/OpenAI/Gemini/Claude) ──

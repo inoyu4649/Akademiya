@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useChatStore } from "../../store/chat.store";
+import { useSettingsStore } from "../../store/settings.store";
+import ModelPicker from "./ModelPicker";
+import PricingBanner from "./PricingBanner";
 import s from "./ChatInput.module.css";
 
 const MAX_LEN  = 8000;
@@ -14,6 +17,8 @@ export default function ChatInput() {
   const availableModels = useChatStore((c) => c.availableModels);
   const selectedModel   = useChatStore((c) => c.selectedModel);
   const setModel        = useChatStore((c) => c.setModel);
+  const mode            = useSettingsStore((s) => s.mode);
+  const apiProvider     = useSettingsStore((s) => s.apiProvider);
 
   const tooLong   = text.length > MAX_LEN;
   const nearLimit = text.length >= WARN_LEN;
@@ -43,21 +48,35 @@ export default function ChatInput() {
       {/* 모델 선택 */}
       <div className={s.modelRow}>
         <span className={s.modelLabel}>모델</span>
-        <select
-          className={s.modelSelect}
-          value={selectedModel}
-          onChange={(e) => setModel(e.target.value)}
-          disabled={isStreaming}
-        >
-          {availableModels.length === 0 && <option value="">서버에 연결 중...</option>}
-          {availableModels.map((m) => (
-            <option key={m.modelId} value={m.modelId}>
-              {m.displayName}{m.unlimited ? " (무제한)" : ""}
-            </option>
-          ))}
-        </select>
-        {selectedInfo && !selectedInfo.unlimited && (
-          <span className={s.modelCost}>{selectedInfo.creditCost}cr</span>
+        {mode === "api" ? (
+          <>
+            <ModelPicker
+              provider={apiProvider}
+              value={selectedModel}
+              onChange={setModel}
+              disabled={isStreaming}
+            />
+            <PricingBanner provider={apiProvider} modelId={selectedModel} />
+          </>
+        ) : (
+          <>
+            <select
+              className={s.modelSelect}
+              value={selectedModel}
+              onChange={(e) => setModel(e.target.value)}
+              disabled={isStreaming}
+            >
+              {availableModels.length === 0 && <option value="">서버에 연결 중...</option>}
+              {availableModels.map((m) => (
+                <option key={m.modelId} value={m.modelId}>
+                  {m.displayName}{m.unlimited ? " (무제한)" : ""}
+                </option>
+              ))}
+            </select>
+            {selectedInfo && !selectedInfo.unlimited && (
+              <span className={s.modelCost}>{selectedInfo.creditCost}cr</span>
+            )}
+          </>
         )}
       </div>
 
