@@ -4,9 +4,10 @@ import { useSettingsStore } from "../../store/settings.store";
 import { useAuthStore } from "../../store/auth.store";
 import { useChatStore } from "../../store/chat.store";
 import { useTheme } from "../../hooks/useTheme";
+import VaultPanel from "../../components/settings/VaultPanel";
 
 export default function SettingsPage() {
-  const { serverUrl, setServerUrl } = useSettingsStore();
+  const { serverUrl, setServerUrl, mode, setMode } = useSettingsStore();
   const user      = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const init      = useChatStore((c) => c.init);
@@ -24,6 +25,12 @@ export default function SettingsPage() {
     startNewChat();
     void init();
     setStatus("idle");
+  };
+
+  const handleModeChange = (next: "local" | "api") => {
+    setMode(next);
+    startNewChat();
+    void init();
   };
 
   const handleTest = async () => {
@@ -132,58 +139,92 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* LLM 서버 설정 */}
+        {/* 연결 방식 선택 */}
         <div style={card}>
-          <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
-            LLM 서버 URL
+          <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>
+            연결 방식
           </p>
-          <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.6 }}>
-            AkashaAlt Local Server 또는 호환 서버의 주소를 입력하세요.<br />
-            예: <code style={{ background: "var(--bg-input)", padding: "1px 5px", borderRadius: 3 }}>http://192.168.1.100:11430</code>
-          </p>
-
-          <input
-            type="text"
-            value={url}
-            onChange={(e) => { setUrl(e.target.value); setStatus("idle"); }}
-            placeholder="http://서버IP:포트"
-            style={{
-              width: "100%", padding: "9px 12px", marginBottom: 12,
-              background: "var(--bg-input)", border: "1px solid var(--border)",
-              borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontSize: 13,
-            }}
-            spellCheck={false}
-          />
-
-          {status === "ok"    && <p style={{ fontSize: 12, color: "var(--accent)",  marginBottom: 10 }}>✓ 서버에 연결됐습니다</p>}
-          {status === "error" && <p style={{ fontSize: 12, color: "var(--danger)", marginBottom: 10 }}>✗ 서버에 연결할 수 없습니다</p>}
-
           <div style={{ display: "flex", gap: 8 }}>
             <button
-              onClick={() => void handleTest()}
-              disabled={testing}
+              onClick={() => handleModeChange("local")}
               style={{
-                padding: "8px 16px", background: "var(--bg-input)",
-                border: "1px solid var(--border)", borderRadius: "var(--radius-sm)",
-                color: "var(--text-secondary)", fontSize: 13, cursor: testing ? "wait" : "pointer",
+                flex: 1, padding: "8px 12px", borderRadius: "var(--radius-sm)", fontSize: 13, cursor: "pointer",
+                background: mode === "local" ? "var(--accent-dark)" : "var(--bg-input)",
+                color: mode === "local" ? "#fff" : "var(--text-secondary)",
+                border: "1px solid var(--border)", fontWeight: mode === "local" ? 600 : 400,
               }}
             >
-              {testing ? "연결 중..." : "연결 테스트"}
+              로컬 서버
             </button>
             <button
-              onClick={handleSave}
+              onClick={() => handleModeChange("api")}
               style={{
-                padding: "8px 20px", background: "var(--accent-dark)", color: "#fff",
-                border: "none", borderRadius: "var(--radius-sm)", fontSize: 13,
-                fontWeight: 600, cursor: "pointer",
+                flex: 1, padding: "8px 12px", borderRadius: "var(--radius-sm)", fontSize: 13, cursor: "pointer",
+                background: mode === "api" ? "var(--accent-dark)" : "var(--bg-input)",
+                color: mode === "api" ? "#fff" : "var(--text-secondary)",
+                border: "1px solid var(--border)", fontWeight: mode === "api" ? 600 : 400,
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--accent)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "var(--accent-dark)")}
             >
-              저장
+              API (OpenRouter/GPT/Gemini/Claude)
             </button>
           </div>
         </div>
+
+        {mode === "local" ? (
+          <div style={card}>
+            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
+              LLM 서버 URL
+            </p>
+            <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.6 }}>
+              AkashaAlt Local Server 또는 호환 서버의 주소를 입력하세요.<br />
+              예: <code style={{ background: "var(--bg-input)", padding: "1px 5px", borderRadius: 3 }}>http://192.168.1.100:11430</code>
+            </p>
+
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => { setUrl(e.target.value); setStatus("idle"); }}
+              placeholder="http://서버IP:포트"
+              style={{
+                width: "100%", padding: "9px 12px", marginBottom: 12,
+                background: "var(--bg-input)", border: "1px solid var(--border)",
+                borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontSize: 13,
+              }}
+              spellCheck={false}
+            />
+
+            {status === "ok"    && <p style={{ fontSize: 12, color: "var(--accent)",  marginBottom: 10 }}>✓ 서버에 연결됐습니다</p>}
+            {status === "error" && <p style={{ fontSize: 12, color: "var(--danger)", marginBottom: 10 }}>✗ 서버에 연결할 수 없습니다</p>}
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => void handleTest()}
+                disabled={testing}
+                style={{
+                  padding: "8px 16px", background: "var(--bg-input)",
+                  border: "1px solid var(--border)", borderRadius: "var(--radius-sm)",
+                  color: "var(--text-secondary)", fontSize: 13, cursor: testing ? "wait" : "pointer",
+                }}
+              >
+                {testing ? "연결 중..." : "연결 테스트"}
+              </button>
+              <button
+                onClick={handleSave}
+                style={{
+                  padding: "8px 20px", background: "var(--accent-dark)", color: "#fff",
+                  border: "none", borderRadius: "var(--radius-sm)", fontSize: 13,
+                  fontWeight: 600, cursor: "pointer",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--accent)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "var(--accent-dark)")}
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        ) : (
+          <VaultPanel />
+        )}
 
         <div style={{
           ...card, background: "transparent",

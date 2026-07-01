@@ -38,3 +38,28 @@ export async function streamInfer(
     signal,
   });
 }
+
+// GET /api/ai/models-api?provider=... — API 방식 provider별 모델 목록
+export async function fetchProviderModels(token: string, provider: string): Promise<ModelInfo[]> {
+  const res = await fetch(`/api/ai/models-api?provider=${encodeURIComponent(provider)}`, {
+    headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(5_000),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json() as { models: Array<{ id: string; displayName: string }> };
+  return data.models.map((m) => ({ modelId: m.id, displayName: m.displayName, creditCost: 0, unlimited: true }));
+}
+
+// POST /api/ai/infer-api  →  SSE stream (백엔드가 사용자의 저장된 API Key로 provider 호출)
+export async function streamInferApi(
+  token: string,
+  provider: string,
+  params: { modelId: string; messages: Array<{ role: string; content: string }> },
+  signal?: AbortSignal
+): Promise<Response> {
+  return fetch("/api/ai/infer-api", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body:    JSON.stringify({ provider, ...params }),
+    signal,
+  });
+}

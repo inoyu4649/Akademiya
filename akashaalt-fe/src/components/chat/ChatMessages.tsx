@@ -14,6 +14,11 @@ const ERROR_LABELS: Record<string, string> = {
   QUEUE_FULL:          "서버가 바쁩니다. 잠시 후 다시 시도해 주세요.",
   CONTENT_TOO_LONG:    "메시지가 너무 깁니다. 8,000자 이하로 입력해 주세요.",
   TOO_MANY_REQUESTS:   "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+  SERVER_URL_MISSING:  "Local Server 주소가 설정되지 않았습니다. 설정에서 입력해 주세요.",
+  VAULT_LOCKED:        "API 볼트가 잠겨 있습니다. 설정에서 비밀번호로 잠금을 해제해 주세요.",
+  PROVIDER_KEY_NOT_SET: "선택한 Provider의 API Key가 등록되지 않았습니다. 설정에서 등록해 주세요.",
+  PROVIDER_ERROR:      "AI Provider 호출 중 오류가 발생했습니다. API Key와 모델을 확인해 주세요.",
+  KEY_DECRYPTION_FAILED: "API Key 복호화에 실패했습니다. 다시 로그인 후 시도해 주세요.",
 };
 
 export default function ChatMessages() {

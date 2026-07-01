@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { fetchModels, streamInfer, type ModelInfo } from "../api/chat.api";
+import { fetchModels, fetchProviderModels, streamInfer, streamInferApi, type ModelInfo } from "../api/chat.api";
 import { useSettingsStore } from "./settings.store";
 import { useAuthStore } from "./auth.store";
 import {
@@ -80,7 +80,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   init: async () => {
     const token = getToken();
     if (!token) return;
-    const { serverUrl } = useSettingsStore.getState();
+    const { serverUrl, mode, apiProvider } = useSettingsStore.getState();
 
     // 대화 목록
     try {
@@ -91,14 +91,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     // 모델 목록
-    if (serverUrl) {
-      try {
+    try {
+      if (mode === "api") {
+        const models = await fetchProviderModels(token, apiProvider);
+        const first  = models[0]?.modelId ?? "";
+        set((s) => ({ availableModels: models, selectedModel: s.selectedModel || first }));
+      } else if (serverUrl) {
         const models = await fetchModels(token, serverUrl);
         const first  = models[0]?.modelId ?? "";
         set((s) => ({ availableModels: models, selectedModel: s.selectedModel || first }));
-      } catch {
+      } else {
         set({ availableModels: [] });
       }
+    } catch {
+      set({ availableModels: [] });
     }
   },
 
@@ -145,8 +151,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const token = getToken();
     if (!token) { handleUnauthorized(); return; }
 
-    const { serverUrl } = useSettingsStore.getState();
-    if (!serverUrl) {
+    const { serverUrl, mode, apiProvider } = useSettingsStore.getState();
+    if (mode === "local" && !serverUrl) {
       set({ streamError: "SERVER_URL_MISSING" });
       return;
     }
@@ -159,7 +165,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     let convId = get().currentConvId;
     if (!convId) {
       try {
-        const conv = await createConversation(token, trimmed.slice(0, 60), serverUrl, modelId);
+        const convLabel = mode === "api" ? `api:${apiProvider}` : serverUrl;
+        const conv = await createConversation(token, trimmed.slice(0, 60), convLabel, modelId);
         convId = conv.id;
         set((s) => ({ conversations: [conv, ...s.conversations], currentConvId: conv.id }));
       } catch (err) {
@@ -192,7 +199,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     let response: Response;
     try {
-      response = await streamInfer(token, serverUrl, { modelId, messages: historyMsgs }, ac.signal);
+      response = mode === "api"
+        ? await streamInferApi(token, apiProvider, { modelId, messages: historyMsgs }, ac.signal)
+        : await streamInfer(token, serverUrl, { modelId, messages: historyMsgs }, ac.signal);
     } catch {
       set((s) => ({
         loadedMessages: s.loadedMessages.slice(0, -1),
