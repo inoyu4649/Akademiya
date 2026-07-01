@@ -58,7 +58,19 @@ export default function VaultPanel() {
   const token = useAuthStore((s) => s.accessToken);
   const apiProvider = useSettingsStore((s) => s.apiProvider);
   const setApiProvider = useSettingsStore((s) => s.setApiProvider);
+  const savePasswordLocally = useSettingsStore((s) => s.savePasswordLocally);
+  const setSavePasswordLocally = useSettingsStore((s) => s.setSavePasswordLocally);
+  const setSavedVaultPassword = useSettingsStore((s) => s.setSavedVaultPassword);
   const chatInit = useChatStore((c) => c.init);
+
+  const rememberIfEnabled = (password: string) => {
+    if (savePasswordLocally) setSavedVaultPassword(password);
+  };
+
+  const handleToggleSaveLocally = (checked: boolean) => {
+    setSavePasswordLocally(checked);
+    if (!checked) setSavedVaultPassword(null);
+  };
 
   const [status, setStatus] = useState<VaultStatus | null>(null);
   const [busy, setBusy] = useState(false);
@@ -104,6 +116,7 @@ export default function VaultPanel() {
     if (pw1.length < 8) { setError("비밀번호는 8자 이상이어야 합니다."); return; }
     if (pw1 !== pw2) { setError("비밀번호가 일치하지 않습니다."); return; }
     await setupVault(token, pw1);
+    rememberIfEnabled(pw1);
     setPw1(""); setPw2("");
     setOkMsg("AkashaAlt API 비밀번호가 설정되었습니다.");
     await refresh();
@@ -112,6 +125,7 @@ export default function VaultPanel() {
   const handleUnlock = () => wrap(async () => {
     if (!token) return;
     await unlockVault(token, unlockPw);
+    rememberIfEnabled(unlockPw);
     setUnlockPw("");
     setOkMsg("잠금이 해제되었습니다.");
     await refresh();
@@ -150,6 +164,7 @@ export default function VaultPanel() {
     if (!token) return;
     if (newPw.length < 8) { setError("새 비밀번호는 8자 이상이어야 합니다."); return; }
     await changeVaultPassword(token, curPw, newPw, code);
+    rememberIfEnabled(newPw);
     setCurPw(""); setNewPw(""); setCode(""); setCodeSent(false); setShowChangePw(false);
     setOkMsg("비밀번호가 변경되었습니다. 기존 API Key는 그대로 유지됩니다.");
     await refresh();
@@ -159,6 +174,7 @@ export default function VaultPanel() {
     if (!token) return;
     if (newPw.length < 8) { setError("새 비밀번호는 8자 이상이어야 합니다."); return; }
     await resetVault(token, newPw, code);
+    rememberIfEnabled(newPw);
     setNewPw(""); setCode(""); setCodeSent(false); setShowForgot(false);
     setOkMsg("비밀번호가 초기화되었습니다. 기존에 등록된 API Key는 모두 삭제되어 다시 등록해야 합니다.");
     await refresh();
@@ -199,6 +215,28 @@ export default function VaultPanel() {
           이 비밀번호로 API Key를 암호화하며, 서버는 평문 API Key와 이 비밀번호를 영구 저장하지 않습니다.<br />
           <strong>비밀번호를 잊으면 기존에 등록한 API Key는 복구할 수 없습니다</strong> (다시 등록 필요).
         </p>
+
+        <label style={{
+          display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 16,
+          padding: "10px 12px", background: "var(--bg-input)", borderRadius: "var(--radius-sm)",
+          border: "1px solid var(--border)", cursor: "pointer",
+        }}>
+          <input
+            type="checkbox"
+            checked={savePasswordLocally}
+            onChange={(e) => handleToggleSaveLocally(e.target.checked)}
+            style={{ marginTop: 2, flexShrink: 0 }}
+          />
+          <span>
+            <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+              기기에 저장 (LocalStorage)
+            </span>
+            <span style={{ display: "block", fontSize: 12, color: "var(--text-secondary)", marginTop: 2, lineHeight: 1.5 }}>
+              활성화 시 비밀번호를 매번 입력할 필요 없습니다.<br />
+              ⚠ 이 기기에 접근 가능한 사람은 비밀번호 없이 API Key를 사용할 수 있게 됩니다. 공용 PC에서는 사용하지 마세요.
+            </span>
+          </span>
+        </label>
 
         {error && <p style={errText}>{error}</p>}
         {okMsg && <p style={okText}>{okMsg}</p>}

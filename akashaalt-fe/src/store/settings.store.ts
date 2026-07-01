@@ -11,6 +11,12 @@ interface SettingsState {
   setMode:       (mode: ChatMode) => void;
   apiProvider:   AiProvider;
   setApiProvider: (provider: AiProvider) => void;
+  // "기기에 저장(LocalStorage)" — 켜져 있으면 AkashaAlt API 비밀번호를 이 기기의
+  // 브라우저 LocalStorage에 평문으로 저장해 매번 입력하지 않아도 자동 언락한다.
+  savePasswordLocally:    boolean;
+  setSavePasswordLocally: (v: boolean) => void;
+  savedVaultPassword:     string | null;
+  setSavedVaultPassword:  (password: string | null) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -22,6 +28,11 @@ export const useSettingsStore = create<SettingsState>()(
       setMode:        (mode) => set({ mode }),
       apiProvider:    "openrouter",
       setApiProvider: (apiProvider) => set({ apiProvider }),
+
+      savePasswordLocally:    false,
+      setSavePasswordLocally: (savePasswordLocally) => set({ savePasswordLocally }),
+      savedVaultPassword:     null,
+      setSavedVaultPassword:  (savedVaultPassword) => set({ savedVaultPassword }),
     }),
     { name: "akashaalt-settings" }
   )

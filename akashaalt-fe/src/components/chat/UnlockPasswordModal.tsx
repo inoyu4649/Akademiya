@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useChatStore } from "../../store/chat.store";
 import { useSettingsStore } from "../../store/settings.store";
 import { useAuthStore } from "../../store/auth.store";
 import { unlockVault } from "../../api/vault.api";
+import { tryAutoUnlock } from "../../lib/autoUnlock";
 
 // API 모드 채팅 중 볼트가 잠겨 있으면(streamError === VAULT_LOCKED) 비밀번호 입력 모달을 띄운다.
+// "기기에 저장" 옵션이 켜져 있으면 모달을 보여주기 전에 저장된 비밀번호로 조용히 자동 언락을 시도한다.
 export default function UnlockPasswordModal() {
   const streamError = useChatStore((s) => s.streamError);
   const mode = useSettingsStore((s) => s.mode);
@@ -15,9 +17,27 @@ export default function UnlockPasswordModal() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notSetup, setNotSetup] = useState(false);
+  const [checkingAuto, setCheckingAuto] = useState(false);
 
   const open = mode === "api" && streamError === "VAULT_LOCKED";
-  if (!open) return null;
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setCheckingAuto(true);
+    void (async () => {
+      const ok = await tryAutoUnlock();
+      if (cancelled) return;
+      if (ok) {
+        useChatStore.setState({ streamError: null });
+      } else {
+        setCheckingAuto(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
+  if (!open || checkingAuto) return null;
 
   const close = () => {
     useChatStore.setState({ streamError: null });
@@ -29,6 +49,9 @@ export default function UnlockPasswordModal() {
     setBusy(true); setError(null);
     try {
       await unlockVault(token, password);
+      if (useSettingsStore.getState().savePasswordLocally) {
+        useSettingsStore.getState().setSavedVaultPassword(password);
+      }
       setPassword("");
       useChatStore.setState({ streamError: null });
     } catch (e) {

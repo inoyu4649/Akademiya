@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { fetchModels, streamInfer, streamInferApi, type ModelInfo } from "../api/chat.api";
 import { getDefaultModel } from "../data/modelCatalog";
+import { tryAutoUnlock } from "../lib/autoUnlock";
 import { useSettingsStore } from "./settings.store";
 import { useAuthStore } from "./auth.store";
 import {
@@ -95,6 +96,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (mode === "api") {
       const def = getDefaultModel(apiProvider);
       set((s) => ({ availableModels: [], selectedModel: s.selectedModel || def }));
+      void tryAutoUnlock(); // "기기에 저장" 옵션이 켜져 있으면 조용히 미리 언락 시도
       return;
     }
     try {
