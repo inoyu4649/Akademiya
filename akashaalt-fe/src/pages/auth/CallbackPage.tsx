@@ -42,7 +42,7 @@ export default function CallbackPage() {
   return (
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "center",
-      height: "100vh", background: "var(--bg-base)", color: "var(--text-secondary)", fontSize: 14,
+      height: "100dvh", background: "var(--bg-base)", color: "var(--text-secondary)", fontSize: 14,
     }}>
       로그인 처리 중...
     </div>

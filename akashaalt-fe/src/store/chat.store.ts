@@ -39,9 +39,6 @@ interface ChatState {
   startNewChat:       () => void;
   sendMessage:        (content: string) => Promise<void>;
   deleteConversation: (id: number) => Promise<void>;
-
-  // ChatMessages.tsx 인터페이스 호환
-  currentMessages:    () => ChatMessage[];
 }
 
 // 401 → 인증 초기화 후 로그인 페이지로
@@ -75,8 +72,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
   toggleSidebar:  () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   setModel:       (modelId) => set({ selectedModel: modelId }),
-
-  currentMessages: () => get().loadedMessages,
 
   // 앱 초기화: 대화 목록 + 모델 목록 로드
   init: async () => {

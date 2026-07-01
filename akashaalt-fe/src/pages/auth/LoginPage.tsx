@@ -19,7 +19,7 @@ export default function LoginPage() {
   return (
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "center",
-      height: "100vh", background: "var(--bg-base)", color: "var(--text-secondary)", fontSize: 14,
+      height: "100dvh", background: "var(--bg-base)", color: "var(--text-secondary)", fontSize: 14,
     }}>
       Akademiya 로그인 페이지로 이동 중...
     </div>

@@ -76,11 +76,10 @@ const ERROR_LABELS: Record<string, string> = {
 };
 
 export default function ChatMessages() {
-  const currentMessages  = useChatStore((c) => c.currentMessages);
+  const messages         = useChatStore((s) => s.loadedMessages);
   const isStreaming      = useChatStore((s) => s.isStreaming);
   const streamingContent = useChatStore((s) => s.streamingContent);
   const streamError      = useChatStore((s) => s.streamError);
-  const messages         = currentMessages();
 
   const bottomRef = useRef<HTMLDivElement>(null);
 

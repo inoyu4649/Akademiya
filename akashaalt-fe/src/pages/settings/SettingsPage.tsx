@@ -62,7 +62,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div style={{ height: "100vh", overflow: "auto", background: "var(--bg-base)" }}>
+    <div style={{ height: "100dvh", overflow: "auto", background: "var(--bg-base)" }}>
       {/* Header */}
       <div style={{
         display: "flex", alignItems: "center", gap: 12, padding: "12px 20px",
