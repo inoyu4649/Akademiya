@@ -42,6 +42,7 @@ import TermsOfUsePage from "./pages/privacy/TermsOfUsePage";
 import OAuthAppsPage from "./pages/developer/OAuthAppsPage";
 import OAuthAppCreatePage from "./pages/developer/OAuthAppCreatePage";
 import OAuthAppDetailPage from "./pages/developer/OAuthAppDetailPage";
+import OAuthGuidePage from "./pages/developer/OAuthGuidePage";
 import OAuthAuthorizePage from "./pages/auth/OAuthAuthorizePage";
 import "./App.css";
 
@@ -97,6 +98,7 @@ const router = createBrowserRouter([
       { path: "surveys/:id/stats",      element: <SurveyStatsPage /> },
       { path: "developer/oauth",        element: <OAuthAppsPage /> },
       { path: "developer/oauth/create", element: <OAuthAppCreatePage /> },
+      { path: "developer/oauth/guide",  element: <OAuthGuidePage /> },
       { path: "developer/oauth/:id",    element: <OAuthAppDetailPage /> },
     ],
   },

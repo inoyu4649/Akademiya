@@ -37,6 +37,9 @@ export default function OAuthAppsPage() {
         <div>
           <h1 className={styles.pageTitle}>{t("developer.apps.title")}</h1>
           <p className={styles.pageSubtitle}>{t("developer.apps.subtitle")}</p>
+          <Link to="/developer/oauth/guide" className={styles.guideLink}>
+            {t("developer.apps.guideLink")}
+          </Link>
           {quota && (
             <p className={styles.pageSubtitle}>
               {t("developer.create.quotaUsage", { used: quota.used, max: quota.max })}

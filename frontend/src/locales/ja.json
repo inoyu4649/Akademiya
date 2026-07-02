@@ -781,6 +781,7 @@
     "apps": {
       "title": "Akademiya OAuth",
       "subtitle": "作成したOAuthアプリで「Akademiyaでログイン」を利用できます。",
+      "guideLink": "Akademiya OpenOAuth 利用ガイド",
       "createBtn": "新しいOAuthアプリを作成",
       "empty": "作成したOAuthアプリはまだありません。"
     },
@@ -887,6 +888,71 @@
       "copy": "コピー",
       "copied": "コピーしました",
       "closeBtn": "保存しました"
+    },
+    "guide": {
+      "title": "Akademiya OpenOAuth 利用ガイド",
+      "subtitle": "あなたのサービスに「Akademiyaでログイン」を組み込む方法を説明します。",
+      "iconAlt": "Akademiyaロゴ",
+      "buttonLabelExample": "Akademiyaでログイン",
+      "sections": {
+        "intro": {
+          "title": "概要",
+          "body": "Akademiya OpenOAuthは、あなたのサービスに「Akademiyaでログイン」機能を追加できるOAuth 2.0 認証プロバイダー(Identity Provider)です。\nGoogleやGitHubなど他のOAuthプロバイダーと同じ方式(Authorization Code + PKCE)で動作し、Akademiyaアカウントを持つユーザーが別途会員登録せずにあなたのサービスにログインできます。\n共有される情報はユーザーID(sub)、名前、メールアドレスのみで、それ以外の個人情報は共有されません。"
+        },
+        "setup": {
+          "title": "事前準備",
+          "body": "1. 会員情報編集メニューで「開発者モード」を有効にしてください。左側メニューに「開発者ツール」が表示されます。\n2.「開発者ツール → Akademiya OAuth → 新しいOAuthアプリを作成」でアプリを作成してください。\n- 内部コード名:英数字とハイフンのみ使用可能で、作成後は変更できません。\n- 外部表示名:ログイン・同意画面に表示される名前で、いつでも変更できます。\n- メインサイトURL:サービスを代表するURLを1つ(同意画面のリンクとして使用されます)。\n- ログイン許可手段:Akademiyaアカウント専用 / Googleアカウント専用 / 両方許可。\n- ログイン許可範囲:全体 / 特定の組織 / 特定のクラス / Google Workspaceドメイン。\n3. 作成時に発行されるクライアントIDとクライアントシークレットは、この画面を閉じると二度と確認できません。安全な場所に保存してください。クライアントシークレットは必ずサーバー側のみで保管し、フロントエンドのコードに露出させないでください。\n4. アプリ設定の「信頼できるJavaScriptオリジン」に、あなたのredirect_uriのオリジンを必ず登録してください。未登録のオリジンからのログイン要求は拒否されます。"
+        },
+        "flow": {
+          "title": "認証フローの概要",
+          "body": "Akademiya OpenOAuthはAuthorization Code Grant + PKCE(S256)方式のみをサポートします。全体の流れは4ステップです。\n- ステップ1:ユーザーをAkademiyaログイン画面にリダイレクトします。\n- ステップ2:ユーザーがログイン・同意すると、登録済みのredirect_uriに認可コード(code)が渡されます。\n- ステップ3:あなたのサーバーが認可コードをaccess_token/refresh_tokenに交換します。\n- ステップ4:access_tokenでユーザー情報(userinfo)を取得します。"
+        },
+        "step1": {
+          "title": "ステップ1 — ログイン画面へのリダイレクト",
+          "body": "まずcode_verifier(43〜128文字のランダムな文字列)を生成し、code_challenge = BASE64URL(SHA256(code_verifier))を計算してください。code_verifierはステップ3で使用するため、セッションなどに一時保存してください。\nCSRF対策のstate値も生成し、セッションに保存してください。\n以下のURLへユーザーのブラウザをトップレベルでリダイレクト(ページ全体の遷移)してください。ポップアップやiframeではなく通常のリダイレクトである必要があります。"
+        },
+        "step2": {
+          "title": "ステップ2 — コールバックの受信",
+          "body": "ユーザーがAkademiyaにログインし「許可」を押すと、登録済みのredirect_uriに次のクエリパラメータ付きでリダイレクトされます。\n- code:60秒間のみ有効な使い捨ての認可コード\n- state:ステップ1で送信した値と同一 — CSRF対策として、セッションに保存した値と必ず比較してください。\nユーザーが拒否した場合やエラーが発生した場合は、redirect_uriには戻らずAkademiya側の画面にエラーが表示されます。"
+        },
+        "step3": {
+          "title": "ステップ3 — トークン交換(サーバー間通信)",
+          "body": "codeを取得したら、あなたのバックエンドサーバーから以下のエンドポイントへ直接(サーバー間で)リクエストしてトークンに交換してください。このリクエストはブラウザではなくサーバーから呼び出す必要があり、クライアントシークレットが必要です。\nリクエストボディはJSONで、フィールド名はcamelCaseです(標準的なOAuth2のフォームエンコーディングではないのでご注意ください)。",
+          "bodyAfter": "access_tokenの有効期限は1時間、refresh_tokenは30日間です。"
+        },
+        "step4": {
+          "title": "ステップ4 — ユーザー情報の取得",
+          "body": "発行されたaccess_tokenでユーザー情報を取得してください。",
+          "bodyAfter": "scopeにprofileが含まれない場合はname、emailが含まれない場合はemailフィールドがレスポンスに含まれません。"
+        },
+        "refresh": {
+          "title": "リフレッシュトークン",
+          "body": "access_tokenの有効期限が切れた場合、refresh_tokenで再発行できます。リフレッシュトークンは使用するたびに新しい値に交換(ローテーション)され、以前の値は即座に失効します。"
+        },
+        "errors": {
+          "title": "主なエラーコード",
+          "body": "- INVALID_CLIENT:クライアントIDまたはクライアントシークレットが正しくありません。\n- REDIRECT_URI_NOT_WHITELISTED:redirect_uriのオリジンが信頼できるオリジンの一覧にありません。\n- PKCE_REQUIRED:code_challengeが存在しないか、code_challenge_methodがS256ではありません。\n- INVALID_OR_EXPIRED_CODE:認可コードが期限切れ(60秒)、または既に使用されています。\n- INVALID_CODE_VERIFIER:code_verifierがcode_challengeと一致しません。\n- OAUTH_APP_BANNED:このユーザーはこのアプリでBANされています。\n- OAUTH_NOT_ELIGIBLE:ユーザーがアプリのログイン許可範囲(組織・クラス・ドメイン)に属していません。\n- OAUTH_GOOGLE_ONLY:Google専用アプリですが、ユーザーがGoogleアカウントを連携していません。"
+        },
+        "security": {
+          "title": "セキュリティチェックリスト",
+          "body": "- PKCE(S256)は必須であり、任意ではありません。code_verifierは安全に保管してください。\n- クライアントシークレットは必ずサーバー側のみで保管してください。ブラウザやモバイルアプリにハードコーディングしないでください。\n- redirect_uriは事前に登録したオリジンと完全に一致する必要があります。\n- state値でCSRFを防止し、送信した値とコールバックで受け取った値を必ず比較してください。\n- access_token・refresh_tokenは安全な場所(サーバーセッション、HttpOnly Cookieなど)に保管し、クライアント側のJavaScriptに露出させないでください。"
+        },
+        "limits": {
+          "title": "利用上限",
+          "body": "誰でもログインできる「公開(Public)」範囲(全体・Google Workspace)のアプリは、アカウントごとに標準で5個まで作成できます。組織またはクラス単位に範囲を限定したアプリには個数制限がありません。\n公開アプリが5個を超えて必要な場合は、OAuthアプリ作成画面から上限拡張を申請できます。申請はAkademiya管理者の審査後に承認されます。"
+        },
+        "icons": {
+          "title": "ブランドアイコン",
+          "body": "「Akademiyaでログイン」ボタンに使用できるよう、Akademiyaのロゴを透過背景の複数サイズPNGで提供しています。ロゴの比率と色は変更せずそのまま使用してください。\n以下から必要なサイズをクリックしてダウンロードしてください(ファイル名の数字はピクセルサイズです)。高解像度ディスプレイ(Retinaなど)では、実際の表示サイズの2倍のファイルを使用することを推奨します。"
+        },
+        "button": {
+          "title": "「Akademiyaでログイン」ボタンの作成",
+          "intro": "GoogleやGitHubのログインボタンと同様に、上記のロゴと「Akademiyaでログイン」というテキストを併せて表示することを推奨します。以下はHTMLマークアップの例です(アイコンURLはAkademiyaサーバーの絶対パスを使用します)。",
+          "cssIntro": "ボタンのスタイルは自由にカスタマイズできます。以下はライト・ダークモード両方に対応した基本スタイルの例です。",
+          "jsIntro": "ボタンがクリックされたら、PKCEパラメータ(code_verifier、code_challenge)とCSRF対策用のstate値を生成してセッションに保存し、ステップ1で説明した認可URLへ遷移させる必要があります。以下はこれを処理する素のJavaScriptの例です。",
+          "jsAfter": "code_verifierとstateは、それぞれステップ3(トークン交換)のコード検証とコールバック検証に使用されるため、セッションに安全に保管してください。"
+        }
+      }
     }
   },
   "oauth": {

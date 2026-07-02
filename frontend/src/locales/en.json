@@ -781,6 +781,7 @@
     "apps": {
       "title": "Akademiya OAuth",
       "subtitle": "Use \"Sign in with Akademiya\" in the OAuth Apps you create.",
+      "guideLink": "Akademiya OpenOAuth Integration Guide",
       "createBtn": "Create New OAuth App",
       "empty": "You haven't created any OAuth Apps yet."
     },
@@ -887,6 +888,71 @@
       "copy": "Copy",
       "copied": "Copied",
       "closeBtn": "I've saved it"
+    },
+    "guide": {
+      "title": "Akademiya OpenOAuth Integration Guide",
+      "subtitle": "How to add \"Sign in with Akademiya\" to your service.",
+      "iconAlt": "Akademiya logo",
+      "buttonLabelExample": "Sign in with Akademiya",
+      "sections": {
+        "intro": {
+          "title": "Overview",
+          "body": "Akademiya OpenOAuth is an OAuth 2.0 identity provider that lets you add \"Sign in with Akademiya\" to your own service.\nIt works the same way as other OAuth providers such as Google or GitHub (Authorization Code + PKCE), allowing users with an Akademiya account to sign in to your service without creating a separate account.\nOnly the user ID (sub), name, and email are shared — no other personal data is exposed."
+        },
+        "setup": {
+          "title": "Before You Start",
+          "body": "1. Enable \"Developer Mode\" in the Edit Profile menu. A \"Developer Tools\" section will appear in the left sidebar.\n2. Create an app under \"Developer Tools → Akademiya OAuth → Create New OAuth App\".\n- Internal code name: letters, digits, and hyphens only; cannot be changed after creation.\n- Public display name: shown on the login/consent screen; can be changed at any time.\n- Main site URL: exactly one URL representing your service (used as the link on the consent screen).\n- Allowed sign-in methods: Akademiya account only / Google account only / both.\n- Allowed sign-in scope: everyone / a specific organization / a specific class / a Google Workspace domain.\n3. The Client ID and Client Secret shown at creation time can't be viewed again once you close that dialog. Save them somewhere safe. Keep the Client Secret on your server only — never expose it in frontend code.\n4. You must register your redirect_uri's origin under \"Trusted JavaScript Origins\" in the app settings. Sign-in requests from unregistered origins are rejected."
+        },
+        "flow": {
+          "title": "Flow Overview",
+          "body": "Akademiya OpenOAuth only supports the Authorization Code Grant with PKCE (S256). The full flow has 4 steps.\n- Step 1: Redirect the user to the Akademiya login screen.\n- Step 2: After the user logs in and consents, an authorization code is delivered to your registered redirect_uri.\n- Step 3: Your server exchanges the authorization code for an access_token/refresh_token.\n- Step 4: Use the access_token to fetch the user's info (userinfo)."
+        },
+        "step1": {
+          "title": "Step 1 — Redirect to the login screen",
+          "body": "First generate a code_verifier (a random string of 43–128 characters) and compute code_challenge = BASE64URL(SHA256(code_verifier)). Keep the code_verifier temporarily (e.g. in the session) — you'll need it in Step 3.\nAlso generate a state value to prevent CSRF and store it in the session.\nRedirect the user's browser (a full top-level navigation, not a popup or iframe) to the URL below."
+        },
+        "step2": {
+          "title": "Step 2 — Receiving the callback",
+          "body": "Once the user logs in to Akademiya and clicks \"Allow\", they are redirected to your registered redirect_uri with the following query parameters.\n- code: a one-time authorization code valid for only 60 seconds\n- state: the same value you sent in Step 1 — always compare it against the value stored in the session to prevent CSRF\nIf the user denies consent or an error occurs, they are not redirected back — an error is shown on the Akademiya screen instead."
+        },
+        "step3": {
+          "title": "Step 3 — Exchange the code for tokens (server-to-server)",
+          "body": "Once you have the code, exchange it for tokens by calling the endpoint below directly from your backend server (server-to-server). This call must come from your server, not the browser, and requires the Client Secret.\nThe request body is JSON, and field names are camelCase (note: this is not standard OAuth2 form encoding).",
+          "bodyAfter": "The access_token is valid for 1 hour, and the refresh_token for 30 days."
+        },
+        "step4": {
+          "title": "Step 4 — Fetch user info",
+          "body": "Use the issued access_token to fetch the user's info.",
+          "bodyAfter": "If the scope doesn't include \"profile\", the \"name\" field is omitted; if it doesn't include \"email\", the \"email\" field is omitted."
+        },
+        "refresh": {
+          "title": "Refresh Tokens",
+          "body": "When the access_token expires, you can obtain a new one with the refresh_token. Each time a refresh_token is used it is rotated (replaced with a new value), and the previous one is immediately revoked."
+        },
+        "errors": {
+          "title": "Common Error Codes",
+          "body": "- INVALID_CLIENT: the Client ID or Client Secret is incorrect.\n- REDIRECT_URI_NOT_WHITELISTED: the redirect_uri's origin isn't in the trusted origins list.\n- PKCE_REQUIRED: code_challenge is missing, or code_challenge_method isn't S256.\n- INVALID_OR_EXPIRED_CODE: the authorization code has expired (60s) or was already used.\n- INVALID_CODE_VERIFIER: the code_verifier doesn't match the code_challenge.\n- OAUTH_APP_BANNED: this user has been banned from this app.\n- OAUTH_NOT_ELIGIBLE: the user is outside the app's allowed sign-in scope (organization/class/domain).\n- OAUTH_GOOGLE_ONLY: this is a Google-only app and the user hasn't linked a Google account."
+        },
+        "security": {
+          "title": "Security Checklist",
+          "body": "- PKCE (S256) is mandatory, not optional. Store the code_verifier securely.\n- Keep the Client Secret on your server only — never hardcode it in browser or mobile app code.\n- redirect_uri must exactly match an origin you registered in advance.\n- Use the state value to prevent CSRF, and always compare the value you sent against the one returned in the callback.\n- Store access_token/refresh_token in a secure location (server session, HttpOnly cookie, etc.) — never expose them to client-side JavaScript."
+        },
+        "limits": {
+          "title": "Usage Limits",
+          "body": "\"Public\" apps (scope: everyone / Google Workspace), which anyone can sign in to, are limited to 5 per account by default. Apps scoped to a specific organization or class have no limit.\nIf you need more than 5 public apps, you can request a limit increase from the OAuth App creation screen. Requests are approved after review by an Akademiya administrator."
+        },
+        "icons": {
+          "title": "Brand Icon",
+          "body": "We provide the Akademiya logo as transparent PNGs at several sizes for use in your \"Sign in with Akademiya\" button. Please keep the logo's proportions and colors unchanged.\nClick a size below to download it (the number in the filename is the pixel size). On high-density displays (Retina, etc.), we recommend using the file at 2x your actual display size."
+        },
+        "button": {
+          "title": "Building a \"Sign in with Akademiya\" Button",
+          "intro": "Similar to Google or GitHub sign-in buttons, we recommend showing the logo above together with the text \"Sign in with Akademiya\". Below is a sample HTML markup (the icon URL uses an absolute path on the Akademiya server).",
+          "cssIntro": "You're free to customize the button's style. Below is a sample base style that supports both light and dark mode.",
+          "jsIntro": "When the button is clicked, generate the PKCE parameters (code_verifier, code_challenge) and a CSRF-preventing state value, store them in the session, and navigate to the authorization URL described in Step 1. Below is a plain JavaScript example that does this.",
+          "jsAfter": "Keep the code_verifier and state stored securely in the session — they're needed for code verification in Step 3 (token exchange) and for validating the callback, respectively."
+        }
+      }
     }
   },
   "oauth": {

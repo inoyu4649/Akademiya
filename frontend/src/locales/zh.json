@@ -781,6 +781,7 @@
     "apps": {
       "title": "Akademiya OAuth",
       "subtitle": "在您创建的 OAuth 应用中使用“使用 Akademiya 登录”功能。",
+      "guideLink": "Akademiya OpenOAuth 使用指南",
       "createBtn": "创建新的 OAuth 应用",
       "empty": "您还没有创建任何 OAuth 应用。"
     },
@@ -887,6 +888,71 @@
       "copy": "复制",
       "copied": "已复制",
       "closeBtn": "已保存"
+    },
+    "guide": {
+      "title": "Akademiya OpenOAuth 使用指南",
+      "subtitle": "介绍如何在您的服务中接入“使用 Akademiya 登录”功能。",
+      "iconAlt": "Akademiya 标志",
+      "buttonLabelExample": "使用 Akademiya 登录",
+      "sections": {
+        "intro": {
+          "title": "概述",
+          "body": "Akademiya OpenOAuth 是一个 OAuth 2.0 身份提供方(Identity Provider)，可让您在自己的服务中接入“使用 Akademiya 登录”功能。\n其工作方式与 Google、GitHub 等其他 OAuth 提供方相同(Authorization Code + PKCE)，拥有 Akademiya 账号的用户无需单独注册即可登录您的服务。\n仅会共享用户 ID(sub)、姓名和邮箱，不会共享其他个人信息。"
+        },
+        "setup": {
+          "title": "准备工作",
+          "body": "1. 在“编辑个人信息”菜单中启用“开发者模式”。左侧菜单将出现“开发者工具”。\n2. 在“开发者工具 → Akademiya OAuth → 创建新的 OAuth 应用”中创建应用。\n- 内部代码名:仅可使用英文字母、数字和连字符，创建后无法更改。\n- 对外显示名称:显示在登录/授权页面上的名称，可随时修改。\n- 主站点 URL:代表该服务的唯一 URL(将用作授权页面的链接)。\n- 允许的登录方式:仅限 Akademiya 账号 / 仅限 Google 账号 / 两者均可。\n- 允许的登录范围:全体 / 指定组织 / 指定班级 / Google Workspace 域名。\n3. 创建时生成的 Client ID 和 Client Secret 在关闭该窗口后将无法再次查看，请妥善保存。Client Secret 必须只保存在服务器端，切勿暴露在前端代码中。\n4. 必须在应用设置的“可信 JavaScript 来源”中登记您的 redirect_uri 来源(Origin)，未登记来源发起的登录请求将被拒绝。"
+        },
+        "flow": {
+          "title": "认证流程概览",
+          "body": "Akademiya OpenOAuth 仅支持 Authorization Code Grant + PKCE(S256)方式，整个流程共 4 个步骤。\n- 第 1 步:将用户重定向到 Akademiya 登录页面。\n- 第 2 步:用户登录并同意授权后，授权码(code)会被传递到已登记的 redirect_uri。\n- 第 3 步:您的服务器用授权码换取 access_token/refresh_token。\n- 第 4 步:使用 access_token 获取用户信息(userinfo)。"
+        },
+        "step1": {
+          "title": "第 1 步 — 重定向到登录页面",
+          "body": "首先生成 code_verifier(43~128 位随机字符串)，并计算 code_challenge = BASE64URL(SHA256(code_verifier))。code_verifier 需临时保存(如存入会话)，第 3 步会用到。\n同时生成用于防止 CSRF 的 state 值并保存到会话中。\n将用户浏览器整页重定向(而非弹窗或 iframe)到以下 URL。"
+        },
+        "step2": {
+          "title": "第 2 步 — 接收回调",
+          "body": "用户在 Akademiya 登录并点击“允许”后，会带着以下查询参数被重定向到您登记的 redirect_uri。\n- code:仅 60 秒内有效的一次性授权码\n- state:与第 1 步发送的值相同 — 请务必与会话中保存的值进行比对以防止 CSRF。\n若用户拒绝授权或发生错误，则不会返回 redirect_uri，而是在 Akademiya 页面显示错误信息。"
+        },
+        "step3": {
+          "title": "第 3 步 — 用授权码换取令牌(服务器对服务器)",
+          "body": "获取 code 后，请由您的后端服务器直接(服务器对服务器)调用以下接口换取令牌。此请求必须由服务器而非浏览器发起，且需要 Client Secret。\n请求体为 JSON 格式，字段名为 camelCase(请注意这不是标准的 OAuth2 表单编码)。",
+          "bodyAfter": "access_token 有效期为 1 小时，refresh_token 有效期为 30 天。"
+        },
+        "step4": {
+          "title": "第 4 步 — 获取用户信息",
+          "body": "使用签发的 access_token 获取用户信息。",
+          "bodyAfter": "若 scope 不包含 profile，响应中将不含 name 字段；不包含 email 时将不含 email 字段。"
+        },
+        "refresh": {
+          "title": "刷新令牌",
+          "body": "access_token 过期后，可使用 refresh_token 重新签发。每次使用 refresh_token 都会被轮换为新值，旧值会立即失效。"
+        },
+        "errors": {
+          "title": "常见错误代码",
+          "body": "- INVALID_CLIENT:Client ID 或 Client Secret 不正确。\n- REDIRECT_URI_NOT_WHITELISTED:redirect_uri 的来源不在可信来源列表中。\n- PKCE_REQUIRED:缺少 code_challenge，或 code_challenge_method 不是 S256。\n- INVALID_OR_EXPIRED_CODE:授权码已过期(60 秒)或已被使用。\n- INVALID_CODE_VERIFIER:code_verifier 与 code_challenge 不匹配。\n- OAUTH_APP_BANNED:该用户已在此应用中被封禁(BAN)。\n- OAUTH_NOT_ELIGIBLE:用户不在该应用允许的登录范围内(组织/班级/域名)。\n- OAUTH_GOOGLE_ONLY:该应用仅限 Google 登录，但用户尚未绑定 Google 账号。"
+        },
+        "security": {
+          "title": "安全检查清单",
+          "body": "- PKCE(S256)是强制要求，并非可选项。请妥善保管 code_verifier。\n- Client Secret 必须只保存在服务器端，切勿硬编码在浏览器或移动应用代码中。\n- redirect_uri 必须与您事先登记的来源完全一致。\n- 使用 state 值防止 CSRF，并务必比对发送时的值与回调收到的值。\n- 请将 access_token/refresh_token 保存在安全位置(如服务器会话、HttpOnly Cookie 等)，切勿暴露给客户端 JavaScript。"
+        },
+        "limits": {
+          "title": "使用限制",
+          "body": "任何人都可登录的“公开(Public)”范围(全体/Google Workspace)应用，每个账号默认最多可创建 5 个。仅限组织或班级范围的应用则不限数量。\n如公开应用超过 5 个仍有需求，可在 OAuth 应用创建页面申请扩大上限，经 Akademiya 管理员审核后生效。"
+        },
+        "icons": {
+          "title": "品牌图标",
+          "body": "我们提供多种尺寸的透明背景 PNG 格式 Akademiya 标志，供您在“使用 Akademiya 登录”按钮中使用。请保持标志的比例和颜色不变。\n点击下方所需尺寸即可下载(文件名中的数字为像素尺寸)。在高分辨率显示屏(如 Retina)上，建议使用实际显示尺寸 2 倍的文件。"
+        },
+        "button": {
+          "title": "创建“使用 Akademiya 登录”按钮",
+          "intro": "与 Google、GitHub 的登录按钮类似，建议将上方的标志与“使用 Akademiya 登录”文字一起显示。以下是参考用的 HTML 标记示例(图标 URL 使用 Akademiya 服务器上的绝对路径)。",
+          "cssIntro": "按钮样式可自由定制。以下是同时支持浅色与深色模式的基础样式示例。",
+          "jsIntro": "点击按钮后，需要生成 PKCE 参数(code_verifier、code_challenge)以及用于防止 CSRF 的 state 值并保存到会话中，然后跳转到第 1 步中说明的授权 URL。以下是处理该流程的原生 JavaScript 示例。",
+          "jsAfter": "code_verifier 和 state 需要妥善保存在会话中，二者将分别用于第 3 步(令牌交换)的代码校验和回调校验。"
+        }
+      }
     }
   },
   "oauth": {
