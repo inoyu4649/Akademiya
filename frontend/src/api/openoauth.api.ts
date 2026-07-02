@@ -76,12 +76,23 @@ export interface OAuthUserSearchResult {
   display_name: string;
 }
 
+export interface OAuthAppQuota {
+  used: number;
+  max: number;
+}
+
 export const openoauthApi = {
   // ── 앱 관리 ──────────────────────────────────────────────────────────
   listApps: () => client.get<{ apps: OAuthApp[] }>("/openoauth/apps"),
 
   createApp: (data: OAuthAppCreate) =>
     client.post<OAuthAppCreatedSecret>("/openoauth/apps", data),
+
+  // ── 공개(Public) 앱 개수 한도 ────────────────────────────────────────
+  getQuota: () => client.get<OAuthAppQuota>("/openoauth/apps/quota"),
+
+  requestQuota: (requestedMaxApps: number, reason?: string) =>
+    client.post("/openoauth/quota-requests", { requestedMaxApps, reason }),
 
   getApp: (id: number) =>
     client.get<{ app: OAuthApp; origins: OAuthAppOrigin[] }>(`/openoauth/apps/${id}`),

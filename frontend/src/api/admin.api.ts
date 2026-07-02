@@ -46,6 +46,18 @@ export interface ResourceLimitRequest {
   created_at: string;
 }
 
+export interface OAuthQuotaRequest {
+  id: number;
+  requester_name: string;
+  requester_email: string;
+  requested_max_apps: number;
+  current_max_apps: number;
+  reason: string | null;
+  status: string;
+  admin_note: string | null;
+  created_at: string;
+}
+
 export const adminApi = {
   getOrgs: () => client.get<{ orgs: PendingOrg[] }>("/admin/orgs"),
   approveOrg: (id: number) => client.post(`/admin/orgs/${id}/approve`),
@@ -64,4 +76,11 @@ export const adminApi = {
     client.post(`/admin/resource-limit-requests/${id}/approve`, { admin_note }),
   rejectResourceLimitRequest: (id: number, admin_note?: string) =>
     client.post(`/admin/resource-limit-requests/${id}/reject`, { admin_note }),
+
+  getOAuthQuotaRequests: (status = "pending") =>
+    client.get<{ requests: OAuthQuotaRequest[] }>("/admin/oauth-quota-requests", { params: { status } }),
+  approveOAuthQuotaRequest: (id: number, admin_note?: string) =>
+    client.post(`/admin/oauth-quota-requests/${id}/approve`, { admin_note }),
+  rejectOAuthQuotaRequest: (id: number, admin_note?: string) =>
+    client.post(`/admin/oauth-quota-requests/${id}/reject`, { admin_note }),
 };

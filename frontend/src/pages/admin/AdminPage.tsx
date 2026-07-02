@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/auth.store";
-import { adminApi, type PendingOrg, type LimitRequest, type ResourceLimitRequest } from "../../api/admin.api";
+import { adminApi, type PendingOrg, type LimitRequest, type ResourceLimitRequest, type OAuthQuotaRequest } from "../../api/admin.api";
 import { bugReportApi, type BugReport } from "../../api/bugReport.api";
 import styles from "./AdminPage.module.css";
 
@@ -45,6 +45,8 @@ export default function AdminPage() {
   const [limitNotes,        setLimitNotes]         = useState<Record<number, string>>({});
   const [resourceLimitReqs, setResourceLimitReqs] = useState<ResourceLimitRequest[]>([]);
   const [resLimitNotes,     setResLimitNotes]      = useState<Record<number, string>>({});
+  const [oauthQuotaReqs,    setOauthQuotaReqs]     = useState<OAuthQuotaRequest[]>([]);
+  const [oauthQuotaNotes,   setOauthQuotaNotes]    = useState<Record<number, string>>({});
 
   const [toast, setToast] = useState("");
 
@@ -68,6 +70,9 @@ export default function AdminPage() {
       .catch(() => {});
     adminApi.getResourceLimitRequests("pending")
       .then((r) => setResourceLimitReqs(r.data.requests))
+      .catch(() => {});
+    adminApi.getOAuthQuotaRequests("pending")
+      .then((r) => setOauthQuotaReqs(r.data.requests))
       .catch(() => {});
   }, [tab]);
 
@@ -430,6 +435,70 @@ export default function AdminPage() {
                       onClick={async () => {
                         await adminApi.rejectResourceLimitRequest(r.id, resLimitNotes[r.id]);
                         setResourceLimitReqs((prev) => prev.filter((x) => x.id !== r.id));
+                        showToast(t("admin.limitRequests.rejectSuccess"));
+                      }}
+                    >
+                      {t("admin.limitRequests.reject")}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── OAuth 공개 앱 한도 확장 요청 ── */}
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 12, marginTop: 28 }}>
+            {t("admin.oauthQuotaRequests.title")}
+          </h3>
+          {oauthQuotaReqs.length === 0 ? (
+            <p className={styles.empty}>{t("admin.limitRequests.noRequests")}</p>
+          ) : (
+            <div className={styles.list}>
+              {oauthQuotaReqs.map((r) => (
+                <div key={r.id} className={styles.card}>
+                  <div className={styles.cardMain}>
+                    <div className={styles.orgName}>{r.requester_name} ({r.requester_email})</div>
+                    <div className={styles.orgMeta}>
+                      <span>
+                        <span className={styles.metaLabel}>{t("admin.limitRequests.current")}:</span>
+                        {" "}{r.current_max_apps}개
+                      </span>
+                      <span>
+                        <span className={styles.metaLabel}>{t("admin.limitRequests.requested")}:</span>
+                        {" "}{r.requested_max_apps}개
+                      </span>
+                      {r.reason && (
+                        <span>
+                          <span className={styles.metaLabel}>{t("admin.limitRequests.reason")}:</span>
+                          {" "}{r.reason}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
+                      <input
+                        className={styles.noteInput}
+                        placeholder={t("admin.limitRequests.notePlaceholder")}
+                        value={oauthQuotaNotes[r.id] ?? ""}
+                        onChange={(e) => setOauthQuotaNotes((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className={styles.cardActions}>
+                    <button
+                      className={styles.btnApprove}
+                      onClick={async () => {
+                        await adminApi.approveOAuthQuotaRequest(r.id, oauthQuotaNotes[r.id]);
+                        setOauthQuotaReqs((prev) => prev.filter((x) => x.id !== r.id));
+                        showToast(t("admin.limitRequests.approveSuccess"));
+                      }}
+                    >
+                      {t("admin.limitRequests.approve")}
+                    </button>
+                    <button
+                      className={styles.btnReject}
+                      onClick={async () => {
+                        await adminApi.rejectOAuthQuotaRequest(r.id, oauthQuotaNotes[r.id]);
+                        setOauthQuotaReqs((prev) => prev.filter((x) => x.id !== r.id));
                         showToast(t("admin.limitRequests.rejectSuccess"));
                       }}
                     >

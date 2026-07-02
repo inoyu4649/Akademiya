@@ -748,6 +748,9 @@
     "resourceLimitRequests": {
       "title": "资料室文件上限扩大申请"
     },
+    "oauthQuotaRequests": {
+      "title": "OAuth 公开应用上限扩大申请"
+    },
     "orgs": {
       "title": "组织创建申请",
       "noRequests": "暂无待审核的申请。",
@@ -800,6 +803,15 @@
       "scopeDomainRequired": "请输入 Google Workspace 域名。",
       "scopeOrgPlaceholder": "请选择组织",
       "scopeClassPlaceholder": "请选择班级",
+      "quotaUsage": "公开应用 {{used}}/{{max}} 个已使用(组织/班级应用不限数量)",
+      "quotaExceeded": "已达到公开应用数量上限({{max}} 个)。",
+      "quotaSectionTitle": "公开应用数量上限",
+      "requestQuotaExpand": "申请扩大上限",
+      "reqMaxApps": "申请的最大应用数",
+      "reqReason": "申请理由(可选)",
+      "reqReasonPlaceholder": "请输入需要扩大上限的理由",
+      "submitQuotaRequest": "提交申请",
+      "quotaRequested": "上限扩大申请已提交。",
       "submitBtn": "创建"
     },
     "loginMeans": {

@@ -27,6 +27,10 @@ const ACCESS_TOKEN_TTL_SEC = 60 * 60; // 1시간
 const REFRESH_TOKEN_TTL_DAYS = 30;
 const CODE_NAME_RE = /^[a-zA-Z0-9-]{3,64}$/;
 
+// "공개(Public)" 범위 — 조직/반에 종속되지 않아 계정당 개수를 제한한다.
+// org/class 범위는 해당 조직/반 소속 권한이 전제되므로 무제한.
+const PUBLIC_SCOPE_RANGES = ["all", "google_workspace"];
+
 // 학교 공용 IP(같은 반/조직이 동일 egress IP를 공유)를 고려해 여유 있게 설정
 // (survey 공개응답 rate limit 상향 사례와 동일한 이유 — [[user-preferences]])
 const providerLimiter = rateLimit({
@@ -55,6 +59,18 @@ async function getOwnedApp(appId: number, ownerId: number): Promise<Row | null> 
   const [rows] = await pool.query("SELECT * FROM oauth_apps WHERE id = ? AND owner_id = ?", [appId, ownerId]);
   const apps = rows as Row[];
   return apps[0] ?? null;
+}
+
+/** 이 사용자의 "공개(Public)" 범위 앱 사용량/한도 조회 */
+async function getPublicAppUsage(userId: number): Promise<{ used: number; max: number }> {
+  const [countRows] = await pool.query(
+    "SELECT COUNT(*) AS cnt FROM oauth_apps WHERE owner_id = ? AND scope_range IN ('all','google_workspace')",
+    [userId]
+  );
+  const used = Number((countRows as Row[])[0]?.cnt ?? 0);
+  const [userRows] = await pool.query("SELECT max_oauth_public_apps FROM users WHERE id = ?", [userId]);
+  const max = Number((userRows as Row[])[0]?.max_oauth_public_apps ?? 5);
+  return { used, max };
 }
 
 function genClientId(): string {
@@ -201,6 +217,14 @@ router.post("/apps", requireAuth, requireDeveloper, async (req, res) => {
     return;
   }
 
+  if (PUBLIC_SCOPE_RANGES.includes(scopeRange as string)) {
+    const { used, max } = await getPublicAppUsage(req.user!.id);
+    if (used >= max) {
+      res.status(403).json({ error: "PUBLIC_APP_QUOTA_EXCEEDED", used, max });
+      return;
+    }
+  }
+
   const clientId = genClientId();
   const clientSecret = genClientSecret();
 
@@ -234,6 +258,13 @@ router.post("/apps", requireAuth, requireDeveloper, async (req, res) => {
     console.error("[openoauth] apps 생성 실패", err);
     res.status(500).json({ error: "SERVER_ERROR" });
   }
+});
+
+// ── GET /apps/quota — 공개(Public) 앱 사용량/한도 조회 ───────────────────────
+// 라우트 순서 주의: "/apps/:id"보다 먼저 등록해야 "quota"가 :id로 매칭되지 않음
+router.get("/apps/quota", requireAuth, requireDeveloper, async (req, res) => {
+  const usage = await getPublicAppUsage(req.user!.id);
+  res.json(usage);
 });
 
 // ── GET /apps/:id ──────────────────────────────────────────────────────────
@@ -289,6 +320,17 @@ router.patch("/apps/:id", requireAuth, requireDeveloper, async (req, res) => {
   }
   if (finalScopeRange === "google_workspace" && finalLoginMeans !== "google") {
     res.status(400).json({ error: "GOOGLE_WORKSPACE_REQUIRES_GOOGLE_ONLY" }); return;
+  }
+  if (
+    scopeRange !== undefined &&
+    PUBLIC_SCOPE_RANGES.includes(finalScopeRange) &&
+    !PUBLIC_SCOPE_RANGES.includes(app.scope_range as string)
+  ) {
+    const { used, max } = await getPublicAppUsage(req.user!.id);
+    if (used >= max) {
+      res.status(403).json({ error: "PUBLIC_APP_QUOTA_EXCEEDED", used, max });
+      return;
+    }
   }
   if (scopeOrgId !== undefined) {
     updates.push("scope_org_id = ?"); values.push(scopeOrgId ? Number(scopeOrgId) : null);
@@ -486,6 +528,25 @@ router.delete("/apps/:id/bans/:userId", requireAuth, requireDeveloper, async (re
   if (!app) { res.status(404).json({ error: "NOT_FOUND" }); return; }
   await pool.query("DELETE FROM oauth_app_bans WHERE app_id = ? AND user_id = ?", [app.id, Number(req.params.userId)]);
   res.json({ ok: true });
+});
+
+// ── POST /quota-requests — 공개(Public) 앱 개수 한도 확장 요청 ───────────────
+// (자료실 파일 한도 확장 요청 resources.ts의 POST /limit-request와 동일한 패턴)
+router.post("/quota-requests", requireAuth, requireDeveloper, async (req, res) => {
+  const { requestedMaxApps, reason } = req.body as Record<string, unknown>;
+  const { max: currentMax } = await getPublicAppUsage(req.user!.id);
+  const requested = Number(requestedMaxApps);
+
+  if (!Number.isFinite(requested) || requested <= currentMax) {
+    res.status(400).json({ error: "INVALID_REQUESTED_MAX" });
+    return;
+  }
+
+  await pool.query(
+    `INSERT INTO oauth_app_quota_requests (requester_id, requested_max_apps, reason) VALUES (?, ?, ?)`,
+    [req.user!.id, requested, typeof reason === "string" && reason.trim() ? reason.trim() : null]
+  );
+  res.status(201).json({ message: "requested" });
 });
 
 // ════════════════════════════════════════════════════════════════════════

@@ -748,6 +748,9 @@
     "resourceLimitRequests": {
       "title": "資料室ファイル上限拡張申請"
     },
+    "oauthQuotaRequests": {
+      "title": "OAuth公開アプリ上限拡張申請"
+    },
     "orgs": {
       "title": "組織作成申請",
       "noRequests": "申請中のものはありません。",
@@ -800,6 +803,15 @@
       "scopeDomainRequired": "Google Workspaceドメインを入力してください。",
       "scopeOrgPlaceholder": "組織を選択",
       "scopeClassPlaceholder": "クラスを選択",
+      "quotaUsage": "公開アプリ {{used}}/{{max}}個使用中(組織/クラスアプリは無制限)",
+      "quotaExceeded": "公開アプリの上限({{max}}個)に達しました。",
+      "quotaSectionTitle": "公開アプリ数の上限",
+      "requestQuotaExpand": "上限拡張申請",
+      "reqMaxApps": "申請する最大アプリ数",
+      "reqReason": "申請理由(任意)",
+      "reqReasonPlaceholder": "上限拡張が必要な理由を入力してください",
+      "submitQuotaRequest": "拡張申請",
+      "quotaRequested": "上限拡張申請を受け付けました。",
       "submitBtn": "作成"
     },
     "loginMeans": {

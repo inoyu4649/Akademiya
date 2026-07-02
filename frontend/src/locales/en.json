@@ -748,6 +748,9 @@
     "resourceLimitRequests": {
       "title": "Resource File Limit Requests"
     },
+    "oauthQuotaRequests": {
+      "title": "OAuth Public App Limit Requests"
+    },
     "orgs": {
       "title": "Organization Applications",
       "noRequests": "No pending applications.",
@@ -800,6 +803,15 @@
       "scopeDomainRequired": "Please enter a Google Workspace domain.",
       "scopeOrgPlaceholder": "Select an organization",
       "scopeClassPlaceholder": "Select a class",
+      "quotaUsage": "Public apps: {{used}}/{{max}} used (org/class apps are unlimited)",
+      "quotaExceeded": "You've reached the public app limit ({{max}}).",
+      "quotaSectionTitle": "Public App Limit",
+      "requestQuotaExpand": "Request Limit Increase",
+      "reqMaxApps": "Requested max apps",
+      "reqReason": "Reason (optional)",
+      "reqReasonPlaceholder": "Explain why you need a higher limit",
+      "submitQuotaRequest": "Submit Request",
+      "quotaRequested": "Your limit increase request has been submitted.",
       "submitBtn": "Create"
     },
     "loginMeans": {

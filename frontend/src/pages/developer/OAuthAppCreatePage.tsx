@@ -2,13 +2,81 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/auth.store";
-import { openoauthApi, type LoginMeans, type ScopeRange } from "../../api/openoauth.api";
+import { openoauthApi, type LoginMeans, type ScopeRange, type OAuthAppQuota } from "../../api/openoauth.api";
 import { orgApi, type Org } from "../../api/org.api";
 import { classApi, type ClassItem } from "../../api/class.api";
 import SecretRevealModal from "../../components/developer/SecretRevealModal";
 import styles from "./Developer.module.css";
 
 const CODE_NAME_RE = /^[a-zA-Z0-9-]{3,64}$/;
+const PUBLIC_SCOPE_RANGES: ScopeRange[] = ["all", "google_workspace"];
+
+// ── 공개(Public) 앱 한도 확장 요청 섹션 ────────────────────────────────────────
+function QuotaRequestSection({
+  quota,
+  onToast,
+}: {
+  quota: OAuthAppQuota;
+  onToast: (msg: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen]     = useState(false);
+  const [reqMax, setReqMax] = useState(quota.max + 5);
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleRequest() {
+    setLoading(true);
+    try {
+      await openoauthApi.requestQuota(reqMax, reason.trim() || undefined);
+      onToast(t("developer.create.quotaRequested"));
+      setOpen(false);
+      setReason("");
+    } catch {
+      onToast(t("common.error"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className={styles.limitSection}>
+      <p className={styles.limitSectionTitle}>{t("developer.create.quotaSectionTitle")}</p>
+      <div className={styles.limitInfo}>
+        <span className={styles.hint}>{t("developer.create.quotaExceeded", { max: quota.max })}</span>
+        <button className={styles.btnSecondary} type="button" onClick={() => setOpen((o) => !o)}>
+          {t("developer.create.requestQuotaExpand")}
+        </button>
+      </div>
+      {open && (
+        <div className={styles.limitForm}>
+          <div className={styles.limitRow}>
+            <label className={styles.limitLabel}>{t("developer.create.reqMaxApps")}</label>
+            <input
+              className={styles.limitInput}
+              type="number"
+              min={quota.max + 1}
+              value={reqMax}
+              onChange={(e) => setReqMax(Number(e.target.value))}
+            />
+          </div>
+          <div className={styles.limitRow}>
+            <label className={styles.limitLabel}>{t("developer.create.reqReason")}</label>
+            <input
+              className={styles.limitInput}
+              placeholder={t("developer.create.reqReasonPlaceholder")}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+          </div>
+          <button className={styles.btn} type="button" onClick={handleRequest} disabled={loading}>
+            {loading ? t("common.loading") : t("developer.create.submitQuotaRequest")}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function OAuthAppCreatePage() {
   const { t } = useTranslation();
@@ -31,11 +99,23 @@ export default function OAuthAppCreatePage() {
   const [loading, setLoading] = useState(false);
   const [created, setCreated] = useState<{ id: number; clientId: string; clientSecret: string } | null>(null);
 
+  const [quota, setQuota] = useState<OAuthAppQuota | null>(null);
+  const [toast, setToast] = useState("");
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(""), 3000);
+  }
+
   useEffect(() => {
     if (!user?.developerMode) { navigate("/"); return; }
     orgApi.my().then((r) => setOrgs(r.data.orgs)).catch(() => {});
     classApi.my().then((r) => setClasses(r.data.classes)).catch(() => {});
+    openoauthApi.getQuota().then((r) => setQuota(r.data)).catch(() => {});
   }, [user]);
+
+  const isPublicScope = PUBLIC_SCOPE_RANGES.includes(scopeRange);
+  const quotaExceeded = !!quota && isPublicScope && quota.used >= quota.max;
 
   // Google Workspace 범위는 Google 전용 로그인 수단일 때만 선택 가능
   useEffect(() => {
@@ -51,6 +131,7 @@ export default function OAuthAppCreatePage() {
     if (scopeRange === "org" && !scopeOrgId) { setError(t("developer.create.scopeOrgRequired")); return; }
     if (scopeRange === "class" && !scopeClassId) { setError(t("developer.create.scopeClassRequired")); return; }
     if (scopeRange === "google_workspace" && !scopeGoogleDomain.trim()) { setError(t("developer.create.scopeDomainRequired")); return; }
+    if (quotaExceeded) { setError(t("developer.create.quotaExceeded", { max: quota!.max })); return; }
 
     setLoading(true);
     try {
@@ -68,6 +149,10 @@ export default function OAuthAppCreatePage() {
     } catch (err: unknown) {
       const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       if (code === "CODE_NAME_EXISTS") setError(t("developer.create.codeNameExists"));
+      else if (code === "PUBLIC_APP_QUOTA_EXCEEDED") {
+        setError(t("developer.create.quotaExceeded", { max: quota?.max ?? 5 }));
+        openoauthApi.getQuota().then((r) => setQuota(r.data)).catch(() => {});
+      }
       else setError(t("common.error"));
     } finally {
       setLoading(false);
@@ -187,10 +272,16 @@ export default function OAuthAppCreatePage() {
               placeholder="school.edu"
             />
           )}
+
+          {quota && isPublicScope && (
+            <p className={styles.hint} style={{ marginTop: 10 }}>
+              {t("developer.create.quotaUsage", { used: quota.used, max: quota.max })}
+            </p>
+          )}
         </div>
 
         <div className={styles.btnRow}>
-          <button className={styles.btn} type="submit" disabled={loading}>
+          <button className={styles.btn} type="submit" disabled={loading || quotaExceeded}>
             {loading ? t("common.loading") : t("developer.create.submitBtn")}
           </button>
           <button className={styles.btnSecondary} type="button" onClick={() => navigate("/developer/oauth")}>
@@ -198,6 +289,14 @@ export default function OAuthAppCreatePage() {
           </button>
         </div>
       </form>
+
+      {toast && <div className={styles.alertSuccess} style={{ maxWidth: 560, marginTop: 16 }}>{toast}</div>}
+
+      {quotaExceeded && quota && (
+        <div className={styles.form} style={{ marginTop: 16 }}>
+          <QuotaRequestSection quota={quota} onToast={showToast} />
+        </div>
+      )}
     </div>
   );
 }

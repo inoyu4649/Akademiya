@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/auth.store";
-import { openoauthApi, type OAuthApp } from "../../api/openoauth.api";
+import { openoauthApi, type OAuthApp, type OAuthAppQuota } from "../../api/openoauth.api";
 import styles from "./Developer.module.css";
 
 const LOGIN_MEANS_KEY: Record<string, string> = {
@@ -18,6 +18,7 @@ export default function OAuthAppsPage() {
 
   const [apps, setApps] = useState<OAuthApp[]>([]);
   const [loading, setLoading] = useState(true);
+  const [quota, setQuota] = useState<OAuthAppQuota | null>(null);
 
   useEffect(() => {
     if (!user?.developerMode) { navigate("/"); return; }
@@ -25,6 +26,7 @@ export default function OAuthAppsPage() {
       .then((res) => setApps(res.data.apps))
       .catch(() => {})
       .finally(() => setLoading(false));
+    openoauthApi.getQuota().then((r) => setQuota(r.data)).catch(() => {});
   }, [user]);
 
   if (loading) return <div className={styles.loading}>{t("common.loading")}</div>;
@@ -35,6 +37,11 @@ export default function OAuthAppsPage() {
         <div>
           <h1 className={styles.pageTitle}>{t("developer.apps.title")}</h1>
           <p className={styles.pageSubtitle}>{t("developer.apps.subtitle")}</p>
+          {quota && (
+            <p className={styles.pageSubtitle}>
+              {t("developer.create.quotaUsage", { used: quota.used, max: quota.max })}
+            </p>
+          )}
         </div>
         <button className={styles.createBtn} onClick={() => navigate("/developer/oauth/create")}>
           {t("developer.apps.createBtn")}

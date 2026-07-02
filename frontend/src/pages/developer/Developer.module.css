@@ -205,8 +205,8 @@
 
 .btn {
   padding: 10px 20px;
-  background: var(--accent-dark);
-  color: #fff;
+  background: var(--accent);
+  color: #000;
   border: none;
   border-radius: var(--radius-sm);
   font-size: 14px;
@@ -214,7 +214,7 @@
   cursor: pointer;
   transition: background 0.15s;
 }
-.btn:hover:not(:disabled) { background: var(--accent); }
+.btn:hover:not(:disabled) { background: var(--accent-hover); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .btnRow {
@@ -540,6 +540,67 @@
 }
 .dangerBtn:hover { background: rgba(244, 67, 54, 0.12); border-color: rgba(244, 67, 54, 0.7); }
 
+/* ── 한도 확장 요청 (공개 앱 개수 / 자료실 확장 요청과 동일 패턴) ── */
+.limitSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.limitSectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.limitInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.limitForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+
+.limitRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.limitLabel {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  min-width: 130px;
+  flex-shrink: 0;
+}
+
+.limitInput {
+  width: 100%;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.limitInput:focus { border-color: var(--accent); }
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .page { padding: 16px; }
@@ -548,4 +609,5 @@
   .statCards { grid-template-columns: 1fr; }
   .headerRow { flex-direction: column; align-items: flex-start; }
   .createBtn { width: 100%; }
+  .limitInfo { flex-direction: column; align-items: flex-start; }
 }

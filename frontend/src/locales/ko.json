@@ -748,6 +748,9 @@
     "resourceLimitRequests": {
       "title": "자료실 파일 한도 확장 요청"
     },
+    "oauthQuotaRequests": {
+      "title": "OAuth 공개 앱 한도 확장 요청"
+    },
     "orgs": {
       "title": "조직 생성 신청",
       "noRequests": "대기 중인 신청이 없습니다.",
@@ -800,6 +803,15 @@
       "scopeDomainRequired": "Google Workspace 도메인을 입력해주세요.",
       "scopeOrgPlaceholder": "조직을 선택하세요",
       "scopeClassPlaceholder": "반을 선택하세요",
+      "quotaUsage": "공개(Public) 앱 {{used}}/{{max}}개 사용 중 (조직/반 앱은 무제한)",
+      "quotaExceeded": "공개 앱 한도({{max}}개)에 도달했습니다.",
+      "quotaSectionTitle": "공개 앱 개수 한도",
+      "requestQuotaExpand": "한도 확장 요청",
+      "reqMaxApps": "요청할 최대 앱 개수",
+      "reqReason": "요청 사유 (선택)",
+      "reqReasonPlaceholder": "한도 확장이 필요한 이유를 입력하세요",
+      "submitQuotaRequest": "확장 요청",
+      "quotaRequested": "한도 확장 요청이 접수되었습니다.",
       "submitBtn": "만들기"
     },
     "loginMeans": {

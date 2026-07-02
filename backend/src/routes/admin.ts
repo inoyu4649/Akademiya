@@ -393,4 +393,102 @@ router.post("/resource-limit-requests/:id/reject", requireAuth, requireAdmin, as
   res.json({ message: "rejected" });
 });
 
+// ── GET /api/admin/oauth-quota-requests — OAuth 공개 앱 한도 확장 요청 목록 ──
+router.get("/oauth-quota-requests", requireAuth, requireAdmin, async (req, res) => {
+  const status = (req.query.status as string) || "pending";
+  const [rows] = await pool.execute(
+    `SELECT oqr.id, oqr.requested_max_apps, oqr.reason, oqr.status, oqr.admin_note, oqr.created_at,
+            u.max_oauth_public_apps AS current_max_apps,
+            u.display_name AS requester_name, u.email AS requester_email
+     FROM oauth_app_quota_requests oqr
+     LEFT JOIN users u ON u.id = oqr.requester_id
+     WHERE oqr.status = ?
+     ORDER BY oqr.created_at DESC`,
+    [status]
+  ) as any[];
+  res.json({ requests: rows });
+});
+
+// ── POST /api/admin/oauth-quota-requests/:id/approve ─────────────────────────
+router.post("/oauth-quota-requests/:id/approve", requireAuth, requireAdmin, async (req, res) => {
+  const reqId   = Number(req.params.id);
+  const adminId = req.user!.id;
+  const { admin_note } = req.body as { admin_note?: string };
+
+  const [rows] = await pool.execute(
+    "SELECT * FROM oauth_app_quota_requests WHERE id = ? AND status = 'pending'",
+    [reqId]
+  ) as any[];
+  if (!(rows as any[]).length) { res.status(404).json({ error: "notFound" }); return; }
+
+  const r = (rows as any[])[0];
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.execute(
+      "UPDATE users SET max_oauth_public_apps = ? WHERE id = ?",
+      [r.requested_max_apps, r.requester_id]
+    );
+    await conn.execute(
+      `UPDATE oauth_app_quota_requests
+       SET status = 'approved', admin_note = ?, reviewed_by = ?, updated_at = NOW()
+       WHERE id = ?`,
+      [admin_note?.trim() || null, adminId, reqId]
+    );
+    if (r.requester_id) {
+      await conn.execute(
+        `INSERT INTO notifications (user_id, type, title, body, link)
+         VALUES (?, 'broadcast', ?, ?, ?)`,
+        [
+          r.requester_id,
+          "OAuth 공개 앱 한도 확장 요청이 승인되었습니다",
+          `최대 ${r.requested_max_apps}개로 확장되었습니다.`,
+          `/developer/oauth`,
+        ]
+      );
+    }
+    await conn.commit();
+    res.json({ message: "approved" });
+  } catch (e) {
+    try { await conn.rollback(); } catch { /* ignore */ }
+    throw e;
+  } finally {
+    try { conn.release(); } catch { /* ignore */ }
+  }
+});
+
+// ── POST /api/admin/oauth-quota-requests/:id/reject ───────────────────────────
+router.post("/oauth-quota-requests/:id/reject", requireAuth, requireAdmin, async (req, res) => {
+  const reqId   = Number(req.params.id);
+  const adminId = req.user!.id;
+  const { admin_note } = req.body as { admin_note?: string };
+
+  const [rows] = await pool.execute(
+    "SELECT requester_id FROM oauth_app_quota_requests WHERE id = ? AND status = 'pending'",
+    [reqId]
+  ) as any[];
+  if (!(rows as any[]).length) { res.status(404).json({ error: "notFound" }); return; }
+
+  const r = (rows as any[])[0];
+  await pool.execute(
+    `UPDATE oauth_app_quota_requests
+     SET status = 'rejected', admin_note = ?, reviewed_by = ?, updated_at = NOW()
+     WHERE id = ?`,
+    [admin_note?.trim() || null, adminId, reqId]
+  );
+  if (r.requester_id) {
+    await pool.execute(
+      `INSERT INTO notifications (user_id, type, title, body, link)
+       VALUES (?, 'broadcast', ?, ?, ?)`,
+      [
+        r.requester_id,
+        "OAuth 공개 앱 한도 확장 요청이 거절되었습니다",
+        admin_note?.trim() || "Akademiya 관리자가 OAuth 공개 앱 한도 확장 요청을 거절했습니다.",
+        `/developer/oauth`,
+      ]
+    );
+  }
+  res.json({ message: "rejected" });
+});
+
 export default router;
