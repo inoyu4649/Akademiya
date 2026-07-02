@@ -18,6 +18,7 @@ import calendarRouter from "./routes/calendar.js";
 import statsRouter from "./routes/stats.js";
 import bugReportsRouter from "./routes/bugReports.js";
 import oauthRouter from "./routes/oauth.js";
+import openoauthRouter from "./routes/openoauth.js";
 import surveysRouter from "./routes/surveys.js";
 import privacyRouter from "./routes/privacy.js";
 import termsRouter from "./routes/terms.js";
@@ -141,6 +142,7 @@ app.use("/api/calendar",     calendarRouter);
 app.use("/api/stats",        statsRouter);
 app.use("/api/bug-reports",  bugReportsRouter);
 app.use("/api/oauth",        oauthRouter);        // GMCAuto ↔ Akademiya OAuth
+app.use("/api/openoauth",    openoauthRouter);    // Akademiya OpenOAuth — 범용 OAuth2 제공자
 app.use("/api/surveys",      surveysRouter);
 app.use("/api/privacy",      privacyRouter);
 app.use("/api/terms",        termsRouter);

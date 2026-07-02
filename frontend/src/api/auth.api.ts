@@ -40,6 +40,7 @@ export const authApi = {
     phone?: string;
     newPassword?: string;
     language?: string;
+    developerMode?: boolean;
   }) => client.patch<AuthUser>("/auth/profile", data),
 
   deleteAccount: (password?: string) =>

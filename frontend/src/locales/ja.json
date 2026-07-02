@@ -101,7 +101,9 @@
       "saveSuccess": "保存しました。",
       "wrongPassword": "パスワードが正しくありません。",
       "passwordTooShort": "パスワードは8文字以上で入力してください。",
-      "passwordMismatch": "パスワードが一致しません。"
+      "passwordMismatch": "パスワードが一致しません。",
+      "developerModeLabel": "開発者モード",
+      "developerModeHint": "有効にすると、サイドバーに開発者ツールが表示され、Akademiya OpenOAuthで独自の「Akademiyaでログイン」連携アプリを作成できます。"
     },
     "completeProfile": {
       "title": "プロフィールの完成",
@@ -136,7 +138,9 @@
     "gmcAutoLoading": "接続中...",
     "admin": "管理者パネル",
     "profile": "プロフィール",
-    "logout": "ログアウト"
+    "logout": "ログアウト",
+    "developerTools": "開発者ツール",
+    "akademiyaOauth": "Akademiya OAuth"
   },
   "org": {
     "list": {
@@ -768,6 +772,128 @@
       "noteLabel": "メモ",
       "notePlaceholder": "管理者メモを入力してください。",
       "saveSuccess": "保存しました。"
+    }
+  },
+  "developer": {
+    "apps": {
+      "title": "Akademiya OAuth",
+      "subtitle": "作成したOAuthアプリで「Akademiyaでログイン」を利用できます。",
+      "createBtn": "新しいOAuthアプリを作成",
+      "empty": "作成したOAuthアプリはまだありません。"
+    },
+    "create": {
+      "title": "OAuthアプリを作成",
+      "codeNameLabel": "内部コード名",
+      "codeNameHint": "英数字とハイフンのみ使用できます。作成後は変更できません。",
+      "codeNameInvalid": "コード名は英数字とハイフンのみ使用できます(3〜64文字)。",
+      "codeNameExists": "既に使用されているコード名です。",
+      "displayNameLabel": "外部表示名",
+      "displayNameHint": "OAuth承認画面に表示される名前です。いつでも変更できます。",
+      "displayNameRequired": "外部表示名を入力してください。",
+      "mainSiteUrlLabel": "メインサイトURL",
+      "mainSiteUrlHint": "このアプリの代表URLを1つだけ入力してください(承認画面のリンクに使用されます)。",
+      "mainSiteUrlInvalid": "正しいURL形式ではありません(http://またはhttps://)。",
+      "loginMeansLabel": "ログイン許可手段",
+      "scopeRangeLabel": "ログイン許可範囲",
+      "scopeOrgRequired": "組織を選択してください。",
+      "scopeClassRequired": "クラスを選択してください。",
+      "scopeDomainRequired": "Google Workspaceドメインを入力してください。",
+      "scopeOrgPlaceholder": "組織を選択",
+      "scopeClassPlaceholder": "クラスを選択",
+      "submitBtn": "作成"
+    },
+    "loginMeans": {
+      "akademiya": "Akademiya専用",
+      "akademiyaDesc": "メール/パスワードログインのみ許可します。",
+      "google": "Google専用",
+      "googleDesc": "Googleログインのみ許可します(別のGoogle OAuthアプリではなく、AkademiyaのGoogleログイン機能です)。",
+      "both": "両方許可",
+      "bothDesc": "Akademiyaのログイン画面と同じく、すべての手段を許可します。"
+    },
+    "scopeRange": {
+      "all": "全体",
+      "allDesc": "すべてのAkademiyaユーザーがログインできます。",
+      "org": "組織単位",
+      "orgDesc": "選択した組織のメンバーのみログインできます。",
+      "class": "クラス単位",
+      "classDesc": "選択したクラスのメンバーのみログインできます。",
+      "google_workspace": "Google Workspace",
+      "google_workspaceDesc": "選択したドメインのGoogleアカウントのみログインできます(Google専用アプリのみ選択可能)。"
+    },
+    "tabs": {
+      "settings": "設定",
+      "stats": "統計",
+      "bans": "BAN管理"
+    },
+    "settings": {
+      "saveSuccess": "保存しました。",
+      "codeNameImmutable": "内部コード名は作成後に変更できません。",
+      "originsTitle": "信頼できるJavaScriptオリジン",
+      "originsHint": "ここに登録されていないオリジンからのログイン要求は拒否されます。",
+      "noOrigins": "登録されたオリジンがありません。",
+      "originInvalid": "正しいオリジン形式ではありません(例: https://example.akademiya.kr)。",
+      "originExists": "既に登録されているオリジンです。",
+      "addOrigin": "追加",
+      "secretTitle": "クライアントシークレット",
+      "secretHint": "クライアントシークレットは発行直後のみ確認できます。紛失した場合は再発行が必要です。",
+      "regenerateBtn": "再発行",
+      "dangerTitle": "危険区域",
+      "deleteBtn": "OAuthアプリを削除",
+      "deleteConfirm": "このOAuthアプリを削除すると、発行済みのすべてのトークンが即座に無効化され、元に戻せません。",
+      "deleteConfirmBtn": "削除を確認"
+    },
+    "stats": {
+      "period": {
+        "today": "今日",
+        "7d": "過去7日間",
+        "30d": "過去30日間",
+        "custom": "期間を指定"
+      },
+      "uniqueUsers": "ログインしたユーザー数",
+      "requestCount": "ログイン要求件数",
+      "chartTitle": "日別推移",
+      "noData": "表示するデータがありません。",
+      "requests": "リクエスト",
+      "users": "ユーザー"
+    },
+    "bans": {
+      "searchTitle": "ユーザー検索・BAN",
+      "searchPlaceholder": "名前またはメールで検索",
+      "searchBtn": "検索",
+      "banBtn": "BAN",
+      "reasonPlaceholder": "BAN理由を入力してください(任意)",
+      "confirmBtn": "BANを確定",
+      "listTitle": "BANされたユーザー",
+      "empty": "BANされたユーザーはいません。",
+      "unbanBtn": "BAN解除"
+    },
+    "secretModal": {
+      "title": "クライアントシークレットが発行されました",
+      "warning": "この画面を閉じると、クライアントシークレットは二度と確認できません。今すぐ安全な場所にコピーしてください。",
+      "clientIdLabel": "クライアントID",
+      "clientSecretLabel": "クライアントシークレット",
+      "copy": "コピー",
+      "copied": "コピーしました",
+      "closeBtn": "保存しました"
+    }
+  },
+  "oauth": {
+    "authorize": {
+      "title": "Akademiyaにログイン",
+      "errorInvalidRequest": "不正なリクエストです。このOAuth連携の設定を確認してください。",
+      "errorGeneric": "リクエストを処理できませんでした。しばらくしてから再度お試しください。",
+      "loggingInToPrefix": "",
+      "loggingInToSuffix": "にログイン",
+      "consentTitle": "ログインの承認",
+      "consentIntro": "{{email}} アカウントでログインします。次の情報が共有されます:",
+      "shareName": "名前",
+      "shareEmail": "メールアドレス",
+      "allowBtn": "許可",
+      "cancelBtn": "キャンセル",
+      "errorBanned": "このアプリへのログインが制限されているアカウントです。",
+      "errorBannedWithReason": "このアプリへのログインが制限されているアカウントです(理由: {{reason}})",
+      "errorNotEligible": "このアプリにログインする権限がありません。",
+      "errorGoogleOnly": "このアプリはGoogleアカウントでのログインのみ対応しています。"
     }
   },
   "privacy": {

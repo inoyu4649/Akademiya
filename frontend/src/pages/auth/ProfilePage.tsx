@@ -5,6 +5,7 @@ import { css as s } from "../../components/layout/AuthLayout";
 import { authApi } from "../../api/auth.api";
 import { useAuthStore } from "../../store/auth.store";
 import { sortedCountries } from "../../utils/countries";
+import rs from "./RegisterPage.module.css";
 
 type Step = "verify" | "edit";
 
@@ -27,6 +28,7 @@ export default function ProfilePage() {
     newPassword: "",
     confirmPassword: "",
   });
+  const [developerMode, setDeveloperMode] = useState(user?.developerMode ?? false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -70,6 +72,7 @@ export default function ProfilePage() {
         displayName: form.displayName,
         country: form.country,
         phone: form.phone,
+        developerMode,
       };
       if (form.newPassword) payload.newPassword = form.newPassword;
       const res = await authApi.updateProfile(payload);
@@ -179,6 +182,21 @@ export default function ProfilePage() {
         <div className={s.field}>
           <label className={s.label}>{t("auth.profile.phoneLabel")}</label>
           <input className={s.input} type="tel" value={form.phone} onChange={setField("phone")} />
+        </div>
+
+        <div className={s.field}>
+          <label className={rs.privacyLabel}>
+            <input
+              type="checkbox"
+              className={rs.privacyCheckbox}
+              checked={developerMode}
+              onChange={(e) => setDeveloperMode(e.target.checked)}
+            />
+            <span>{t("auth.profile.developerModeLabel")}</span>
+          </label>
+          <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, marginLeft: 23 }}>
+            {t("auth.profile.developerModeHint")}
+          </p>
         </div>
 
         <div style={{ borderTop: "1px solid var(--border)", margin: "24px 0 16px" }}>

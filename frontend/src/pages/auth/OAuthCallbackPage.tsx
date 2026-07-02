@@ -27,6 +27,9 @@ export default function OAuthCallbackPage() {
       ? aiRedirectStored
       : null;
 
+    // Akademiya OpenOAuth: /oauth/authorize에서 "Google로 로그인"을 눌러 진입한 경우 복귀용 쿼리스트링
+    const openoauthPending = sessionStorage.getItem("openoauth_pending");
+
     if (!code) {
       navigate("/auth/login?error=oauth_failed");
       return;
@@ -45,12 +48,19 @@ export default function OAuthCallbackPage() {
           return;
         }
 
+        // Akademiya OpenOAuth: 로그인 완료 후 승인 화면으로 정확히 복귀
+        if (openoauthPending && user.country && user.phone) {
+          sessionStorage.removeItem("openoauth_pending");
+          navigate(`/oauth/authorize?${openoauthPending}`);
+          return;
+        }
+
         if (!user.country || !user.phone) {
-          navigate(
-            gmcRedirect
-              ? `/auth/complete-profile?gmcRedirect=${encodeURIComponent(gmcRedirect)}`
-              : "/auth/complete-profile"
-          );
+          const completeParams = new URLSearchParams();
+          if (gmcRedirect) completeParams.set("gmcRedirect", gmcRedirect);
+          if (openoauthPending) completeParams.set("openoauthReturn", openoauthPending);
+          const qs = completeParams.toString();
+          navigate(qs ? `/auth/complete-profile?${qs}` : "/auth/complete-profile");
         } else if (gmcRedirect) {
           redirectToGmcAuto(gmcRedirect);
         } else {

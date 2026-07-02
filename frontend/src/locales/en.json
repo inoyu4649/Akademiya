@@ -101,7 +101,9 @@
       "saveSuccess": "Profile updated successfully.",
       "wrongPassword": "Incorrect password.",
       "passwordTooShort": "Password must be at least 8 characters.",
-      "passwordMismatch": "Passwords do not match."
+      "passwordMismatch": "Passwords do not match.",
+      "developerModeLabel": "Developer Mode",
+      "developerModeHint": "When enabled, Developer Tools appears in the sidebar, letting you build your own \"Sign in with Akademiya\" integrations via Akademiya OpenOAuth."
     },
     "completeProfile": {
       "title": "Complete Your Profile",
@@ -136,7 +138,9 @@
     "gmcAutoLoading": "Connecting...",
     "admin": "Admin Panel",
     "profile": "Profile",
-    "logout": "Log Out"
+    "logout": "Log Out",
+    "developerTools": "Developer Tools",
+    "akademiyaOauth": "Akademiya OAuth"
   },
   "org": {
     "list": {
@@ -768,6 +772,128 @@
       "noteLabel": "Note",
       "notePlaceholder": "Enter admin note...",
       "saveSuccess": "Saved."
+    }
+  },
+  "developer": {
+    "apps": {
+      "title": "Akademiya OAuth",
+      "subtitle": "Use \"Sign in with Akademiya\" in the OAuth Apps you create.",
+      "createBtn": "Create New OAuth App",
+      "empty": "You haven't created any OAuth Apps yet."
+    },
+    "create": {
+      "title": "Create OAuth App",
+      "codeNameLabel": "Internal Code Name",
+      "codeNameHint": "Only letters, digits, and hyphens are allowed. Cannot be changed after creation.",
+      "codeNameInvalid": "Code name may only contain letters, digits, and hyphens (3-64 characters).",
+      "codeNameExists": "This code name is already in use.",
+      "displayNameLabel": "Public Display Name",
+      "displayNameHint": "Shown on the OAuth consent screen. Can be changed at any time.",
+      "displayNameRequired": "Please enter a display name.",
+      "mainSiteUrlLabel": "Main Site URL",
+      "mainSiteUrlHint": "Enter exactly one main URL for this app (used as the link on the consent screen).",
+      "mainSiteUrlInvalid": "Invalid URL format (must start with http:// or https://).",
+      "loginMeansLabel": "Allowed Sign-in Methods",
+      "scopeRangeLabel": "Allowed Sign-in Scope",
+      "scopeOrgRequired": "Please select an organization.",
+      "scopeClassRequired": "Please select a class.",
+      "scopeDomainRequired": "Please enter a Google Workspace domain.",
+      "scopeOrgPlaceholder": "Select an organization",
+      "scopeClassPlaceholder": "Select a class",
+      "submitBtn": "Create"
+    },
+    "loginMeans": {
+      "akademiya": "Akademiya only",
+      "akademiyaDesc": "Only allow email/password sign-in.",
+      "google": "Google only",
+      "googleDesc": "Only allow Google sign-in (Akademiya's built-in Google login, not a separate Google OAuth app).",
+      "both": "Allow both",
+      "bothDesc": "Allow every method, same as the Akademiya login screen."
+    },
+    "scopeRange": {
+      "all": "Everyone",
+      "allDesc": "Any Akademiya user can sign in.",
+      "org": "Organization",
+      "orgDesc": "Only members of the selected organization can sign in.",
+      "class": "Class",
+      "classDesc": "Only members of the selected class can sign in.",
+      "google_workspace": "Google Workspace",
+      "google_workspaceDesc": "Only Google accounts on the selected domain can sign in (Google-only apps only)."
+    },
+    "tabs": {
+      "settings": "Settings",
+      "stats": "Stats",
+      "bans": "Ban Management"
+    },
+    "settings": {
+      "saveSuccess": "Saved.",
+      "codeNameImmutable": "The internal code name cannot be changed after creation.",
+      "originsTitle": "Authorized JavaScript Origins",
+      "originsHint": "Sign-in requests from origins not listed here will be rejected.",
+      "noOrigins": "No origins registered.",
+      "originInvalid": "Invalid origin format (e.g. https://example.akademiya.kr).",
+      "originExists": "This origin is already registered.",
+      "addOrigin": "Add",
+      "secretTitle": "Client Secret",
+      "secretHint": "The client secret can only be viewed once, right after it's issued. If lost, you must regenerate it.",
+      "regenerateBtn": "Regenerate",
+      "dangerTitle": "Danger Zone",
+      "deleteBtn": "Delete OAuth App",
+      "deleteConfirm": "Deleting this OAuth App immediately invalidates all issued tokens and cannot be undone.",
+      "deleteConfirmBtn": "Confirm Delete"
+    },
+    "stats": {
+      "period": {
+        "today": "Today",
+        "7d": "Last 7 days",
+        "30d": "Last 30 days",
+        "custom": "Custom range"
+      },
+      "uniqueUsers": "Signed-in users",
+      "requestCount": "Sign-in requests",
+      "chartTitle": "Daily trend",
+      "noData": "No data to display.",
+      "requests": "Requests",
+      "users": "Users"
+    },
+    "bans": {
+      "searchTitle": "Search & Ban Users",
+      "searchPlaceholder": "Search by name or email",
+      "searchBtn": "Search",
+      "banBtn": "Ban",
+      "reasonPlaceholder": "Enter a reason for the ban (optional)",
+      "confirmBtn": "Confirm Ban",
+      "listTitle": "Banned Users",
+      "empty": "No banned users.",
+      "unbanBtn": "Unban"
+    },
+    "secretModal": {
+      "title": "Client Secret Issued",
+      "warning": "You won't be able to see this secret again once you close this dialog. Copy it somewhere safe now.",
+      "clientIdLabel": "Client ID",
+      "clientSecretLabel": "Client Secret",
+      "copy": "Copy",
+      "copied": "Copied",
+      "closeBtn": "I've saved it"
+    }
+  },
+  "oauth": {
+    "authorize": {
+      "title": "Sign in to Akademiya",
+      "errorInvalidRequest": "Invalid request. Please check this OAuth integration's settings.",
+      "errorGeneric": "Couldn't process the request. Please try again shortly.",
+      "loggingInToPrefix": "Signing in to ",
+      "loggingInToSuffix": "",
+      "consentTitle": "Approve sign-in",
+      "consentIntro": "Signing in with {{email}}. The following information will be shared:",
+      "shareName": "Name",
+      "shareEmail": "Email address",
+      "allowBtn": "Allow",
+      "cancelBtn": "Cancel",
+      "errorBanned": "This account is restricted from signing in to this app.",
+      "errorBannedWithReason": "This account is restricted from signing in to this app (reason: {{reason}})",
+      "errorNotEligible": "You're not eligible to sign in to this app.",
+      "errorGoogleOnly": "This app only supports signing in with a Google account."
     }
   },
   "privacy": {

@@ -9,6 +9,7 @@ export interface AuthUser {
   phone: string | null;
   language: string | null;
   role: "user" | "admin";
+  developerMode: boolean;
 }
 
 interface AuthState {

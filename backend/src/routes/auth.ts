@@ -68,6 +68,7 @@ function userPayload(u: DbUser) {
     phone: u.phone as string | null,
     language: u.language as string | null,
     role: u.role as string,
+    developerMode: !!u.developer_mode,
   };
 }
 
@@ -155,7 +156,7 @@ router.post("/register", async (req, res) => {
     setRefreshCookie(res, refreshToken);
     res.status(201).json({
       accessToken,
-      user: { id: userId, email: email.toLowerCase(), displayName, country, phone, language: language || null, role: "user" },
+      user: { id: userId, email: email.toLowerCase(), displayName, country, phone, language: language || null, role: "user", developerMode: false },
     });
   } catch (err) {
     console.error("[register]", err);
@@ -226,7 +227,7 @@ router.post("/refresh", async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      `SELECT rt.user_id, u.email, u.role, u.display_name, u.country, u.phone, u.language, u.is_banned
+      `SELECT rt.user_id, u.email, u.role, u.display_name, u.country, u.phone, u.language, u.is_banned, u.developer_mode
        FROM refresh_tokens rt
        JOIN users u ON u.id = rt.user_id
        WHERE rt.token_hash = ? AND rt.expires_at > NOW()`,
@@ -359,7 +360,7 @@ router.post("/reset-password", async (req, res) => {
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, display_name, country, phone, language, role FROM users WHERE id = ?",
+      "SELECT id, email, display_name, country, phone, language, role, developer_mode FROM users WHERE id = ?",
       [req.user!.id]
     );
     const users = rows as DbUser[];
@@ -378,6 +379,7 @@ router.get("/me", requireAuth, async (req, res) => {
 router.patch("/profile", requireAuth, async (req, res) => {
   const { currentPassword, displayName, country, phone, newPassword, language } =
     req.body as Record<string, string>;
+  const { developerMode } = req.body as { developerMode?: boolean };
 
   try {
     const [rows] = await pool.query("SELECT * FROM users WHERE id = ?", [req.user!.id]);
@@ -388,7 +390,7 @@ router.patch("/profile", requireAuth, async (req, res) => {
       return;
     }
 
-    const hasOtherChanges = !!(displayName || country || phone || newPassword);
+    const hasOtherChanges = !!(displayName || country || phone || newPassword || developerMode !== undefined);
     const isLanguageOnlyUpdate = !!language && !hasOtherChanges;
 
     if (!isLanguageOnlyUpdate && user.password_hash) {
@@ -409,6 +411,7 @@ router.patch("/profile", requireAuth, async (req, res) => {
     if (country)     { updates.push("country = ?");       values.push(country); }
     if (phone)       { updates.push("phone = ?");          values.push(phone); }
     if (language)    { updates.push("language = ?");       values.push(language); }
+    if (developerMode !== undefined) { updates.push("developer_mode = ?"); values.push(developerMode ? 1 : 0); }
     if (newPassword) {
       if (newPassword.length < 8) {
         res.status(400).json({ error: "PASSWORD_TOO_SHORT" });
@@ -427,7 +430,7 @@ router.patch("/profile", requireAuth, async (req, res) => {
     await pool.query(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
 
     const [updated] = await pool.query(
-      "SELECT id, email, display_name, country, phone, language, role FROM users WHERE id = ?",
+      "SELECT id, email, display_name, country, phone, language, role, developer_mode FROM users WHERE id = ?",
       [req.user!.id]
     );
     res.json(userPayload((updated as DbUser[])[0]));
@@ -546,7 +549,7 @@ router.post("/oauth-exchange", async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, display_name, country, phone, language, role FROM users WHERE id = ?",
+      "SELECT id, email, display_name, country, phone, language, role, developer_mode FROM users WHERE id = ?",
       [userId]
     );
     const users = rows as DbUser[];

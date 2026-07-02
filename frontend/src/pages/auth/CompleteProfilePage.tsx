@@ -31,6 +31,8 @@ export default function CompleteProfilePage() {
 
   const gmcRedirectRaw = searchParams.get("gmcRedirect");
   const gmcRedirect = isSafeGmcRedirect(gmcRedirectRaw) ? gmcRedirectRaw : null;
+  // Akademiya OpenOAuth: 승인 화면에서 진입한 신규 가입자가 프로필 완성 후 복귀할 대상
+  const openoauthReturn = searchParams.get("openoauthReturn");
 
   const [country, setCountry] = useState("KR"); // 거주 국가는 대한민국만 허용
   const [phone, setPhone] = useState("");
@@ -61,6 +63,9 @@ export default function CompleteProfilePage() {
       if (gmcRedirect) {
         // GMCAuto에서 시작된 가입 절차가 끝났으므로 Akademiya 메인이 아니라 GMCAuto로 복귀
         redirectToGmcAuto(gmcRedirect);
+      } else if (openoauthReturn) {
+        // Akademiya OpenOAuth 승인 화면에서 시작된 가입 절차이므로 그 화면으로 복귀
+        navigate(`/oauth/authorize?${openoauthReturn}`);
       } else {
         navigate("/");
       }

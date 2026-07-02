@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AuthLayout, { css as s } from "../../components/layout/AuthLayout";
 import { authApi } from "../../api/auth.api";
@@ -19,8 +19,11 @@ const LANG_OPTIONS: { code: SupportedLang; label: string }[] = [
 export default function RegisterPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const setAuth = useAuthStore((s) => s.setAuth);
   const lang = i18n.language as SupportedLang;
+  // Akademiya OpenOAuth 승인 화면에서 회원가입으로 진입한 경우 가입 완료 후 복귀할 대상
+  const openoauthReturn = searchParams.get("openoauthReturn");
 
   const [form, setForm] = useState({
     displayName: "",
@@ -74,7 +77,13 @@ export default function RegisterPage() {
         intlTransferVersion: INTL_TRANSFER_VERSION,
       });
       setAuth(res.data.user, res.data.accessToken);
-      navigate("/");
+      if (openoauthReturn) {
+        // Akademiya OpenOAuth 승인 화면에서 시작된 가입이므로 그 화면으로 복귀 (RegisterPage는 국가/전화번호를
+        // 이미 수집하므로 CompleteProfilePage를 거칠 필요 없이 곧바로 복귀 가능)
+        navigate(`/oauth/authorize?${openoauthReturn}`);
+      } else {
+        navigate("/");
+      }
     } catch (err: unknown) {
       const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       if (code === "EMAIL_EXISTS") setErrors({ global: t("auth.register.emailExists") });

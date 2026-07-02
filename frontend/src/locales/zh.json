@@ -101,7 +101,9 @@
       "saveSuccess": "保存成功。",
       "wrongPassword": "密码不正确。",
       "passwordTooShort": "密码长度至少8位。",
-      "passwordMismatch": "两次输入的密码不一致。"
+      "passwordMismatch": "两次输入的密码不一致。",
+      "developerModeLabel": "开发者模式",
+      "developerModeHint": "启用后，侧边栏将显示开发者工具，您可以通过 Akademiya OpenOAuth 创建自己的“使用 Akademiya 登录”集成应用。"
     },
     "completeProfile": {
       "title": "完善个人资料",
@@ -136,7 +138,9 @@
     "gmcAutoLoading": "连接中...",
     "admin": "管理员面板",
     "profile": "个人资料",
-    "logout": "退出登录"
+    "logout": "退出登录",
+    "developerTools": "开发者工具",
+    "akademiyaOauth": "Akademiya OAuth"
   },
   "org": {
     "list": {
@@ -768,6 +772,128 @@
       "noteLabel": "备注",
       "notePlaceholder": "请输入处理备注。",
       "saveSuccess": "已保存。"
+    }
+  },
+  "developer": {
+    "apps": {
+      "title": "Akademiya OAuth",
+      "subtitle": "在您创建的 OAuth 应用中使用“使用 Akademiya 登录”功能。",
+      "createBtn": "创建新的 OAuth 应用",
+      "empty": "您还没有创建任何 OAuth 应用。"
+    },
+    "create": {
+      "title": "创建 OAuth 应用",
+      "codeNameLabel": "内部代码名",
+      "codeNameHint": "仅可使用英文字母、数字和连字符，创建后无法更改。",
+      "codeNameInvalid": "代码名仅可包含英文字母、数字和连字符(3~64位)。",
+      "codeNameExists": "该代码名已被使用。",
+      "displayNameLabel": "对外显示名称",
+      "displayNameHint": "显示在 OAuth 授权页面上的名称，可随时修改。",
+      "displayNameRequired": "请输入对外显示名称。",
+      "mainSiteUrlLabel": "主站点 URL",
+      "mainSiteUrlHint": "请输入该应用唯一的主站点 URL(将用作授权页面的链接)。",
+      "mainSiteUrlInvalid": "URL 格式不正确(需以 http:// 或 https:// 开头)。",
+      "loginMeansLabel": "允许的登录方式",
+      "scopeRangeLabel": "允许的登录范围",
+      "scopeOrgRequired": "请选择组织。",
+      "scopeClassRequired": "请选择班级。",
+      "scopeDomainRequired": "请输入 Google Workspace 域名。",
+      "scopeOrgPlaceholder": "请选择组织",
+      "scopeClassPlaceholder": "请选择班级",
+      "submitBtn": "创建"
+    },
+    "loginMeans": {
+      "akademiya": "仅限 Akademiya",
+      "akademiyaDesc": "仅允许邮箱/密码登录。",
+      "google": "仅限 Google",
+      "googleDesc": "仅允许 Google 登录(此处指 Akademiya 内置的 Google 登录功能，而非单独的 Google OAuth 应用)。",
+      "both": "两者都允许",
+      "bothDesc": "与 Akademiya 登录页面相同，允许所有登录方式。"
+    },
+    "scopeRange": {
+      "all": "全体",
+      "allDesc": "所有 Akademiya 用户均可登录。",
+      "org": "组织范围",
+      "orgDesc": "仅所选组织的成员可以登录。",
+      "class": "班级范围",
+      "classDesc": "仅所选班级的成员可以登录。",
+      "google_workspace": "Google Workspace",
+      "google_workspaceDesc": "仅所选域名下的 Google 账号可以登录(仅限 Google 专用应用选择)。"
+    },
+    "tabs": {
+      "settings": "设置",
+      "stats": "统计",
+      "bans": "BAN 管理"
+    },
+    "settings": {
+      "saveSuccess": "已保存。",
+      "codeNameImmutable": "内部代码名创建后无法更改。",
+      "originsTitle": "受信任的 JavaScript 来源",
+      "originsHint": "未在此处注册的来源(Origin)发起的登录请求将被拒绝。",
+      "noOrigins": "尚未注册任何来源。",
+      "originInvalid": "来源格式不正确(例如: https://example.akademiya.kr)。",
+      "originExists": "该来源已注册。",
+      "addOrigin": "添加",
+      "secretTitle": "Client Secret",
+      "secretHint": "Client Secret 仅在首次发放时可见，如遗失需重新生成。",
+      "regenerateBtn": "重新生成",
+      "dangerTitle": "危险区域",
+      "deleteBtn": "删除 OAuth 应用",
+      "deleteConfirm": "删除此 OAuth 应用将立即使所有已发放的令牌失效，且无法恢复。",
+      "deleteConfirmBtn": "确认删除"
+    },
+    "stats": {
+      "period": {
+        "today": "今天",
+        "7d": "最近 7 天",
+        "30d": "最近 30 天",
+        "custom": "自定义期间"
+      },
+      "uniqueUsers": "登录用户数",
+      "requestCount": "登录请求次数",
+      "chartTitle": "每日趋势",
+      "noData": "暂无数据。",
+      "requests": "请求",
+      "users": "用户"
+    },
+    "bans": {
+      "searchTitle": "搜索并 BAN 用户",
+      "searchPlaceholder": "按姓名或邮箱搜索",
+      "searchBtn": "搜索",
+      "banBtn": "BAN",
+      "reasonPlaceholder": "请输入 BAN 原因(可选)",
+      "confirmBtn": "确认 BAN",
+      "listTitle": "被 BAN 的用户",
+      "empty": "没有被 BAN 的用户。",
+      "unbanBtn": "解除 BAN"
+    },
+    "secretModal": {
+      "title": "Client Secret 已生成",
+      "warning": "关闭此窗口后将无法再次查看该密钥，请立即复制并妥善保存。",
+      "clientIdLabel": "Client ID",
+      "clientSecretLabel": "Client Secret",
+      "copy": "复制",
+      "copied": "已复制",
+      "closeBtn": "已保存"
+    }
+  },
+  "oauth": {
+    "authorize": {
+      "title": "登录 Akademiya",
+      "errorInvalidRequest": "请求无效，请检查该 OAuth 集成的配置。",
+      "errorGeneric": "无法处理该请求，请稍后重试。",
+      "loggingInToPrefix": "正在登录到 ",
+      "loggingInToSuffix": "",
+      "consentTitle": "登录授权",
+      "consentIntro": "正在使用 {{email}} 账号登录。以下信息将被共享：",
+      "shareName": "姓名",
+      "shareEmail": "邮箱地址",
+      "allowBtn": "允许",
+      "cancelBtn": "取消",
+      "errorBanned": "该账号已被限制登录此应用。",
+      "errorBannedWithReason": "该账号已被限制登录此应用(原因: {{reason}})",
+      "errorNotEligible": "您没有登录此应用的权限。",
+      "errorGoogleOnly": "此应用仅支持使用 Google 账号登录。"
     }
   },
   "privacy": {

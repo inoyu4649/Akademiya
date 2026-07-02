@@ -227,6 +227,15 @@ function LanguageSelector() {
   );
 }
 
+function IconCode() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="16 18 22 12 16 6" />
+      <polyline points="8 6 2 12 8 18" />
+    </svg>
+  );
+}
+
 function IconGmc() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -471,6 +480,21 @@ export default function AppLayout() {
               <IconShield />
               <span>{t("nav.admin")}</span>
             </NavLink>
+          )}
+
+          {/* 개발자 도구 — 회원정보 수정에서 개발자 모드를 켠 사용자에게만 표시 */}
+          {user?.developerMode && (
+            <>
+              <div className={styles.navSectionLabel}>{t("nav.developerTools")}</div>
+              <NavLink
+                to="/developer/oauth"
+                onClick={closeMobile}
+                className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ""}`}
+              >
+                <IconCode />
+                <span>{t("nav.akademiyaOauth")}</span>
+              </NavLink>
+            </>
           )}
         </nav>
 

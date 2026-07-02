@@ -39,6 +39,10 @@ import SurveyStatsPage from "./pages/survey/SurveyStatsPage";
 import SurveyPublicPage from "./pages/survey/SurveyPublicPage";
 import PrivacyPolicyPage from "./pages/privacy/PrivacyPolicyPage";
 import TermsOfUsePage from "./pages/privacy/TermsOfUsePage";
+import OAuthAppsPage from "./pages/developer/OAuthAppsPage";
+import OAuthAppCreatePage from "./pages/developer/OAuthAppCreatePage";
+import OAuthAppDetailPage from "./pages/developer/OAuthAppDetailPage";
+import OAuthAuthorizePage from "./pages/auth/OAuthAuthorizePage";
 import "./App.css";
 
 const router = createBrowserRouter([
@@ -49,6 +53,7 @@ const router = createBrowserRouter([
   { path: "/auth/reset-password", element: <ResetPasswordPage /> },
   { path: "/auth/callback",         element: <OAuthCallbackPage /> },
   { path: "/auth/gmcauto-oauth",    element: <GmcAutoOAuthPage /> },
+  { path: "/oauth/authorize",       element: <OAuthAuthorizePage /> },
   {
     path: "/auth/complete-profile",
     element: <ProtectedRoute><CompleteProfilePage /></ProtectedRoute>,
@@ -90,6 +95,9 @@ const router = createBrowserRouter([
       { path: "surveys/:id/edit",       element: <SurveyEditPage /> },
       { path: "surveys/:id",            element: <SurveyDetailPage /> },
       { path: "surveys/:id/stats",      element: <SurveyStatsPage /> },
+      { path: "developer/oauth",        element: <OAuthAppsPage /> },
+      { path: "developer/oauth/create", element: <OAuthAppCreatePage /> },
+      { path: "developer/oauth/:id",    element: <OAuthAppDetailPage /> },
     ],
   },
 
