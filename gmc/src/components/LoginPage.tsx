@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { startAkademiyaLogin, consumeAkademiyaOAuthState } from '../utils/akademiyaOAuth'
 import type { SessionData } from '../types'
 
 interface LoginPageProps {
@@ -33,8 +34,6 @@ type AkStep = 'idle' | 'verifying' | 'link_needed' | 'linking'
 interface AkUserInfo {
   displayName?: string
   email?: string
-  hafsOrgPerm?: number
-  gmcRole?: number
   akademiyaUserId?: number
 }
 
@@ -54,21 +53,26 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState('')
 
-  const [showAkWarning, setShowAkWarning] = useState(false)
   const [akStep, setAkStep]         = useState<AkStep>('idle')
   const [akUserInfo, setAkUserInfo]  = useState<AkUserInfo | null>(null)
   const [akStudentNo, setAkStudentNo] = useState('')
   const [akPassword, setAkPassword]   = useState('')
   const [akError, setAkError]         = useState('')
 
-  const verifyAkademiyaCode = useCallback(async (code: string) => {
+  const verifyAkademiyaCode = useCallback(async (code: string, state: string | null) => {
     setAkStep('verifying')
     setAkError('')
+    const codeVerifier = consumeAkademiyaOAuthState(state)
+    if (!codeVerifier) {
+      setAkError(t('auth.ak.verifyFailed'))
+      setAkStep('idle')
+      return
+    }
     try {
-      const res  = await fetch('/api/akademiya/verify', {
+      const res  = await fetch('/api/akademiya/oauth-callback', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ code }),
+        body:    JSON.stringify({ code, codeVerifier }),
       })
       const data = await res.json() as {
         success: boolean; message?: string;
@@ -112,10 +116,11 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const code   = params.get('code')
+    const state  = params.get('state')
     if (code) {
       queueMicrotask(() => {
         setTab('akademiya')
-        verifyAkademiyaCode(code)
+        verifyAkademiyaCode(code, state)
       })
       window.history.replaceState({}, '', window.location.pathname)
     }
@@ -156,8 +161,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
   }
 
   const handleAkademiyaLogin = () => {
-    const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback')
-    window.location.href = `https://akademiya.kr/auth/gmcauto-oauth?redirect_uri=${redirectUri}`
+    startAkademiyaLogin().catch(() => setAkError(t('auth.serverError')))
   }
 
   const handleAkademiyaLink = async (e: React.FormEvent) => {
@@ -173,7 +177,6 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
           akademiyaEmail:  akUserInfo?.email,
           studentNo:       akStudentNo,
           password:        akPassword,
-          gmcRole:         akUserInfo?.gmcRole ?? 0,
         }),
       })
       const data = await res.json() as {
@@ -306,7 +309,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
                       {t('auth.ak.descSub2')}
                     </span>
                   </div>
-                  <button className="btn btn-primary btn-block btn-lg" onClick={() => setShowAkWarning(true)}>
+                  <button className="btn btn-primary btn-block btn-lg" onClick={handleAkademiyaLogin}>
                     {t('auth.ak.loginBtn')}
                   </button>
                   <p style={{ textAlign: 'center', marginTop: '14px', fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -362,38 +365,6 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
           )}
         </div>
       </div>
-
-      {showAkWarning && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
-          }}
-          onClick={() => setShowAkWarning(false)}
-        >
-          <div
-            className="card"
-            style={{ maxWidth: '360px', margin: '16px', padding: '24px 20px' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <h3 style={{ margin: '0 0 12px', color: 'var(--text)', fontSize: '15px', fontWeight: 600 }}>
-              {t('auth.ak.warningTitle')}
-            </h3>
-            <p style={{ fontSize: '13.5px', lineHeight: '1.7', color: 'var(--text-secondary)', margin: '0 0 20px' }}>
-              {t('auth.ak.hafsGoogleWarning')}
-            </p>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowAkWarning(false)}>
-                {t('common.cancel')}
-              </button>
-              <button className="btn btn-primary" style={{ flex: 1 }}
-                onClick={() => { setShowAkWarning(false); handleAkademiyaLogin() }}>
-                {t('auth.ak.confirmProceed')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

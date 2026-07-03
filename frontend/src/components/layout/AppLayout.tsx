@@ -253,7 +253,6 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen]           = useState(false);
   const [isHafsOrgMember, setIsHafsOrgMember] = useState(false);
-  const [gmcLoading, setGmcLoading]           = useState(false);
   const { theme, toggle: toggleTheme }        = useTheme();
   const [privacyNeedsConsent, setPrivacyNeedsConsent] = useState(false);
   const [termsNeedsConsent, setTermsNeedsConsent] = useState(false);
@@ -303,20 +302,9 @@ export default function AppLayout() {
     setMobileOpen(false);
   }
 
-  async function handleGmcAutoClick() {
-    if (gmcLoading) return;
-    setGmcLoading(true);
+  function handleGmcAutoClick() {
     closeMobile();
-    try {
-      const res  = await client.post<{ code: string }>("/oauth/gmcauto-code");
-      const code = res.data.code;
-      window.open(`https://gmc.akademiya.kr/auth/callback?code=${encodeURIComponent(code)}`, "_blank", "noopener");
-    } catch {
-      // 코드 발급 실패 시 직접 접속 (로그인 화면)
-      window.open("https://gmc.akademiya.kr", "_blank", "noopener");
-    } finally {
-      setGmcLoading(false);
-    }
+    window.open("https://gmc.akademiya.kr", "_blank", "noopener");
   }
 
 
@@ -462,11 +450,10 @@ export default function AppLayout() {
             <button
               className={styles.navItem}
               onClick={handleGmcAutoClick}
-              disabled={gmcLoading}
-              style={{ background: "none", border: "none", cursor: gmcLoading ? "wait" : "pointer", width: "100%", textAlign: "left" }}
+              style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left" }}
             >
               <IconGmc />
-              <span>{gmcLoading ? t("nav.gmcAutoLoading") || "연결 중..." : t("nav.gmcAuto")}</span>
+              <span>{t("nav.gmcAuto")}</span>
               <span className={styles.externalBadge}>↗</span>
             </button>
           )}

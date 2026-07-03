@@ -5,9 +5,12 @@ import LoginPage from './components/LoginPage'
 import Dashboard from './components/Dashboard'
 import PrivacyPolicyModal from './components/PrivacyPolicyModal'
 import TermsOfUseModal from './components/TermsOfUseModal'
+import PatchNotesModal, { GMC_PATCH_NOTES_VERSION } from './components/PatchNotesModal'
+import { startAkademiyaLogin } from './utils/akademiyaOAuth'
 import type { SessionData } from './types'
 
 const SESSION_KEY = 'gmcauto_session'
+const PATCH_NOTES_SEEN_KEY = 'gmcauto_patch_notes_seen_version'
 
 function applyTheme(theme: string) {
   document.documentElement.setAttribute('data-theme', theme)
@@ -24,6 +27,7 @@ function App() {
   const [sessionExpired, setSessionExpired] = useState(false)
   const [showPrivacyModal, setShowPrivacyModal] = useState(false)
   const [showTermsModal, setShowTermsModal] = useState(false)
+  const [patchNotesDismissed, setPatchNotesDismissed] = useState(false)
 
   // 재접속/새로고침 시에는 항상 시스템(브라우저·PWA) 테마부터 시작 — 이전 토글 선택은 저장하지 않음
   const [theme, setTheme] = useState<string>(getSystemTheme)
@@ -53,7 +57,11 @@ function App() {
     if (window.location.pathname === '/auth/callback') {
       const params = new URLSearchParams(window.location.search)
       const code   = params.get('code')
-      window.history.replaceState({}, '', code ? `/?code=${encodeURIComponent(code)}` : '/')
+      const state  = params.get('state')
+      const qs = new URLSearchParams()
+      if (code) qs.set('code', code)
+      if (state) qs.set('state', state)
+      window.history.replaceState({}, '', qs.toString() ? `/?${qs.toString()}` : '/')
     }
   }, [])
 
@@ -82,8 +90,7 @@ function App() {
             const autoRedirAttempted = sessionStorage.getItem('gmcauto_auto_redir') === '1'
             if (isPwaMode && authMethod === 'akademiya' && !autoRedirAttempted) {
               sessionStorage.setItem('gmcauto_auto_redir', '1')
-              const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback')
-              window.location.href = `https://akademiya.kr/auth/gmcauto-oauth?redirect_uri=${redirectUri}`
+              startAkademiyaLogin().catch(() => setSessionExpired(true))
               return
             }
             setSessionExpired(true)
@@ -141,6 +148,13 @@ function App() {
     setSession(null)
   }, [session, t])
 
+  // 개인정보/약관 동의가 끝난 로그인 사용자에게 업데이트 후 최초 접속 시 패치노트 안내
+  // (개인정보 처리방침 모달의 버전 비교·표시 패턴을 재사용 — 서버 동의 기록 없이 localStorage로 판단)
+  const patchNotesSeenVersion = Number(localStorage.getItem(PATCH_NOTES_SEEN_KEY) || '0')
+  const showPatchNotes =
+    !!session && !showPrivacyModal && !showTermsModal &&
+    !patchNotesDismissed && patchNotesSeenVersion < GMC_PATCH_NOTES_VERSION
+
   return (
     <>
       {showPrivacyModal && session && (
@@ -163,6 +177,14 @@ function App() {
         <TermsOfUseModal
           sessionId={session.sessionId}
           onConsented={() => setShowTermsModal(false)}
+        />
+      )}
+      {showPatchNotes && (
+        <PatchNotesModal
+          onClose={() => {
+            localStorage.setItem(PATCH_NOTES_SEEN_KEY, String(GMC_PATCH_NOTES_VERSION))
+            setPatchNotesDismissed(true)
+          }}
         />
       )}
 

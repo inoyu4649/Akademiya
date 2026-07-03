@@ -381,25 +381,23 @@ export default function Dashboard({ session, onLogout, onAccountDelete, theme, t
         {/* ── 홈 ── */}
         {view === 'home' && (
           <div className="dashboard-grid">
-            {/* 설문 배너 */}
-            <a
-              href="https://akademiya.kr/surveys/public/7"
-              target="_blank"
-              rel="noopener noreferrer"
+            {/* 2학기 이용 안내 배너 */}
+            <div
               style={{
-                gridColumn: '1 / -1', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', gap: '8px', padding: '8px 16px',
-                background: 'rgba(79, 195, 247, 0.08)', border: '1px solid rgba(79, 195, 247, 0.3)',
-                borderRadius: '8px', color: 'var(--primary)', fontSize: '13px',
-                fontWeight: '500', textDecoration: 'none', transition: 'background 0.15s',
+                gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '4px',
+                padding: '12px 16px',
+                background: 'var(--danger-light)', border: '1px solid var(--danger)',
+                borderRadius: '8px', fontSize: '13px', lineHeight: '1.6',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(79, 195, 247, 0.15)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(79, 195, 247, 0.08)')}
             >
-              <span>📋</span>
-              <span>더 나은 GMCAuto 2를 만들기 위해 설문조사에 참여해주세요! (~7월 6일)</span>
-              <span style={{ fontSize: '11px', opacity: 0.7 }}>↗</span>
-            </a>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, color: 'var(--danger)' }}>
+                <span>🚨</span>
+                <span>[필독] 2학기 GMCAuto 이용 안내</span>
+              </div>
+              <div style={{ color: 'var(--text)' }}>
+                2학기에는 대규모 업데이트 GMCAuto 3이 예정되어 있습니다. 많은 기능 추가와 DB구조 변경 등이 예정되어 있으므로, 2학기에 GMCAuto를 이용하고자 하는 HAFS 학생 여러분은 [8월 15일] 이후 [재등록]이 필요합니다. 불편을 드려 죄송합니다.
+              </div>
+            </div>
 
             {/* 설치 안내 모달 */}
             {showInstallModal && (

@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { authApi } from "../../api/auth.api";
 import { useAuthStore } from "../../store/auth.store";
-import { redirectToGmcAuto, isSafeGmcRedirect } from "../../utils/gmcAuto";
 
 export default function OAuthCallbackPage() {
   const { t } = useTranslation();
@@ -16,8 +15,6 @@ export default function OAuthCallbackPage() {
     if (called.current) return;
     called.current = true;
     const code = params.get("code");
-    const gmcRedirectRaw = params.get("gmcRedirect");
-    const gmcRedirect = isSafeGmcRedirect(gmcRedirectRaw) ? gmcRedirectRaw : null;
     const aiRedirectStored = sessionStorage.getItem("ai_redirect");
     const safeAiCallbacks = [
       "https://ai.akademiya.kr/auth/callback",
@@ -57,12 +54,9 @@ export default function OAuthCallbackPage() {
 
         if (!user.country || !user.phone) {
           const completeParams = new URLSearchParams();
-          if (gmcRedirect) completeParams.set("gmcRedirect", gmcRedirect);
           if (openoauthPending) completeParams.set("openoauthReturn", openoauthPending);
           const qs = completeParams.toString();
           navigate(qs ? `/auth/complete-profile?${qs}` : "/auth/complete-profile");
-        } else if (gmcRedirect) {
-          redirectToGmcAuto(gmcRedirect);
         } else {
           navigate("/");
         }

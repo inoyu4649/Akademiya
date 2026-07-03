@@ -65,6 +65,15 @@ if (existsSync(distPath)) {
 const BASE_URL = 'https://going.hafs.hs.kr';
 const AKADEMIYA_API_URL = process.env.AKADEMIYA_API_URL || 'https://akademiya.kr/api';
 
+// ── Akademiya OpenOAuth ("Akademiya로 로그인") ────────────────────────────
+// GMCAuto는 Akademiya OpenOAuth(/api/openoauth)의 서드파티 클라이언트로 등록되어 있음.
+// Client ID/Secret은 Akademiya 개발자 도구에서 발급받아 .env로 주입한다 (Akademiya 코드는 수정하지 않음).
+const AKADEMIYA_OAUTH_CLIENT_ID     = process.env.AKADEMIYA_OAUTH_CLIENT_ID || '';
+const AKADEMIYA_OAUTH_CLIENT_SECRET = process.env.AKADEMIYA_OAUTH_CLIENT_SECRET || '';
+const AKADEMIYA_OAUTH_AUTHORIZE_URL = process.env.AKADEMIYA_OAUTH_AUTHORIZE_URL || 'https://akademiya.kr/oauth/authorize';
+const AKADEMIYA_OAUTH_REDIRECT_URI  = process.env.AKADEMIYA_OAUTH_REDIRECT_URI || 'https://gmc.akademiya.kr/auth/callback';
+const AKADEMIYA_OAUTH_SCOPE = 'openid profile email';
+
 const chromePath = findChromePath();
 console.log(chromePath ? `Chrome 발견: ${chromePath}` : 'Chrome 미발견');
 
@@ -675,35 +684,56 @@ app.post('/api/login', async (req: Request, res: Response) => {
   }
 });
 
-// ========== Akademiya OAuth 연동 ==========
+// ========== Akademiya OpenOAuth 연동 ==========
 
-app.post('/api/akademiya/verify', async (req: Request, res: Response) => {
-  const { code } = req.body as { code: string };
-  if (!code) return res.status(400).json({ success: false, message: 'code 파라미터 필요' });
+// 프론트엔드가 인가 URL을 직접 구성할 수 있도록 클라이언트 설정(비밀 정보 제외) 제공
+app.get('/api/akademiya/oauth-config', (_req: Request, res: Response) => {
+  res.json({
+    clientId:     AKADEMIYA_OAUTH_CLIENT_ID,
+    authorizeUrl: AKADEMIYA_OAUTH_AUTHORIZE_URL,
+    redirectUri:  AKADEMIYA_OAUTH_REDIRECT_URI,
+    scope:        AKADEMIYA_OAUTH_SCOPE,
+  });
+});
+
+app.post('/api/akademiya/oauth-callback', async (req: Request, res: Response) => {
+  const { code, codeVerifier } = req.body as { code?: string; codeVerifier?: string };
+  if (!code || !codeVerifier) {
+    return res.status(400).json({ success: false, message: 'code/codeVerifier 파라미터 필요' });
+  }
 
   try {
-    const verifyRes = await axios.post(
-      `${AKADEMIYA_API_URL}/oauth/gmcauto-verify`,
-      { code },
+    const tokenRes = await axios.post(
+      `${AKADEMIYA_API_URL}/openoauth/token`,
+      {
+        grantType:    'authorization_code',
+        clientId:     AKADEMIYA_OAUTH_CLIENT_ID,
+        clientSecret: AKADEMIYA_OAUTH_CLIENT_SECRET,
+        code,
+        redirectUri:  AKADEMIYA_OAUTH_REDIRECT_URI,
+        codeVerifier,
+      },
       { timeout: 10000 }
     );
-    const { userId, displayName, email, hafsOrgPerm } = verifyRes.data as {
-      userId: number; displayName: string; email: string; hafsOrgPerm: number;
-    };
+    const accessToken = (tokenRes.data as { access_token: string }).access_token;
 
+    const userinfoRes = await axios.get(`${AKADEMIYA_API_URL}/openoauth/userinfo`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      timeout: 10000,
+    });
+    const { sub, name, email } = userinfoRes.data as { sub: string; name?: string; email?: string };
+    const userId = Number(sub);
     if (!userId) {
-      return res.status(401).json({ success: false, message: '유효하지 않은 코드입니다.' });
+      return res.status(401).json({ success: false, message: '사용자 정보를 가져오지 못했습니다.' });
     }
+    const displayName = name || email?.split('@')[0] || '';
 
-    const gmcRole = hafsOrgPerm >= 3 ? 3 : hafsOrgPerm >= 1 ? 1 : 0;
     const gmcUser = await getByAkademiyaUserId(userId);
 
+    // 기존 연동 사용자: role은 GMCAuto 관리자 화면에서만 관리하며 여기서는 절대 재계산하지 않는다
+    // (Akademiya 계정 로그인 시 권한이 초기화되던 버그 수정 — hafsOrgPerm 기반 재계산 로직 제거)
     if (gmcUser && gmcUser.student_no && gmcUser.password) {
-      console.log(`[Akademiya OAuth] 기존 연동 사용자: ${email} → ${gmcUser.student_no}`);
-
-      if (gmcUser.role !== gmcRole) {
-        await setUserRole(gmcUser.student_no, gmcRole);
-      }
+      console.log(`[Akademiya OpenOAuth] 기존 연동 사용자: ${email} → ${gmcUser.student_no}`);
 
       const loginResult = await autoLogin(gmcUser.student_no);
       if (!loginResult) {
@@ -711,7 +741,7 @@ app.post('/api/akademiya/verify', async (req: Request, res: Response) => {
           success: true,
           linked: true,
           loginFailed: true,
-          userInfo: { displayName, email, hafsOrgPerm, gmcRole },
+          userInfo: { displayName, email, akademiyaUserId: userId },
           studentNo: gmcUser.student_no,
         });
       }
@@ -734,24 +764,25 @@ app.post('/api/akademiya/verify', async (req: Request, res: Response) => {
         sessionId,
         studentNo: gmcUser.student_no,
         studentName: displayName || '',
-        role: gmcRole,
+        role: gmcUser.role,
         needsPrivacyConsent: privacyConsentedVer < GMC_PRIVACY_POLICY_VERSION,
         needsTermsConsent:   termsConsentedVer   < GMC_TERMS_OF_USE_VERSION,
       });
     }
 
+    // 신규 Akademiya 사용자: role은 항상 0(일반)으로 시작, 이후 GMCAuto 관리자만 변경 가능
     if (!gmcUser) {
-      await saveAkademiyaUser({ akademiyaUserId: userId, akademiyaEmail: email, studentNo: null, password: null, role: gmcRole });
+      await saveAkademiyaUser({ akademiyaUserId: userId, akademiyaEmail: email || null, studentNo: null, password: null, role: 0 });
     }
 
     return res.json({
       success: true,
       linked: false,
-      userInfo: { displayName, email, hafsOrgPerm, gmcRole, akademiyaUserId: userId },
+      userInfo: { displayName, email, akademiyaUserId: userId },
     });
 
   } catch (err) {
-    console.error('[Akademiya OAuth 검증 오류]', (err as Error).message);
+    console.error('[Akademiya OpenOAuth 콜백 오류]', axios.isAxiosError(err) ? (err.response?.data ?? err.message) : (err as Error).message);
     if (axios.isAxiosError(err) && (err.response?.status === 401 || err.response?.status === 400)) {
       return res.status(401).json({ success: false, message: '코드가 만료되었거나 유효하지 않습니다.' });
     }
@@ -760,8 +791,8 @@ app.post('/api/akademiya/verify', async (req: Request, res: Response) => {
 });
 
 app.post('/api/akademiya/link', async (req: Request, res: Response) => {
-  const { akademiyaUserId, akademiyaEmail, studentNo, password, gmcRole } = req.body as {
-    akademiyaUserId: number; akademiyaEmail: string; studentNo: string; password: string; gmcRole?: number;
+  const { akademiyaUserId, akademiyaEmail, studentNo, password } = req.body as {
+    akademiyaUserId: number; akademiyaEmail: string; studentNo: string; password: string;
   };
 
   if (!akademiyaUserId || !studentNo || !password) {
@@ -822,19 +853,23 @@ app.post('/api/akademiya/link', async (req: Request, res: Response) => {
     const nameMatch = loginBody.match(/([가-힣]{2,4})\s*학생/);
     if (nameMatch) studentName = nameMatch[1];
 
+    // role은 클라이언트 입력을 신뢰하지 않고 기존 DB 값을 그대로 보존한다 (없으면 0)
+    const existingUser = await getByAkademiyaUserId(akademiyaUserId);
+    const role = existingUser?.role ?? 0;
+
     await saveAkademiyaUser({
       akademiyaUserId,
       akademiyaEmail,
       studentNo,
       password,
-      role: gmcRole ?? 0,
+      role,
     });
 
     const sessionId = `ak_${crypto.randomBytes(24).toString('hex')}`;
     sessions.set(sessionId, { cookies, studentNo, loginTime: new Date().toISOString() });
 
-    console.log(`[Akademiya 연동 완료] ${akademiyaEmail} → ${studentNo} (role ${gmcRole ?? 0})`);
-    return res.json({ success: true, sessionId, studentNo, studentName, role: gmcRole ?? 0, needsPrivacyConsent: true, needsTermsConsent: true });
+    console.log(`[Akademiya 연동 완료] ${akademiyaEmail} → ${studentNo} (role ${role})`);
+    return res.json({ success: true, sessionId, studentNo, studentName, role, needsPrivacyConsent: true, needsTermsConsent: true });
 
   } catch (err) {
     console.error('[Akademiya 연동 오류]', (err as Error).message);

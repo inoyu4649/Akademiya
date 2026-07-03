@@ -7,7 +7,6 @@ import RegisterPage from "./pages/auth/RegisterPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import OAuthCallbackPage from "./pages/auth/OAuthCallbackPage";
-import GmcAutoOAuthPage from "./pages/auth/GmcAutoOAuthPage";
 import CompleteProfilePage from "./pages/auth/CompleteProfilePage";
 import ProfilePage from "./pages/auth/ProfilePage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -53,7 +52,6 @@ const router = createBrowserRouter([
   { path: "/auth/forgot-password", element: <ForgotPasswordPage /> },
   { path: "/auth/reset-password", element: <ResetPasswordPage /> },
   { path: "/auth/callback",         element: <OAuthCallbackPage /> },
-  { path: "/auth/gmcauto-oauth",    element: <GmcAutoOAuthPage /> },
   { path: "/oauth/authorize",       element: <OAuthAuthorizePage /> },
   {
     path: "/auth/complete-profile",
