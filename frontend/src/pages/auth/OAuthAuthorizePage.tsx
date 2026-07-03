@@ -3,16 +3,10 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AuthLayout, { css as s } from "../../components/layout/AuthLayout";
 import { authApi } from "../../api/auth.api";
-import { openoauthApi, type LoginMeans } from "../../api/openoauth.api";
+import { openoauthApi, type AuthorizeInfo } from "../../api/openoauth.api";
 import { useAuthStore } from "../../store/auth.store";
 import GoogleIcon from "../../components/common/GoogleIcon";
 import styles from "./OAuthAuthorizePage.module.css";
-
-interface AuthorizeInfo {
-  displayName: string;
-  mainSiteUrl: string;
-  loginMeans: LoginMeans;
-}
 
 /**
  * Akademiya OpenOAuth — 사용자가 서드파티 OAuth App의 "Akademiya로 로그인"을 통해
@@ -130,6 +124,33 @@ export default function OAuthAuthorizePage() {
     </div>
   );
 
+  // ── 로그인 범위 제한(조직/반/구글 도메인) 및 로그인 수단 제한 안내 ──
+  const scopeNotices: string[] = [];
+  if (info.scopeRange === "org" && info.scopeOrg) {
+    scopeNotices.push(
+      t("oauth.authorize.scopeOrgNotice", { orgName: info.scopeOrg.name, orgCode: info.scopeOrg.code })
+    );
+  } else if (info.scopeRange === "class" && info.scopeClass) {
+    scopeNotices.push(
+      t("oauth.authorize.scopeClassNotice", { className: info.scopeClass.name, classCode: info.scopeClass.code })
+    );
+  } else if (info.scopeRange === "google_workspace" && info.scopeGoogleDomain) {
+    scopeNotices.push(t("oauth.authorize.scopeGoogleWorkspaceNotice", { domain: info.scopeGoogleDomain }));
+  }
+  if (info.loginMeans === "google") {
+    scopeNotices.push(t("oauth.authorize.googleOnlyNotice"));
+  } else if (info.loginMeans === "akademiya") {
+    scopeNotices.push(t("oauth.authorize.akademiyaOnlyNotice"));
+  }
+
+  const scopeNoticeBox = scopeNotices.length > 0 && (
+    <div className={styles.scopeNotice}>
+      {scopeNotices.map((notice, i) => (
+        <div key={i}>{notice}</div>
+      ))}
+    </div>
+  );
+
   // ── 로그인이 필요한 상태 — loginMeans에 따라 버튼 구성 변경 ──
   if (!user) {
     const showAkademiya = info.loginMeans === "akademiya" || info.loginMeans === "both";
@@ -139,6 +160,7 @@ export default function OAuthAuthorizePage() {
     return (
       <AuthLayout title={t("auth.login.title")}>
         {appBox}
+        {scopeNoticeBox}
 
         {showAkademiya && (
           <>

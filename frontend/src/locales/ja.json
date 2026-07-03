@@ -971,7 +971,12 @@
       "errorBanned": "このアプリへのログインが制限されているアカウントです。",
       "errorBannedWithReason": "このアプリへのログインが制限されているアカウントです(理由: {{reason}})",
       "errorNotEligible": "このアプリにログインする権限がありません。",
-      "errorGoogleOnly": "このアプリはGoogleアカウントでのログインのみ対応しています。"
+      "errorGoogleOnly": "このアプリはGoogleアカウントでのログインのみ対応しています。",
+      "scopeOrgNotice": "{{orgName}}[{{orgCode}}] 組織に加入しているアカウントのみ利用できます。",
+      "scopeClassNotice": "{{className}}[{{classCode}}] クラスに加入しているアカウントのみ利用できます。",
+      "scopeGoogleWorkspaceNotice": "{{domain}} ドメインのGoogleアカウントのみ利用できます。",
+      "googleOnlyNotice": "Googleログインのみ利用できます。",
+      "akademiyaOnlyNotice": "Googleログインは許可されていません。"
     }
   },
   "privacy": {

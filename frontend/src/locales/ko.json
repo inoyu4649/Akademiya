@@ -971,7 +971,12 @@
       "errorBanned": "이 앱에서 로그인이 제한된 계정입니다.",
       "errorBannedWithReason": "이 앱에서 로그인이 제한된 계정입니다 (사유: {{reason}})",
       "errorNotEligible": "이 앱에 로그인할 수 있는 권한이 없습니다.",
-      "errorGoogleOnly": "이 앱은 Google 계정으로만 로그인할 수 있습니다."
+      "errorGoogleOnly": "이 앱은 Google 계정으로만 로그인할 수 있습니다.",
+      "scopeOrgNotice": "{{orgName}}[{{orgCode}}] 조직에 가입된 계정만 이용 가능합니다.",
+      "scopeClassNotice": "{{className}}[{{classCode}}] 반에 가입된 계정만 이용 가능합니다.",
+      "scopeGoogleWorkspaceNotice": "{{domain}} 도메인 Google 계정만 이용 가능합니다.",
+      "googleOnlyNotice": "Google로 로그인만 사용할 수 있습니다.",
+      "akademiyaOnlyNotice": "Google로 로그인은 허용되지 않습니다."
     }
   },
   "privacy": {

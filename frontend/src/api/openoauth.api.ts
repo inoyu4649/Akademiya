@@ -81,6 +81,17 @@ export interface OAuthAppQuota {
   max: number;
 }
 
+export interface AuthorizeInfo {
+  clientId: string;
+  displayName: string;
+  mainSiteUrl: string;
+  loginMeans: LoginMeans;
+  scopeRange: ScopeRange;
+  scopeOrg: { name: string; code: string } | null;
+  scopeClass: { name: string; code: string } | null;
+  scopeGoogleDomain: string | null;
+}
+
 export const openoauthApi = {
   // ── 앱 관리 ──────────────────────────────────────────────────────────
   listApps: () => client.get<{ apps: OAuthApp[] }>("/openoauth/apps"),
@@ -129,7 +140,7 @@ export const openoauthApi = {
 
   // ── 제공자 (로그인 화면용) ───────────────────────────────────────────
   authorizeInfo: (clientId: string, redirectUri: string, scope: string) =>
-    client.get<{ clientId: string; displayName: string; mainSiteUrl: string; loginMeans: LoginMeans }>(
+    client.get<AuthorizeInfo>(
       "/openoauth/authorize-info",
       { params: { client_id: clientId, redirect_uri: redirectUri, scope } }
     ),

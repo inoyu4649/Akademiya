@@ -971,7 +971,12 @@
       "errorBanned": "This account is restricted from signing in to this app.",
       "errorBannedWithReason": "This account is restricted from signing in to this app (reason: {{reason}})",
       "errorNotEligible": "You're not eligible to sign in to this app.",
-      "errorGoogleOnly": "This app only supports signing in with a Google account."
+      "errorGoogleOnly": "This app only supports signing in with a Google account.",
+      "scopeOrgNotice": "Only accounts belonging to the {{orgName}}[{{orgCode}}] organization can use this.",
+      "scopeClassNotice": "Only accounts belonging to the {{className}}[{{classCode}}] class can use this.",
+      "scopeGoogleWorkspaceNotice": "Only Google accounts on the {{domain}} domain can use this.",
+      "googleOnlyNotice": "You can only sign in with Google.",
+      "akademiyaOnlyNotice": "Signing in with Google is not allowed."
     }
   },
   "privacy": {

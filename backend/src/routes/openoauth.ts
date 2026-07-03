@@ -583,11 +583,34 @@ router.get("/authorize-info", providerLimiter, async (req, res) => {
 
   logEvent(app.id as number, null, "request");
 
+  const scopeRange = app.scope_range as string;
+  let scopeOrg: { name: string; code: string } | null = null;
+  let scopeClass: { name: string; code: string } | null = null;
+
+  if (scopeRange === "org" && app.scope_org_id) {
+    const [orgRows] = await pool.query("SELECT name, code FROM organizations WHERE id = ?", [app.scope_org_id]);
+    const org = (orgRows as Row[])[0];
+    if (org) scopeOrg = { name: org.name as string, code: org.code as string };
+  } else if (scopeRange === "class" && app.scope_class_id) {
+    const [classRows] = await pool.query(
+      `SELECT c.name AS name, c.code AS code, o.code AS org_code
+       FROM classes c JOIN organizations o ON o.id = c.org_id
+       WHERE c.id = ?`,
+      [app.scope_class_id]
+    );
+    const cls = (classRows as Row[])[0];
+    if (cls) scopeClass = { name: cls.name as string, code: `${cls.org_code}${cls.code}` };
+  }
+
   res.json({
     clientId: app.client_id,
     displayName: app.display_name,
     mainSiteUrl: app.main_site_url,
     loginMeans: app.login_means,
+    scopeRange,
+    scopeOrg,
+    scopeClass,
+    scopeGoogleDomain: app.scope_google_domain,
   });
 });
 

@@ -27,6 +27,20 @@
 }
 .appLink:hover { text-decoration: underline; }
 
+/* ── 로그인 범위/수단 제한 안내 박스 (경고색 틴트) ── */
+.scopeNotice {
+  background: rgba(255, 193, 7, 0.12);
+  border: 1px solid rgba(255, 193, 7, 0.4);
+  color: #f5a623;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+.scopeNotice > div + div { margin-top: 4px; }
+
 .consentText {
   font-size: 13px;
   color: var(--text-secondary);
