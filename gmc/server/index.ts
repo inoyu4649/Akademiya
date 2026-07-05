@@ -686,6 +686,29 @@ app.post('/api/login', async (req: Request, res: Response) => {
 
 // ========== Akademiya OpenOAuth 연동 ==========
 
+// [보안] 계정연동(/link)은 반드시 OpenOAuth 콜백에서 토큰으로 검증된 akademiyaUserId에만
+// 수행되어야 한다. 과거처럼 그 값을 클라이언트가 되돌려 보내게 하면, 인가 없이 임의 사용자의
+// 연동을 덮어써 그 계정의 role(관리자 포함)이 실린 세션까지 탈취할 수 있다. 따라서 콜백에서
+// 1회용 서버측 링크 티켓을 발급하고, /link는 이 티켓에서만 연동 대상 id를 얻는다.
+const AK_LINK_TICKET_TTL_MS = 10 * 60_000; // 10분
+const linkTickets = new Map<string, { akademiyaUserId: number; email: string | null; expiresAt: number }>();
+
+function issueLinkTicket(akademiyaUserId: number, email: string | null): string {
+  const ticket = `lt_${crypto.randomBytes(24).toString('hex')}`;
+  linkTickets.set(ticket, { akademiyaUserId, email, expiresAt: Date.now() + AK_LINK_TICKET_TTL_MS });
+  return ticket;
+}
+
+// 유효하면 연동 대상(검증된 akademiyaUserId)을 반환. HAFS 비밀번호 오타 등으로 재시도할 수
+// 있도록 실제 연동이 성공한 뒤에만 티켓을 삭제한다(여기서는 만료된 것만 폐기).
+function peekLinkTicket(ticket: unknown): { akademiyaUserId: number; email: string | null } | null {
+  if (typeof ticket !== 'string' || !ticket) return null;
+  const entry = linkTickets.get(ticket);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) { linkTickets.delete(ticket); return null; }
+  return { akademiyaUserId: entry.akademiyaUserId, email: entry.email };
+}
+
 // 프론트엔드가 인가 URL을 직접 구성할 수 있도록 클라이언트 설정(비밀 정보 제외) 제공
 app.get('/api/akademiya/oauth-config', (_req: Request, res: Response) => {
   res.json({
@@ -741,7 +764,8 @@ app.post('/api/akademiya/oauth-callback', async (req: Request, res: Response) =>
           success: true,
           linked: true,
           loginFailed: true,
-          userInfo: { displayName, email, akademiyaUserId: userId },
+          userInfo: { displayName, email },
+          linkTicket: issueLinkTicket(userId, email ?? null),
           studentNo: gmcUser.student_no,
         });
       }
@@ -778,7 +802,8 @@ app.post('/api/akademiya/oauth-callback', async (req: Request, res: Response) =>
     return res.json({
       success: true,
       linked: false,
-      userInfo: { displayName, email, akademiyaUserId: userId },
+      userInfo: { displayName, email },
+      linkTicket: issueLinkTicket(userId, email ?? null),
     });
 
   } catch (err) {
@@ -791,11 +816,19 @@ app.post('/api/akademiya/oauth-callback', async (req: Request, res: Response) =>
 });
 
 app.post('/api/akademiya/link', async (req: Request, res: Response) => {
-  const { akademiyaUserId, akademiyaEmail, studentNo, password } = req.body as {
-    akademiyaUserId: number; akademiyaEmail: string; studentNo: string; password: string;
+  const { linkTicket, studentNo, password } = req.body as {
+    linkTicket?: string; studentNo?: string; password?: string;
   };
 
-  if (!akademiyaUserId || !studentNo || !password) {
+  // [보안] akademiyaUserId는 클라이언트 입력이 아니라, OpenOAuth 콜백에서 토큰으로 검증된 뒤
+  // 발급된 1회용 서버측 티켓에서만 얻는다. (임의 계정 연동 덮어쓰기/권한상승 방지)
+  const ticket = peekLinkTicket(linkTicket);
+  if (!ticket) {
+    return res.status(401).json({ success: false, message: '연동 세션이 만료되었거나 유효하지 않습니다. 다시 로그인해 주세요.' });
+  }
+  const { akademiyaUserId, email: akademiyaEmail } = ticket;
+
+  if (!studentNo || !password) {
     return res.status(400).json({ success: false, message: '필수 파라미터 누락' });
   }
 
@@ -864,6 +897,7 @@ app.post('/api/akademiya/link', async (req: Request, res: Response) => {
       password,
       role,
     });
+    linkTickets.delete(linkTicket!); // 연동 성공 → 티켓 1회용 폐기
 
     const sessionId = `ak_${crypto.randomBytes(24).toString('hex')}`;
     sessions.set(sessionId, { cookies, studentNo, loginTime: new Date().toISOString() });

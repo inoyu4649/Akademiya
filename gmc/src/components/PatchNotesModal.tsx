@@ -1,6 +1,6 @@
 import type React from 'react'
 
-export const GMC_PATCH_NOTES_VERSION = 1
+export const GMC_PATCH_NOTES_VERSION = 2
 
 interface PatchNoteEntry {
   version: number
@@ -11,6 +11,15 @@ interface PatchNoteEntry {
 
 // 새 업데이트를 배포할 때마다 맨 위에 항목을 추가하고 GMC_PATCH_NOTES_VERSION을 올리세요.
 const PATCH_NOTES: PatchNoteEntry[] = [
+  {
+    version: 2,
+    date: '2026-07-05',
+    title: 'GMCAuto v2.9.1 업데이트',
+    items: [
+      'Akademiya 계정 연동 과정의 보안을 강화했습니다. 이제 연동은 로그인으로 검증된 본인 계정에 대해서만 처리됩니다.',
+      '연동 화면을 오래 열어둔 경우, 안전을 위해 다시 로그인하도록 변경되었습니다.',
+    ],
+  },
   {
     version: 1,
     date: '2026-07-04',

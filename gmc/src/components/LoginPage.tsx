@@ -34,7 +34,6 @@ type AkStep = 'idle' | 'verifying' | 'link_needed' | 'linking'
 interface AkUserInfo {
   displayName?: string
   email?: string
-  akademiyaUserId?: number
 }
 
 function detectIsPwa(): boolean {
@@ -55,6 +54,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
 
   const [akStep, setAkStep]         = useState<AkStep>('idle')
   const [akUserInfo, setAkUserInfo]  = useState<AkUserInfo | null>(null)
+  const [akLinkTicket, setAkLinkTicket] = useState('')
   const [akStudentNo, setAkStudentNo] = useState('')
   const [akPassword, setAkPassword]   = useState('')
   const [akError, setAkError]         = useState('')
@@ -79,7 +79,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
         linked?: boolean; loginFailed?: boolean;
         sessionId?: string; studentNo?: string; studentName?: string;
         role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
-        userInfo?: AkUserInfo;
+        userInfo?: AkUserInfo; linkTicket?: string;
       }
       if (!data.success) {
         setAkError(data.message || t('auth.ak.verifyFailed'))
@@ -99,13 +99,15 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
         return
       }
       if (data.linked && data.loginFailed) {
-        setAkUserInfo({ ...data.userInfo, akademiyaUserId: data.userInfo?.akademiyaUserId })
+        setAkUserInfo(data.userInfo ?? null)
+        setAkLinkTicket(data.linkTicket ?? '')
         setAkStudentNo(data.studentNo || '')
         setAkStep('link_needed')
         setAkError(t('auth.ak.relink'))
         return
       }
       setAkUserInfo(data.userInfo ?? null)
+      setAkLinkTicket(data.linkTicket ?? '')
       setAkStep('link_needed')
     } catch {
       setAkError(t('auth.serverError'))
@@ -173,10 +175,9 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          akademiyaUserId: akUserInfo?.akademiyaUserId,
-          akademiyaEmail:  akUserInfo?.email,
-          studentNo:       akStudentNo,
-          password:        akPassword,
+          linkTicket: akLinkTicket,
+          studentNo:  akStudentNo,
+          password:   akPassword,
         }),
       })
       const data = await res.json() as {
@@ -356,7 +357,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
                     </button>
                   </form>
                   <button className="btn btn-outline" style={{ width: '100%', marginTop: '10px', fontSize: '13px' }}
-                    onClick={() => { setAkStep('idle'); setAkError(''); setAkUserInfo(null) }}>
+                    onClick={() => { setAkStep('idle'); setAkError(''); setAkUserInfo(null); setAkLinkTicket('') }}>
                     {t('common.cancel', '취소')}
                   </button>
                 </>

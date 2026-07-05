@@ -9,7 +9,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS 자동신청 프로그램",
-    "version": "v2.9",
+    "version": "v2.9.1",
     "contact": "문의: 022207@hafs.hs.kr",
     "madeWith": "Claude Code로 제작됨",
     "loading": "로그인 정보 확인 중...",
