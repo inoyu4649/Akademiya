@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthStore } from "../../store/auth.store";
 import type { AkashaUser } from "../../store/auth.store";
+import { consumeAkademiyaOAuthState } from "../../utils/akademiyaOAuth";
 
 interface ExchangeResponse {
   accessToken: string;
@@ -19,13 +20,14 @@ export default function CallbackPage() {
     called.current = true;
 
     const code = params.get("code");
-    if (!code) { navigate("/auth/login"); return; }
+    const state = params.get("state");
+    const codeVerifier = consumeAkademiyaOAuthState(state);
+    if (!code || !codeVerifier) { navigate("/auth/login"); return; }
 
-    // oauth-exchange는 /api/auth/oauth-exchange — ai.akademiya.kr nginx가 /api/ 를 backend로 프록시
-    fetch("/api/auth/oauth-exchange", {
+    fetch("/api/oauth-callback", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ code }),
+      body:    JSON.stringify({ code, codeVerifier }),
     })
       .then((r) => {
         if (!r.ok) throw new Error("exchange_failed");

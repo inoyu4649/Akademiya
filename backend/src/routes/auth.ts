@@ -22,17 +22,6 @@ const REFRESH_COOKIE = "refresh_token";
 const SALT_ROUNDS = 12;
 const RESET_CODE_TTL_MIN = 15;
 
-// AkashaAlt SSO: ai.akademiya.kr 로그인 완료 후 되돌아갈 콜백 URL 화이트리스트
-const ALLOWED_AI_CALLBACKS = [
-  "https://ai.akademiya.kr/auth/callback",
-  "http://localhost:5175/auth/callback",
-];
-
-function isSafeAiRedirect(uri: string | undefined): uri is string {
-  if (!uri) return false;
-  return ALLOWED_AI_CALLBACKS.includes(uri);
-}
-
 type DbUser = Record<string, unknown>;
 
 function setRefreshCookie(res: Response, token: string) {
@@ -476,12 +465,6 @@ router.delete("/account", requireAuth, async (req, res) => {
   }
 });
 
-// ─── POST /ai-code ── AkashaAlt SSO: 로그인된 사용자의 OAuth 코드 발급 ──────────
-router.post("/ai-code", requireAuth, (req, res) => {
-  const code = createOAuthCode(req.user!.id);
-  res.json({ code });
-});
-
 // ─── Google OAuth ─────────────────────────────────────────────────────────────
 router.get("/google", (req, res, next) => {
   passport.authenticate("google", { scope: ["profile", "email"], session: false })(req, res, next);
@@ -546,5 +529,4 @@ router.post("/oauth-exchange", async (req, res) => {
   }
 });
 
-export { isSafeAiRedirect };
 export default router;

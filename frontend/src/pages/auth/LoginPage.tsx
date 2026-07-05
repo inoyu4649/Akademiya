@@ -5,21 +5,11 @@ import AuthLayout, { css as s } from "../../components/layout/AuthLayout";
 import { authApi } from "../../api/auth.api";
 import { useAuthStore } from "../../store/auth.store";
 
-const SAFE_AI_CALLBACKS = [
-  "https://ai.akademiya.kr/auth/callback",
-  "http://localhost:5175/auth/callback",
-];
-function isSafeAiRedirect(uri: string | null): uri is string {
-  return !!uri && SAFE_AI_CALLBACKS.includes(uri);
-}
-
 export default function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const setAuth = useAuthStore((s) => s.setAuth);
-
-  const aiRedirect = params.get("ai_redirect");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,12 +25,7 @@ export default function LoginPage() {
     try {
       const res = await authApi.login({ email, password });
       setAuth(res.data.user, res.data.accessToken);
-      if (isSafeAiRedirect(aiRedirect)) {
-        const codeRes = await authApi.aiCode();
-        window.location.href = `${aiRedirect}?code=${codeRes.data.code}`;
-      } else {
-        navigate("/");
-      }
+      navigate("/");
     } catch (err: unknown) {
       const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       if (code === "INVALID_CREDENTIALS") setError(t("auth.login.invalidCredentials"));
@@ -52,9 +37,6 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    if (isSafeAiRedirect(aiRedirect)) {
-      sessionStorage.setItem("ai_redirect", aiRedirect);
-    }
     window.location.href = "/api/auth/google";
   };
 

@@ -16,6 +16,7 @@
 7. [배포 후 검증](#7-배포-후-검증)
 8. [운영 관리 명령어](#8-운영-관리-명령어)
 9. [트러블슈팅](#9-트러블슈팅)
+10. [AkashaAlt(ai.akademiya.kr) 배포](#10-akashaaltaiakademiyakr-배포)
 
 ---
 
@@ -579,6 +580,20 @@ docker builder prune -f
 
 ## 9. 트러블슈팅
 
+### `ERROR 1410 (42000): You are not allowed to create a user with GRANT`
+
+`GRANT ... TO '${MYSQL_APP_USER}'@'%'` 같은 명령을 셸에 직접 타이핑해서 실행했는데, `.env`를
+그 셸에 먼저 로드하지 않아 변수가 빈 문자열로 치환되면서 `TO ''@'%'`가 되어 발생한다(MySQL 8부터는
+GRANT가 존재하지 않는 사용자를 암묵적으로 만들어주지 않음). `docker compose exec`는 프로젝트 `.env`를
+자동으로 읽지 않으므로, 수동으로 SQL을 실행하기 전에 반드시 먼저 로드해야 한다:
+
+```bash
+set -a; source .env; set +a
+echo "$MYSQL_APP_USER"   # 빈 값이 아닌지 먼저 확인
+```
+
+[10-3](#10-3-mysql-akashaalt-스키마-생성)의 akashaalt 스키마 수동 생성 명령이 대표적인 예시.
+
 ### DB 연결 실패 (`ECONNREFUSED`)
 
 ```bash
@@ -654,6 +669,85 @@ sudo lsof -i :443
 # 기존 nginx 서비스 중지 (호스트에 설치된 경우)
 sudo systemctl stop nginx
 sudo systemctl disable nginx
+```
+
+---
+
+## 10. AkashaAlt(ai.akademiya.kr) 배포
+
+AkashaAlt는 GMCAuto와 동일한 구조로 Akademiya 본체와 완전히 독립된 앱이다(별도 폴더 `akashaalt/`,
+별도 MySQL 스키마 `akashaalt`, 별도 세션). Akademiya OpenOAuth의 서드파티 클라이언트로만 연동된다.
+
+### 10-1. Akademiya OpenOAuth App 등록 (필수, 배포 전)
+
+1. `akademiya.kr`에 로그인 → 회원정보 수정에서 "개발자 모드" 활성화
+2. 좌측 "개발자 도구 → Akademiya OAuth → 새 OAuth App 만들기"에서 등록:
+   - 로그인 허용 수단: 자유롭게 선택(둘 다 허용 권장)
+   - 로그인 허용 범위: 전체(all)
+   - 신뢰할 수 있는 출처(redirect_uri)에 `https://ai.akademiya.kr/auth/callback` 등록
+3. 발급된 **Client ID / Client Secret**을 안전한 곳에 저장 (이 화면을 닫으면 다시 볼 수 없음)
+
+### 10-2. `akashaalt/.env` 작성
+
+`akashaalt/.env.example`을 복사해 `akashaalt/.env`를 만들고 채운다:
+- `AKASHAALT_DB_USER`/`AKASHAALT_DB_PASSWORD` — 루트 `.env`의 `MYSQL_APP_USER`/`MYSQL_APP_PASSWORD`와 **동일한 값**(env_file은 변수 치환이 안 되므로 직접 복사 필요, gmc/.env와 동일한 관례)
+- `AKASHAALT_JWT_SECRET` — 32자 이상 무작위 문자열 (Akademiya의 JWT 시크릿과는 별개)
+- `AI_OAUTH_CLIENT_ID`/`AI_OAUTH_CLIENT_SECRET` — 10-1에서 발급받은 값
+- `SMTP_*`/`EMAIL_FROM` — API Key Vault 비밀번호 변경 인증코드 발송용 (Akademiya 본체와 같은 Gmail 계정을 재사용해도 무방)
+
+### 10-3. MySQL `akashaalt` 스키마 생성
+
+**신규 배포**(MySQL 볼륨을 처음 만드는 경우)라면 `mysql-init/init.sh`가 컨테이너 최초 기동 시
+`akashaalt` DB와 권한을 자동 생성하므로 이 단계를 건너뛴다.
+
+**기존 운영 중인 MySQL 볼륨**에 추가하는 경우 수동 생성이 필요하다.
+
+⚠️ **먼저 루트 `.env`를 현재 셸에 로드해야 한다** — `docker compose exec`로 직접 타이핑하는 명령은
+`.env`를 자동으로 읽어오지 않는다. `${MYSQL_APP_USER}` 등이 빈 문자열로 치환되면 `GRANT ... TO ''@'%'`가
+되어 `ERROR 1410 (42000): You are not allowed to create a user with GRANT`가 발생한다(MySQL 8부터 GRANT가
+존재하지 않는 사용자를 암묵적으로 생성해주지 않기 때문 — 실제로 겪은 오류):
+
+```bash
+set -a; source .env; set +a   # MYSQL_ROOT_PASSWORD / MYSQL_APP_USER 를 현재 셸에 로드
+
+docker compose exec mysql mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "
+  CREATE DATABASE IF NOT EXISTS akashaalt CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  GRANT ALL PRIVILEGES ON akashaalt.* TO '${MYSQL_APP_USER}'@'%';
+  FLUSH PRIVILEGES;
+"
+```
+
+실행 후 `'${MYSQL_APP_USER}'@'%'`로 실제 치환됐는지 확인하려면 명령 실행 직전에 `echo "$MYSQL_APP_USER"`로
+빈 값이 아닌지 먼저 확인한다.
+
+테이블 자체는 `akashaalt` 컨테이너가 처음 기동할 때 `initDb()`가 자동 생성한다(마이그레이션 파일 불필요).
+
+### 10-4. ⚠️ 기존 AkashaAlt 채팅 데이터 이관 (구버전에서 업그레이드하는 경우만)
+
+이전 버전의 AkashaAlt는 Akademiya 본체 DB(`akademiya` 스키마)의 `ai_conversations`,
+`ai_messages`, `ai_vaults`, `ai_api_keys`, `ai_vault_reset_tokens` 테이블을 사용했다.
+이번 개편으로 이 테이블들은 더 이상 Akademiya 백엔드 코드에서 참조되지 않지만, **기존 프로덕션
+DB에는 여전히 남아 있으며 자동으로 삭제되지 않는다.** 기존 사용자 데이터를 보존하려면:
+
+1. Akademiya `users.id`(정수)를 새 `akashaalt.akashaalt_users.akademiya_user_id`로 매핑하는
+   행을 먼저 생성(로그인 이력이 있는 사용자만 신규 로그인 시 자동 생성되므로, 데이터 보존이
+   꼭 필요하지 않다면 이 단계 전체를 건너뛰고 사용자가 재로그인 후 새로 채팅을 시작하게 해도 무방)
+2. 필요 시 `mysqldump`로 위 5개 테이블만 덤프 후, `user_id` 값을 `akashaalt_users.id`로
+   치환하는 변환 스크립트를 작성해 `akashaalt` DB로 import
+3. 이관 완료 후 Akademiya `akademiya` DB에서 다음을 실행해 기존 테이블 삭제:
+   ```sql
+   DROP TABLE IF EXISTS ai_vault_reset_tokens, ai_api_keys, ai_vaults, ai_messages, ai_conversations;
+   ```
+
+**데이터 보존이 중요하지 않다면(예: 아직 실사용자가 적은 초기 단계) 위 이관 절차를 생략하고
+바로 3번의 `DROP TABLE`만 실행해도 된다.**
+
+### 10-5. 빌드 및 배포
+
+```bash
+docker compose up -d --build akashaalt
+docker compose logs -f akashaalt   # "[akashaalt] listening on port 3003" 확인
+curl -s https://ai.akademiya.kr/api/health
 ```
 
 ---

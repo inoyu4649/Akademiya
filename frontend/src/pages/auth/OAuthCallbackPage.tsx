@@ -15,14 +15,6 @@ export default function OAuthCallbackPage() {
     if (called.current) return;
     called.current = true;
     const code = params.get("code");
-    const aiRedirectStored = sessionStorage.getItem("ai_redirect");
-    const safeAiCallbacks = [
-      "https://ai.akademiya.kr/auth/callback",
-      "http://localhost:5175/auth/callback",
-    ];
-    const aiRedirect = aiRedirectStored && safeAiCallbacks.includes(aiRedirectStored)
-      ? aiRedirectStored
-      : null;
 
     // Akademiya OpenOAuth: /oauth/authorize에서 "Google로 로그인"을 눌러 진입한 경우 복귀용 쿼리스트링
     const openoauthPending = sessionStorage.getItem("openoauth_pending");
@@ -33,17 +25,9 @@ export default function OAuthCallbackPage() {
     }
     authApi
       .oauthExchange(code)
-      .then(async (res) => {
+      .then((res) => {
         setAuth(res.data.user, res.data.accessToken);
         const user = res.data.user;
-
-        // AkashaAlt SSO: 로그인 완료 후 ai.akademiya.kr로 복귀
-        if (aiRedirect && user.country && user.phone) {
-          sessionStorage.removeItem("ai_redirect");
-          const codeRes = await authApi.aiCode();
-          window.location.href = `${aiRedirect}?code=${codeRes.data.code}`;
-          return;
-        }
 
         // Akademiya OpenOAuth: 로그인 완료 후 승인 화면으로 정확히 복귀
         if (openoauthPending && user.country && user.phone) {

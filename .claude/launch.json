@@ -18,6 +18,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "gmc", "run", "dev"],
       "port": 5174
+    },
+    {
+      "name": "akashaalt-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "akashaalt", "run", "dev"],
+      "port": 5175
     }
   ]
 }

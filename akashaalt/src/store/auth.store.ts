@@ -3,9 +3,8 @@ import { persist } from "zustand/middleware";
 
 export interface AkashaUser {
   id: number;
-  email: string;
+  email: string | null;
   displayName: string;
-  role: "user" | "admin";
 }
 
 interface AuthState {
