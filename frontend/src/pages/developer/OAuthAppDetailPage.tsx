@@ -134,9 +134,13 @@ export default function OAuthAppDetailPage() {
 
   async function handleAddOrigin() {
     setOriginError("");
-    let normalized = newOrigin.trim();
+    let normalized: string;
     try {
-      normalized = new URL(normalized).origin;
+      const u = new URL(newOrigin.trim());
+      if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error();
+      if (u.username || u.password || u.hash) throw new Error();
+      // 경로/쿼리가 있으면 전체 redirect_uri로 정확 등록(권장), 없으면 오리진으로 등록(레거시 호환)
+      normalized = u.pathname === "/" && !u.search ? u.origin : u.origin + u.pathname + u.search;
     } catch {
       setOriginError(t("developer.settings.originInvalid"));
       return;
@@ -327,7 +331,7 @@ export default function OAuthAppDetailPage() {
             <div className={styles.addRow}>
               <input
                 className={`${styles.input} ${styles.mono}`}
-                placeholder="https://example.akademiya.kr"
+                placeholder="https://example.akademiya.kr/callback"
                 value={newOrigin}
                 onChange={(e) => setNewOrigin(e.target.value)}
               />

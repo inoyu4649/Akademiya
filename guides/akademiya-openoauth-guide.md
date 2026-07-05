@@ -40,7 +40,10 @@ Google, GitHub 등 다른 OAuth 제공자와 동일한 방식(Authorization Code
    - **로그인 허용 수단**: Akademiya 계정 전용 / Google 계정 전용 / 둘 다 허용.
    - **로그인 허용 범위**: 전체 / 특정 조직 / 특정 반 / Google Workspace 도메인.
 3. 생성 시 발급되는 Client ID와 Client Secret은 이 화면을 닫으면 다시 볼 수 없습니다. 안전한 곳에 저장하세요. Client Secret은 반드시 서버에만 보관하고 프런트엔드 코드에 노출하지 마세요.
-4. 앱 설정의 "신뢰할 수 있는 자바스크립트 출처"에 여러분의 `redirect_uri` 오리진을 반드시 등록해야 합니다. 등록되지 않은 오리진으로는 로그인 요청이 거부됩니다.
+4. 앱 설정의 "신뢰할 수 있는 출처"에 `redirect_uri`를 반드시 등록해야 합니다. 등록되지 않은 값으로는 로그인 요청이 거부됩니다.
+   - **권장**: 전체 `redirect_uri`(예: `https://example.akademiya.kr/callback`)를 등록하면 정확히 그 주소로만 인가 코드가 전달됩니다(가장 안전).
+   - **호환**: 오리진만(예: `https://example.akademiya.kr`) 등록하면 해당 오리진의 모든 경로를 허용합니다. 가능하면 전체 URI 등록을 사용하세요.
+   - `redirect_uri`에 사용자 정보(`user:pass@`)나 프래그먼트(`#...`)는 포함할 수 없습니다.
 
 ## 인증 플로우 요약
 
@@ -160,7 +163,7 @@ Content-Type: application/json
 
 - PKCE(S256)는 선택이 아닌 필수입니다. `code_verifier`를 안전하게 보관하세요.
 - Client Secret은 반드시 서버에만 보관하세요. 브라우저·모바일 앱에 하드코딩하지 마세요.
-- `redirect_uri`는 반드시 사전에 등록한 오리진과 정확히 일치해야 합니다.
+- `redirect_uri`는 사전에 등록한 값과 일치해야 합니다. 보안을 위해 오리진만이 아니라 전체 `redirect_uri`를 등록해 정확 일치(exact match)를 적용하는 것을 권장합니다.
 - `state` 값으로 CSRF를 방어하고, 요청 시 보낸 값과 콜백으로 받은 값을 반드시 비교하세요.
 - `access_token`·`refresh_token`은 안전한 저장소(서버 세션, HttpOnly 쿠키 등)에 보관하고 클라이언트 JavaScript에 노출하지 마세요.
 

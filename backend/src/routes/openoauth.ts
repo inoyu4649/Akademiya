@@ -92,11 +92,19 @@ function isValidHttpUrl(value: string): boolean {
   }
 }
 
-function isValidOrigin(value: string): boolean {
+/**
+ * 신뢰 리다이렉트 항목으로 등록 가능한 값인지 검증.
+ * - 순수 오리진(`https://app.example`)  → 동일 오리진 redirect_uri 허용(레거시 호환)
+ * - 전체 redirect_uri(`https://app.example/callback`) → 정확 일치 검증(BCP 권장, 더 안전)
+ * 어느 쪽이든 userinfo/fragment는 금지(코드 유출·피싱 표면 축소), 길이 255 이하.
+ */
+function isValidRedirectEntry(value: string): boolean {
+  if (typeof value !== "string" || value.length === 0 || value.length > 255) return false;
   try {
     const u = new URL(value);
     if (u.protocol !== "http:" && u.protocol !== "https:") return false;
-    return u.origin === value; // path/query 없이 origin 자체만 허용
+    if (u.username || u.password || u.hash) return false;
+    return true;
   } catch {
     return false;
   }
@@ -122,12 +130,31 @@ function base64UrlSha256(input: string): string {
   return crypto.createHash("sha256").update(input).digest("base64url");
 }
 
-async function isOriginWhitelisted(appId: number, origin: string): Promise<boolean> {
-  const [rows] = await pool.query(
-    "SELECT 1 FROM oauth_app_origins WHERE app_id = ? AND origin = ? LIMIT 1",
-    [appId, origin]
-  );
-  return (rows as Row[]).length > 0;
+/** 등록 항목 1건과 redirect_uri 매칭: 정확 일치(권장) 또는 순수 오리진 등록 시 동일 오리진(레거시). */
+function redirectUriMatchesEntry(redirectUri: string, entry: string): boolean {
+  if (redirectUri === entry) return true; // 전체 URI 정확 일치 (BCP 권장 경로)
+  try {
+    const e = new URL(entry);
+    if (entry === e.origin) {
+      // entry가 경로 없는 순수 오리진 → 같은 오리진의 redirect_uri 허용(기존 등록 호환)
+      return new URL(redirectUri).origin === entry;
+    }
+  } catch {
+    /* 잘못된 등록 항목은 무시 */
+  }
+  return false;
+}
+
+/** redirect_uri가 앱의 신뢰 항목 중 하나에 매칭되는지 검사. userinfo/fragment 포함 시 즉시 거부. */
+async function isRedirectUriAllowed(appId: number, redirectUri: string): Promise<boolean> {
+  try {
+    const u = new URL(redirectUri);
+    if (u.username || u.password || u.hash) return false;
+  } catch {
+    return false;
+  }
+  const [rows] = await pool.query("SELECT origin FROM oauth_app_origins WHERE app_id = ?", [appId]);
+  return (rows as Row[]).some((r) => redirectUriMatchesEntry(redirectUri, r.origin as string));
 }
 
 async function isBanned(appId: number, userId: number): Promise<Row | null> {
@@ -370,13 +397,14 @@ router.post("/apps/:id/regenerate-secret", requireAuth, requireDeveloper, async 
   res.json({ clientSecret });
 });
 
-// ── Origins (신뢰 JavaScript 출처 화이트리스트) ────────────────────────────
+// ── Origins (신뢰 리다이렉트 출처/URI 화이트리스트) ─────────────────────────
+// 순수 오리진 또는 전체 redirect_uri(정확 일치, 권장) 둘 다 등록 가능.
 router.post("/apps/:id/origins", requireAuth, requireDeveloper, async (req, res) => {
   const app = await getOwnedApp(Number(req.params.id), req.user!.id);
   if (!app) { res.status(404).json({ error: "NOT_FOUND" }); return; }
 
   const { origin } = req.body as { origin?: string };
-  if (typeof origin !== "string" || !isValidOrigin(origin)) {
+  if (typeof origin !== "string" || !isValidRedirectEntry(origin)) {
     res.status(400).json({ error: "INVALID_ORIGIN" });
     return;
   }
@@ -475,9 +503,15 @@ router.get("/apps/:id/user-search", requireAuth, requireDeveloper, async (req, r
   const q = ((req.query.q as string) ?? "").trim();
   if (!q) { res.json({ users: [] }); return; }
 
+  // BAN 대상은 "이 앱을 실제로 이용(로그인 이벤트가 있는)"한 사용자로 한정한다.
+  // 과거처럼 전체 users를 검색하면 개발자 모드 계정이 전교생 이메일을 열거할 수 있다.
   const [rows] = await pool.query(
-    `SELECT id, email, display_name FROM users WHERE email LIKE ? OR display_name LIKE ? LIMIT 20`,
-    [`%${q}%`, `%${q}%`]
+    `SELECT DISTINCT u.id, u.email, u.display_name
+       FROM users u
+       JOIN oauth_login_events e ON e.user_id = u.id AND e.app_id = ?
+      WHERE (u.email LIKE ? OR u.display_name LIKE ?)
+      LIMIT 20`,
+    [app.id, `%${q}%`, `%${q}%`]
   );
   res.json({ users: rows });
 });
@@ -565,14 +599,13 @@ router.get("/authorize-info", providerLimiter, async (req, res) => {
   const app = (rows as Row[])[0];
   if (!app) { res.status(400).json({ error: "INVALID_CLIENT" }); return; }
 
-  let redirectOrigin: string;
   try {
-    redirectOrigin = new URL(redirectUri).origin;
+    new URL(redirectUri); // 형식 검증(파싱 가능 여부)
   } catch {
     res.status(400).json({ error: "INVALID_REDIRECT_URI" });
     return;
   }
-  if (!(await isOriginWhitelisted(app.id as number, redirectOrigin))) {
+  if (!(await isRedirectUriAllowed(app.id as number, redirectUri))) {
     res.status(400).json({ error: "REDIRECT_URI_NOT_WHITELISTED" });
     return;
   }
@@ -628,14 +661,13 @@ router.post("/authorize", requireAuth, providerLimiter, async (req, res) => {
   const app = (rows as Row[])[0];
   if (!app) { res.status(400).json({ error: "INVALID_CLIENT" }); return; }
 
-  let redirectOrigin: string;
   try {
-    redirectOrigin = new URL(redirectUri).origin;
+    new URL(redirectUri); // 형식 검증(파싱 가능 여부)
   } catch {
     res.status(400).json({ error: "INVALID_REDIRECT_URI" });
     return;
   }
-  if (!(await isOriginWhitelisted(app.id as number, redirectOrigin))) {
+  if (!(await isRedirectUriAllowed(app.id as number, redirectUri))) {
     res.status(400).json({ error: "REDIRECT_URI_NOT_WHITELISTED" });
     return;
   }
@@ -762,8 +794,15 @@ router.post("/token", providerLimiter, async (req, res) => {
       return;
     }
 
-    // 코드 사용 처리 (1회용)
-    await pool.query("UPDATE oauth_auth_codes SET used = 1 WHERE id = ?", [authCode.id]);
+    // 코드 사용 처리 — 원자적 1회용 소비(select→update 사이 레이스로 인한 이중 교환 방지)
+    const [claim] = await pool.query(
+      "UPDATE oauth_auth_codes SET used = 1 WHERE id = ? AND used = 0",
+      [authCode.id]
+    );
+    if ((claim as { affectedRows: number }).affectedRows !== 1) {
+      res.status(400).json({ error: "INVALID_OR_EXPIRED_CODE" });
+      return;
+    }
 
     // 발급 직전 재확인 (인가~교환 사이 BAN 되었을 가능성 방어)
     const ban = await isBanned(app.id as number, authCode.user_id as number);
