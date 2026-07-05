@@ -487,7 +487,7 @@ export default function AppLayout() {
 
         {/* ── Version badge ── */}
         <div className={styles.versionBadge}>
-          Akademiya Web App version 1.1.2
+          Akademiya Web App version 1.1.3
         </div>
         <div className={styles.versionLinks}>
           <Link to="/privacy" className={styles.versionLink}>{t("nav.privacyPolicy", "개인정보 처리방침")}</Link>
