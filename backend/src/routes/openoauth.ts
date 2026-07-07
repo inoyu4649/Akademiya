@@ -21,7 +21,50 @@ const router: IRouter = Router();
 
 type Row = Record<string, unknown>;
 
-const SCOPES = ["openid", "profile", "email"];
+// ── Scope 모델 ───────────────────────────────────────────────────────────────
+// 필수 scope(이름·이메일)는 요청/설정과 무관하게 항상 부여된다.
+// 선택 scope는 앱 소유자가 개발자 화면 체크박스로 켠 것만 부여되며,
+// scope_range가 org/class인 앱은 해당 소속 정보 scope가 서버에서 강제로 켜진다
+// (조직/반 단위 로그인을 제한해두고 정작 그 소속 정보를 못 받으면 의미가 없으므로).
+// third-party가 authorize 요청에 실어 보내는 scope 파라미터는 하위호환을 위해
+// 형식만 검증하고(openid는 관례상 계속 허용), 실제로 부여되는 scope는 항상
+// "필수 scope + 이 앱에 켜진 선택 scope"로 서버가 결정한다 — 요청 측이 앱 소유자가
+// 켜지 않은 scope를 자체적으로 더 요구할 수 없다.
+type OptionalScope = "picture" | "org_membership" | "class_membership";
+const REQUIRED_SCOPES: readonly string[] = ["profile", "email"];
+const OPTIONAL_SCOPES: readonly OptionalScope[] = ["picture", "org_membership", "class_membership"];
+const KNOWN_SCOPE_TOKENS: readonly string[] = ["openid", ...REQUIRED_SCOPES, ...OPTIONAL_SCOPES];
+
+function parseEnabledScopes(raw: unknown): OptionalScope[] {
+  const str = typeof raw === "string" ? raw : "";
+  const tokens = str.split(/\s+/).filter(Boolean);
+  return OPTIONAL_SCOPES.filter((s) => tokens.includes(s));
+}
+
+/** scope_range가 org/class인 앱은 해당 소속 정보 scope가 항상 강제로 켜진다 */
+function forcedScopesFor(scopeRange: string): OptionalScope[] {
+  if (scopeRange === "org") return ["org_membership"];
+  if (scopeRange === "class") return ["class_membership"];
+  return [];
+}
+
+/** 요청받은 선택 scope 목록을 forced scope와 합쳐 저장용 문자열로 직렬화 */
+function serializeEnabledScopes(requested: unknown, scopeRange: string): string {
+  const chosen = new Set<OptionalScope>();
+  if (Array.isArray(requested)) {
+    for (const s of requested) {
+      if (typeof s === "string" && OPTIONAL_SCOPES.includes(s as OptionalScope)) chosen.add(s as OptionalScope);
+    }
+  }
+  for (const s of forcedScopesFor(scopeRange)) chosen.add(s);
+  return [...chosen].join(" ");
+}
+
+/** 이 앱의 로그인이 실제로 부여하는 전체 scope(필수 + 선택 켜진 것) */
+function effectiveScopes(app: Row): string[] {
+  return [...REQUIRED_SCOPES, ...parseEnabledScopes(app.enabled_scopes)];
+}
+
 const CODE_TTL_MS = 60_000; // 인가 코드 60초 TTL
 const ACCESS_TOKEN_TTL_SEC = 60 * 60; // 1시간
 const REFRESH_TOKEN_TTL_DAYS = 30;
@@ -118,12 +161,14 @@ function safeCompareHash(a: string, b: string): boolean {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-function normalizeScope(raw: unknown): string[] | null {
-  const str = typeof raw === "string" && raw.trim() ? raw : SCOPES.join(" ");
+/**
+ * third-party가 보낸 scope 파라미터의 형식만 검증한다(하위호환용 — openid 포함 허용).
+ * 실제로 무엇이 부여되는지는 이 값과 무관하게 effectiveScopes(app)가 결정한다.
+ */
+function isValidRequestedScope(raw: unknown): boolean {
+  const str = typeof raw === "string" && raw.trim() ? raw : REQUIRED_SCOPES.join(" ");
   const requested = str.split(/\s+/).filter(Boolean);
-  const unique = [...new Set(requested)];
-  if (unique.length === 0 || unique.some((s) => !SCOPES.includes(s))) return null;
-  return unique;
+  return requested.length > 0 && requested.every((s) => KNOWN_SCOPE_TOKENS.includes(s));
 }
 
 function base64UrlSha256(input: string): string {
@@ -172,6 +217,35 @@ function logEvent(appId: number, userId: number | null, eventType: "request" | "
     .catch((e) => console.error("[openoauth] event log 실패", e));
 }
 
+/** picture scope 값 — 업로드한 사진이 없으면 기본 SVG 아이콘의 절대 URL을 반환 */
+function pictureUrl(avatarUrl: string | null): string {
+  const base = process.env.FRONTEND_URL ?? "";
+  return avatarUrl ? `${base}${avatarUrl}` : `${base}/default-avatar.svg`;
+}
+
+async function getOrgMemberships(userId: number) {
+  const [rows] = await pool.query(
+    `SELECT o.id AS org_id, o.name AS org_name, o.code AS org_code, om.permission
+     FROM org_members om JOIN organizations o ON o.id = om.org_id
+     WHERE om.user_id = ?`,
+    [userId]
+  );
+  return rows;
+}
+
+async function getClassMemberships(userId: number) {
+  const [rows] = await pool.query(
+    `SELECT c.id AS class_id, c.name AS class_name, CONCAT(o.code, c.code) AS class_code,
+            o.id AS org_id, o.name AS org_name, cm.permission
+     FROM class_members cm
+     JOIN classes c ON c.id = cm.class_id
+     JOIN organizations o ON o.id = c.org_id
+     WHERE cm.user_id = ?`,
+    [userId]
+  );
+  return rows;
+}
+
 function appPublicShape(app: Row) {
   return {
     id: app.id as number,
@@ -183,6 +257,7 @@ function appPublicShape(app: Row) {
     scopeOrgId: app.scope_org_id as number | null,
     scopeClassId: app.scope_class_id as number | null,
     scopeGoogleDomain: app.scope_google_domain as string | null,
+    enabledScopes: parseEnabledScopes(app.enabled_scopes),
     clientId: app.client_id as string,
     createdAt: app.created_at,
   };
@@ -203,8 +278,10 @@ router.get("/apps", requireAuth, requireDeveloper, async (req, res) => {
 
 // ── POST /apps ─────────────────────────────────────────────────────────────
 router.post("/apps", requireAuth, requireDeveloper, async (req, res) => {
-  const { codeName, displayName, mainSiteUrl, loginMeans, scopeRange, scopeOrgId, scopeClassId, scopeGoogleDomain } =
-    req.body as Record<string, unknown>;
+  const {
+    codeName, displayName, mainSiteUrl, loginMeans, scopeRange, scopeOrgId, scopeClassId, scopeGoogleDomain,
+    enabledScopes,
+  } = req.body as Record<string, unknown>;
 
   if (typeof codeName !== "string" || !CODE_NAME_RE.test(codeName)) {
     res.status(400).json({ error: "INVALID_CODE_NAME" });
@@ -259,14 +336,15 @@ router.post("/apps", requireAuth, requireDeveloper, async (req, res) => {
     const [result] = await pool.query(
       `INSERT INTO oauth_apps
         (owner_id, client_id, client_secret_hash, code_name, display_name, main_site_url,
-         login_means, scope_range, scope_org_id, scope_class_id, scope_google_domain)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         login_means, scope_range, scope_org_id, scope_class_id, scope_google_domain, enabled_scopes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         req.user!.id, clientId, hashToken(clientSecret), codeName, displayName.trim(), mainSiteUrl,
         loginMeans, scopeRange,
         scopeRange === "org" ? Number(scopeOrgId) : null,
         scopeRange === "class" ? Number(scopeClassId) : null,
         scopeRange === "google_workspace" ? (scopeGoogleDomain as string).trim().toLowerCase() : null,
+        serializeEnabledScopes(enabledScopes, scopeRange as string),
       ]
     );
     const appId = (result as { insertId: number }).insertId;
@@ -311,7 +389,7 @@ router.patch("/apps/:id", requireAuth, requireDeveloper, async (req, res) => {
   const app = await getOwnedApp(Number(req.params.id), req.user!.id);
   if (!app) { res.status(404).json({ error: "NOT_FOUND" }); return; }
 
-  const { displayName, mainSiteUrl, loginMeans, scopeRange, scopeOrgId, scopeClassId, scopeGoogleDomain } =
+  const { displayName, mainSiteUrl, loginMeans, scopeRange, scopeOrgId, scopeClassId, scopeGoogleDomain, enabledScopes } =
     req.body as Record<string, unknown>;
 
   const updates: string[] = [];
@@ -368,6 +446,13 @@ router.patch("/apps/:id", requireAuth, requireDeveloper, async (req, res) => {
   if (scopeGoogleDomain !== undefined) {
     updates.push("scope_google_domain = ?");
     values.push(scopeGoogleDomain ? (scopeGoogleDomain as string).trim().toLowerCase() : null);
+  }
+  // scopeRange가 바뀌면 강제 scope(org/class 소속 정보)도 바뀌므로, enabledScopes를
+  // 명시적으로 보내지 않았더라도 scopeRange가 바뀌었다면 재계산한다.
+  if (enabledScopes !== undefined || scopeRange !== undefined) {
+    const base = enabledScopes !== undefined ? enabledScopes : parseEnabledScopes(app.enabled_scopes);
+    updates.push("enabled_scopes = ?");
+    values.push(serializeEnabledScopes(base, finalScopeRange));
   }
 
   if (updates.length === 0) { res.status(400).json({ error: "NO_CHANGES" }); return; }
@@ -609,7 +694,7 @@ router.get("/authorize-info", providerLimiter, async (req, res) => {
     res.status(400).json({ error: "REDIRECT_URI_NOT_WHITELISTED" });
     return;
   }
-  if (normalizeScope(scope) === null) {
+  if (!isValidRequestedScope(scope)) {
     res.status(400).json({ error: "INVALID_SCOPE" });
     return;
   }
@@ -644,6 +729,7 @@ router.get("/authorize-info", providerLimiter, async (req, res) => {
     scopeOrg,
     scopeClass,
     scopeGoogleDomain: app.scope_google_domain,
+    enabledScopes: parseEnabledScopes(app.enabled_scopes),
   });
 });
 
@@ -672,8 +758,9 @@ router.post("/authorize", requireAuth, providerLimiter, async (req, res) => {
     return;
   }
 
-  const scopes = normalizeScope(scope);
-  if (scopes === null) { res.status(400).json({ error: "INVALID_SCOPE" }); return; }
+  if (!isValidRequestedScope(scope)) { res.status(400).json({ error: "INVALID_SCOPE" }); return; }
+  // 실제로 부여되는 scope는 요청 값과 무관하게 이 앱에 설정된 필수+선택 scope로 고정된다.
+  const scopes = effectiveScopes(app);
 
   // PKCE 필수 (S256만 허용)
   if (typeof codeChallenge !== "string" || !codeChallenge || codeChallengeMethod !== "S256") {
@@ -900,16 +987,22 @@ router.get("/userinfo", providerLimiter, async (req, res) => {
   }
 
   const [userRows] = await pool.query(
-    "SELECT id, email, display_name FROM users WHERE id = ?",
+    "SELECT id, email, display_name, avatar_url FROM users WHERE id = ?",
     [tokenRow.user_id]
   );
   const u = (userRows as Row[])[0];
   if (!u) { res.status(404).json({ error: "USER_NOT_FOUND" }); return; }
 
   const scopes = (tokenRow.scope as string).split(" ");
-  const payload: Record<string, unknown> = { sub: String(u.id) };
-  if (scopes.includes("profile")) payload.name = u.display_name;
-  if (scopes.includes("email")) payload.email = u.email;
+  // 필수 scope(이름·이메일)는 항상 포함된다.
+  const payload: Record<string, unknown> = {
+    sub: String(u.id),
+    name: u.display_name,
+    email: u.email,
+  };
+  if (scopes.includes("picture")) payload.picture = pictureUrl(u.avatar_url as string | null);
+  if (scopes.includes("org_membership")) payload.org_memberships = await getOrgMemberships(u.id as number);
+  if (scopes.includes("class_membership")) payload.class_memberships = await getClassMemberships(u.id as number);
   res.json(payload);
 });
 

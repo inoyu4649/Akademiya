@@ -28,7 +28,7 @@ Akademiya OpenOAuth는 여러분의 서비스에 "Akademiya로 로그인" 기능
 
 Google, GitHub 등 다른 OAuth 제공자와 동일한 방식(Authorization Code + PKCE)으로 동작하며, Akademiya 계정을 가진 사용자가 여러분의 서비스에 별도 회원가입 없이 로그인할 수 있습니다.
 
-전달되는 정보는 사용자 ID(`sub`), 이름, 이메일뿐이며 그 외의 개인정보는 공유되지 않습니다.
+이름과 이메일 주소(`sub` 포함)는 항상 전달되는 필수 정보입니다. 프로필 사진·조직 가입 현황·반 가입 현황은 OAuth App 소유자가 개발자 화면에서 선택적으로 켠 경우에만 함께 전달됩니다.
 
 ## 사전 준비
 
@@ -39,6 +39,7 @@ Google, GitHub 등 다른 OAuth 제공자와 동일한 방식(Authorization Code
    - **메인 사이트 URL**: 서비스 대표 URL 1개(동의 화면의 링크로 사용됩니다).
    - **로그인 허용 수단**: Akademiya 계정 전용 / Google 계정 전용 / 둘 다 허용.
    - **로그인 허용 범위**: 전체 / 특정 조직 / 특정 반 / Google Workspace 도메인.
+   - **선택적 Scope**: 프로필 사진 · 조직 가입 현황 · 반 가입 현황 중 이 앱에 필요한 정보만 체크박스로 켤 수 있습니다(이름·이메일은 항상 전달되는 필수 정보). 로그인 허용 범위를 조직/반으로 제한하면 해당 소속 정보 scope는 자동으로 켜집니다.
 3. 생성 시 발급되는 Client ID와 Client Secret은 이 화면을 닫으면 다시 볼 수 없습니다. 안전한 곳에 저장하세요. Client Secret은 반드시 서버에만 보관하고 프런트엔드 코드에 노출하지 마세요.
 4. 앱 설정의 "신뢰할 수 있는 출처"에 `redirect_uri`를 반드시 등록해야 합니다. 등록되지 않은 값으로는 로그인 요청이 거부됩니다.
    - **권장**: 전체 `redirect_uri`(예: `https://example.akademiya.kr/callback`)를 등록하면 정확히 그 주소로만 인가 코드가 전달됩니다(가장 안전).
@@ -71,6 +72,8 @@ GET https://akademiya.kr/oauth/authorize
   &code_challenge={CODE_CHALLENGE}
   &code_challenge_method=S256
 ```
+
+> `scope` 파라미터는 하위호환을 위해 형식만 검증되며, 실제로 어떤 정보가 전달되는지는 이 값과 무관하게 OAuth App 설정(필수 scope + 개발자가 켠 선택 scope)이 결정합니다.
 
 ## 2단계 — 콜백 수신
 
@@ -106,11 +109,11 @@ Content-Type: application/json
   "refresh_token": "...",
   "token_type": "Bearer",
   "expires_in": 3600,
-  "scope": "openid profile email"
+  "scope": "profile email"
 }
 ```
 
-`access_token`은 1시간, `refresh_token`은 30일간 유효합니다.
+`access_token`은 1시간, `refresh_token`은 30일간 유효합니다. `scope` 값은 이 앱에 설정된 필수+선택 scope로 서버가 결정하며, 인가 요청의 `scope` 파라미터와는 무관합니다.
 
 ## 4단계 — 사용자 정보 조회
 
@@ -125,10 +128,15 @@ Authorization: Bearer {ACCESS_TOKEN}
   "sub": "1234",
   "name": "Hong Gildong",
   "email": "user@akademiya.kr"
+
+  // 아래 필드는 OAuth App 설정에서 해당 선택 scope를 켠 경우에만 추가된다
+  // "picture": "https://akademiya.kr/api/avatars/....png",
+  // "org_memberships": [{ "org_id": 1, "org_name": "...", "org_code": "HAFS", "permission": 3 }],
+  // "class_memberships": [{ "class_id": 1, "class_name": "...", "class_code": "HAFS0103", "org_id": 1, "org_name": "...", "permission": 1 }]
 }
 ```
 
-`scope`에 `profile`이 없으면 `name`이, `email`이 없으면 `email` 필드가 응답에 포함되지 않습니다.
+`name`과 `email`은 항상 포함됩니다. `picture`·`org_memberships`·`class_memberships` 필드는 OAuth App 설정에서 해당 선택 scope를 켠 경우에만 추가로 포함됩니다.
 
 ## 리프레시 토큰
 

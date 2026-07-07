@@ -103,7 +103,11 @@
       "passwordTooShort": "Password must be at least 8 characters.",
       "passwordMismatch": "Passwords do not match.",
       "developerModeLabel": "Developer Mode",
-      "developerModeHint": "When enabled, Developer Tools appears in the sidebar, letting you build your own \"Sign in with Akademiya\" integrations via Akademiya OpenOAuth."
+      "developerModeHint": "When enabled, Developer Tools appears in the sidebar, letting you build your own \"Sign in with Akademiya\" integrations via Akademiya OpenOAuth.",
+      "avatarChangeBtn": "Change photo",
+      "avatarRemoveBtn": "Reset to default",
+      "avatarHint": "PNG, JPG, and WEBP only, up to 5MB.",
+      "avatarInvalidType": "Unsupported file type (PNG, JPG, or WEBP only)."
     },
     "completeProfile": {
       "title": "Complete Your Profile",
@@ -812,7 +816,9 @@
       "reqReasonPlaceholder": "Explain why you need a higher limit",
       "submitQuotaRequest": "Submit Request",
       "quotaRequested": "Your limit increase request has been submitted.",
-      "submitBtn": "Create"
+      "submitBtn": "Create",
+      "scopesLabel": "Optional Scopes",
+      "requiredScopesHint": "Name and email are always shared as required information. Only turn on what this app actually needs below."
     },
     "loginMeans": {
       "akademiya": "Akademiya only",
@@ -896,11 +902,11 @@
       "sections": {
         "intro": {
           "title": "Overview",
-          "body": "Akademiya OpenOAuth is an OAuth 2.0 identity provider that lets you add \"Sign in with Akademiya\" to your own service.\nIt works the same way as other OAuth providers such as Google or GitHub (Authorization Code + PKCE), allowing users with an Akademiya account to sign in to your service without creating a separate account.\nOnly the user ID (sub), name, and email are shared — no other personal data is exposed."
+          "body": "Akademiya OpenOAuth is an OAuth 2.0 identity provider that lets you add \"Sign in with Akademiya\" to your own service.\nIt works the same way as other OAuth providers such as Google or GitHub (Authorization Code + PKCE), allowing users with an Akademiya account to sign in to your service without creating a separate account.\nName and email address (along with sub) are always shared as required information. Profile picture, organization membership, and class membership are only shared if the OAuth App owner has turned them on in Developer Tools."
         },
         "setup": {
           "title": "Before You Start",
-          "body": "1. Enable \"Developer Mode\" in the Edit Profile menu. A \"Developer Tools\" section will appear in the left sidebar.\n2. Create an app under \"Developer Tools → Akademiya OAuth → Create New OAuth App\".\n- Internal code name: letters, digits, and hyphens only; cannot be changed after creation.\n- Public display name: shown on the login/consent screen; can be changed at any time.\n- Main site URL: exactly one URL representing your service (used as the link on the consent screen).\n- Allowed sign-in methods: Akademiya account only / Google account only / both.\n- Allowed sign-in scope: everyone / a specific organization / a specific class / a Google Workspace domain.\n3. The Client ID and Client Secret shown at creation time can't be viewed again once you close that dialog. Save them somewhere safe. Keep the Client Secret on your server only — never expose it in frontend code.\n4. You must register your redirect_uri's origin under \"Trusted JavaScript Origins\" in the app settings. Sign-in requests from unregistered origins are rejected."
+          "body": "1. Enable \"Developer Mode\" in the Edit Profile menu. A \"Developer Tools\" section will appear in the left sidebar.\n2. Create an app under \"Developer Tools → Akademiya OAuth → Create New OAuth App\".\n- Internal code name: letters, digits, and hyphens only; cannot be changed after creation.\n- Public display name: shown on the login/consent screen; can be changed at any time.\n- Main site URL: exactly one URL representing your service (used as the link on the consent screen).\n- Allowed sign-in methods: Akademiya account only / Google account only / both.\n- Allowed sign-in scope: everyone / a specific organization / a specific class / a Google Workspace domain.\n- Optional scopes: turn on only what this app needs — profile picture, organization membership, and/or class membership (name and email are always shared). Restricting the sign-in scope to an organization or class automatically enables the matching membership scope.\n3. The Client ID and Client Secret shown at creation time can't be viewed again once you close that dialog. Save them somewhere safe. Keep the Client Secret on your server only — never expose it in frontend code.\n4. You must register your redirect_uri's origin under \"Trusted JavaScript Origins\" in the app settings. Sign-in requests from unregistered origins are rejected."
         },
         "flow": {
           "title": "Flow Overview",
@@ -922,7 +928,7 @@
         "step4": {
           "title": "Step 4 — Fetch user info",
           "body": "Use the issued access_token to fetch the user's info.",
-          "bodyAfter": "If the scope doesn't include \"profile\", the \"name\" field is omitted; if it doesn't include \"email\", the \"email\" field is omitted."
+          "bodyAfter": "name and email are always included. The picture, org_memberships, and class_memberships fields are included only when the matching optional scope is enabled in the OAuth App's settings."
         },
         "refresh": {
           "title": "Refresh Tokens",
@@ -952,6 +958,15 @@
           "jsAfter": "Keep the code_verifier and state stored securely in the session — they're needed for code verification in Step 3 (token exchange) and for validating the callback, respectively."
         }
       }
+    },
+    "scopes": {
+      "picture": "Profile picture",
+      "pictureDesc": "Shares the URL of the user's Akademiya profile picture.",
+      "org_membership": "Organization membership",
+      "org_membershipDesc": "Shares the full list of organizations the user belongs to (name, code, permission).",
+      "class_membership": "Class membership",
+      "class_membershipDesc": "Shares the full list of classes the user belongs to (name, code, permission).",
+      "forcedHint": "Automatically enabled by the allowed sign-in scope setting"
     }
   },
   "oauth": {
@@ -975,7 +990,10 @@
       "scopeClassNotice": "Only accounts belonging to the {{className}}[{{classCode}}] class can use this.",
       "scopeGoogleWorkspaceNotice": "Only Google accounts on the {{domain}} domain can use this.",
       "googleOnlyNotice": "You can only sign in with Google.",
-      "akademiyaOnlyNotice": "Signing in with Google is not allowed."
+      "akademiyaOnlyNotice": "Signing in with Google is not allowed.",
+      "sharePicture": "Profile picture",
+      "shareOrgMembership": "List of joined organizations",
+      "shareClassMembership": "List of joined classes"
     }
   },
   "privacy": {

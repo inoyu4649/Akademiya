@@ -7,10 +7,11 @@ import {
 import { useAuthStore } from "../../store/auth.store";
 import {
   openoauthApi, type OAuthApp, type OAuthAppOrigin, type LoginMeans, type ScopeRange,
-  type OAuthStats, type OAuthBan, type OAuthUserSearchResult,
+  type OAuthStats, type OAuthBan, type OAuthUserSearchResult, type OptionalScope,
 } from "../../api/openoauth.api";
 import { orgApi, type Org } from "../../api/org.api";
 import { classApi, type ClassItem } from "../../api/class.api";
+import { OPTIONAL_SCOPES, forcedScopesFor } from "../../utils/oauthScopes";
 import SecretRevealModal from "../../components/developer/SecretRevealModal";
 import styles from "./Developer.module.css";
 
@@ -39,6 +40,7 @@ export default function OAuthAppDetailPage() {
   const [scopeOrgId, setScopeOrgId] = useState<number | "">("");
   const [scopeClassId, setScopeClassId] = useState<number | "">("");
   const [scopeGoogleDomain, setScopeGoogleDomain] = useState("");
+  const [enabledScopes, setEnabledScopes] = useState<OptionalScope[]>([]);
   const [saveError, setSaveError] = useState("");
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -74,6 +76,7 @@ export default function OAuthAppDetailPage() {
       setScopeOrgId(res.data.app.scopeOrgId ?? "");
       setScopeClassId(res.data.app.scopeClassId ?? "");
       setScopeGoogleDomain(res.data.app.scopeGoogleDomain ?? "");
+      setEnabledScopes(res.data.app.enabledScopes);
     });
   }
 
@@ -87,6 +90,17 @@ export default function OAuthAppDetailPage() {
   useEffect(() => {
     if (loginMeans !== "google" && scopeRange === "google_workspace") setScopeRange("all");
   }, [loginMeans]);
+
+  // 조직/반 단위 로그인 범위는 해당 소속 정보 scope가 강제로 켜진다
+  const forcedScopes = forcedScopesFor(scopeRange);
+  useEffect(() => {
+    setEnabledScopes((prev) => [...new Set([...prev, ...forcedScopes])]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopeRange]);
+
+  function toggleScope(scope: OptionalScope, checked: boolean) {
+    setEnabledScopes((prev) => (checked ? [...new Set([...prev, scope])] : prev.filter((s) => s !== scope)));
+  }
 
   useEffect(() => {
     if (tab !== "stats" || !app) return;
@@ -122,6 +136,7 @@ export default function OAuthAppDetailPage() {
         scopeOrgId: scopeRange === "org" ? Number(scopeOrgId) : null,
         scopeClassId: scopeRange === "class" ? Number(scopeClassId) : null,
         scopeGoogleDomain: scopeRange === "google_workspace" ? scopeGoogleDomain.trim() : null,
+        enabledScopes,
       });
       await loadApp();
       setSaveSuccess(true);
@@ -307,6 +322,34 @@ export default function OAuthAppDetailPage() {
               {scopeRange === "google_workspace" && (
                 <input className={styles.input} style={{ marginTop: 10 }} value={scopeGoogleDomain} onChange={(e) => setScopeGoogleDomain(e.target.value)} placeholder="school.edu" />
               )}
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>{t("developer.create.scopesLabel")}</label>
+              <p className={styles.hint} style={{ marginTop: -2, marginBottom: 8 }}>{t("developer.create.requiredScopesHint")}</p>
+              <div className={styles.radioGroup}>
+                {OPTIONAL_SCOPES.map((scope) => {
+                  const forced = forcedScopes.includes(scope);
+                  const checked = enabledScopes.includes(scope);
+                  return (
+                    <label key={scope} className={`${styles.radioOption} ${checked ? styles.radioOptionActive : ""}`}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={forced}
+                        onChange={(e) => toggleScope(scope, e.target.checked)}
+                      />
+                      <span>
+                        <span className={styles.radioLabel}>{t(`developer.scopes.${scope}`)}</span>
+                        <span className={styles.radioDesc}>
+                          {t(`developer.scopes.${scope}Desc`)}
+                          {forced ? ` — ${t("developer.scopes.forcedHint")}` : ""}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
             <button className={styles.btn} type="submit" disabled={saving}>

@@ -5,6 +5,7 @@ export interface AuthUser {
   id: number;
   email: string;
   displayName: string;
+  avatarUrl: string | null;
   country: string | null;
   phone: string | null;
   language: string | null;

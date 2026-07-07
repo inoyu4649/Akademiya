@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { css as s } from "../../components/layout/AuthLayout";
@@ -32,6 +32,48 @@ export default function ProfilePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+
+  // ── 프로필 사진 ────────────────────────────────────────────────
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl ?? null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setAvatarError(null);
+    setAvatarLoading(true);
+    try {
+      const res = await authApi.uploadAvatar(file);
+      setAvatarUrl(res.data.avatarUrl);
+      updateUser({ avatarUrl: res.data.avatarUrl });
+    } catch (err: unknown) {
+      const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setAvatarError(
+        code === "INVALID_FILE_TYPE" || code === "INVALID_FILE"
+          ? t("auth.profile.avatarInvalidType")
+          : t("common.error")
+      );
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    setAvatarError(null);
+    setAvatarLoading(true);
+    try {
+      await authApi.removeAvatar();
+      setAvatarUrl(null);
+      updateUser({ avatarUrl: null });
+    } catch {
+      setAvatarError(t("common.error"));
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
 
   // ── 회원 탈퇴 상태 ─────────────────────────────────────────────
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -163,6 +205,57 @@ export default function ProfilePage() {
         <h1 style={titleStyle}>{t("auth.profile.title")}</h1>
         {saveError && <div className={s.alertError}>{saveError}</div>}
         {saveSuccess && <div className={s.alertSuccess}>{t("auth.profile.saveSuccess")}</div>}
+
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
+          <img
+            src={avatarUrl ?? "/default-avatar.svg"}
+            alt=""
+            style={{
+              width: 64, height: 64, borderRadius: "50%", objectFit: "cover",
+              border: "1px solid var(--border)", background: "var(--bg-input)", flexShrink: 0,
+            }}
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {avatarError && <span style={{ fontSize: 11, color: "var(--danger)" }}>{avatarError}</span>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarLoading}
+                style={{
+                  padding: "6px 14px", background: "var(--bg-input)", color: "var(--text-secondary)",
+                  border: "1px solid var(--border)", borderRadius: "var(--radius-sm)",
+                  fontSize: 12.5, cursor: avatarLoading ? "not-allowed" : "pointer",
+                }}
+              >
+                {avatarLoading ? t("common.loading") : t("auth.profile.avatarChangeBtn")}
+              </button>
+              {avatarUrl && (
+                <button
+                  type="button"
+                  onClick={handleAvatarRemove}
+                  disabled={avatarLoading}
+                  style={{
+                    padding: "6px 14px", background: "transparent", color: "var(--text-muted)",
+                    border: "1px solid var(--border)", borderRadius: "var(--radius-sm)",
+                    fontSize: 12.5, cursor: avatarLoading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {t("auth.profile.avatarRemoveBtn")}
+                </button>
+              )}
+            </div>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={handleAvatarSelect}
+              style={{ display: "none" }}
+            />
+            <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("auth.profile.avatarHint")}</p>
+          </div>
+        </div>
+
       <form onSubmit={handleSave} noValidate>
         <div className={s.field}>
           <label className={s.label}>{t("auth.profile.displayNameLabel")}</label>

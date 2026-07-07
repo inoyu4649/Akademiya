@@ -282,6 +282,15 @@
   color: var(--accent) !important;
 }
 
+.userAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--bg-input);
+}
+
 .userInfo {
   display: flex;
   flex-direction: column;

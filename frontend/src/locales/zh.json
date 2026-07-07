@@ -103,7 +103,11 @@
       "passwordTooShort": "密码长度至少8位。",
       "passwordMismatch": "两次输入的密码不一致。",
       "developerModeLabel": "开发者模式",
-      "developerModeHint": "启用后，侧边栏将显示开发者工具，您可以通过 Akademiya OpenOAuth 创建自己的“使用 Akademiya 登录”集成应用。"
+      "developerModeHint": "启用后，侧边栏将显示开发者工具，您可以通过 Akademiya OpenOAuth 创建自己的“使用 Akademiya 登录”集成应用。",
+      "avatarChangeBtn": "更换照片",
+      "avatarRemoveBtn": "恢复默认头像",
+      "avatarHint": "仅支持 PNG、JPG、WEBP 格式，最大可上传 5MB。",
+      "avatarInvalidType": "不支持的文件格式(仅支持 PNG、JPG、WEBP)。"
     },
     "completeProfile": {
       "title": "完善个人资料",
@@ -812,7 +816,9 @@
       "reqReasonPlaceholder": "请输入需要扩大上限的理由",
       "submitQuotaRequest": "提交申请",
       "quotaRequested": "上限扩大申请已提交。",
-      "submitBtn": "创建"
+      "submitBtn": "创建",
+      "scopesLabel": "可选 Scope",
+      "requiredScopesHint": "姓名和邮箱地址是始终共享的必需信息。以下选项只需勾选此应用实际需要的内容。"
     },
     "loginMeans": {
       "akademiya": "仅限 Akademiya",
@@ -896,11 +902,11 @@
       "sections": {
         "intro": {
           "title": "概述",
-          "body": "Akademiya OpenOAuth 是一个 OAuth 2.0 身份提供方(Identity Provider)，可让您在自己的服务中接入“使用 Akademiya 登录”功能。\n其工作方式与 Google、GitHub 等其他 OAuth 提供方相同(Authorization Code + PKCE)，拥有 Akademiya 账号的用户无需单独注册即可登录您的服务。\n仅会共享用户 ID(sub)、姓名和邮箱，不会共享其他个人信息。"
+          "body": "Akademiya OpenOAuth 是一个 OAuth 2.0 身份提供方(Identity Provider)，可让您在自己的服务中接入“使用 Akademiya 登录”功能。\n其工作方式与 Google、GitHub 等其他 OAuth 提供方相同(Authorization Code + PKCE)，拥有 Akademiya 账号的用户无需单独注册即可登录您的服务。\n姓名和邮箱地址(含 sub)是始终共享的必需信息。头像、组织加入情况、班级加入情况仅在 OAuth App 所有者在开发者工具中选择性开启时才会共享。"
         },
         "setup": {
           "title": "准备工作",
-          "body": "1. 在“编辑个人信息”菜单中启用“开发者模式”。左侧菜单将出现“开发者工具”。\n2. 在“开发者工具 → Akademiya OAuth → 创建新的 OAuth 应用”中创建应用。\n- 内部代码名:仅可使用英文字母、数字和连字符，创建后无法更改。\n- 对外显示名称:显示在登录/授权页面上的名称，可随时修改。\n- 主站点 URL:代表该服务的唯一 URL(将用作授权页面的链接)。\n- 允许的登录方式:仅限 Akademiya 账号 / 仅限 Google 账号 / 两者均可。\n- 允许的登录范围:全体 / 指定组织 / 指定班级 / Google Workspace 域名。\n3. 创建时生成的 Client ID 和 Client Secret 在关闭该窗口后将无法再次查看，请妥善保存。Client Secret 必须只保存在服务器端，切勿暴露在前端代码中。\n4. 必须在应用设置的“可信 JavaScript 来源”中登记您的 redirect_uri 来源(Origin)，未登记来源发起的登录请求将被拒绝。"
+          "body": "1. 在“编辑个人信息”菜单中启用“开发者模式”。左侧菜单将出现“开发者工具”。\n2. 在“开发者工具 → Akademiya OAuth → 创建新的 OAuth 应用”中创建应用。\n- 内部代码名:仅可使用英文字母、数字和连字符，创建后无法更改。\n- 对外显示名称:显示在登录/授权页面上的名称，可随时修改。\n- 主站点 URL:代表该服务的唯一 URL(将用作授权页面的链接)。\n- 允许的登录方式:仅限 Akademiya 账号 / 仅限 Google 账号 / 两者均可。\n- 允许的登录范围:全体 / 指定组织 / 指定班级 / Google Workspace 域名。\n- 可选 Scope:可通过复选框仅开启此应用需要的信息 —— 头像、组织加入情况、班级加入情况(姓名、邮箱是始终共享的必需信息)。将登录范围限制为组织/班级时，对应的加入情况 scope 会自动开启。\n3. 创建时生成的 Client ID 和 Client Secret 在关闭该窗口后将无法再次查看，请妥善保存。Client Secret 必须只保存在服务器端，切勿暴露在前端代码中。\n4. 必须在应用设置的“可信 JavaScript 来源”中登记您的 redirect_uri 来源(Origin)，未登记来源发起的登录请求将被拒绝。"
         },
         "flow": {
           "title": "认证流程概览",
@@ -922,7 +928,7 @@
         "step4": {
           "title": "第 4 步 — 获取用户信息",
           "body": "使用签发的 access_token 获取用户信息。",
-          "bodyAfter": "若 scope 不包含 profile，响应中将不含 name 字段；不包含 email 时将不含 email 字段。"
+          "bodyAfter": "name 和 email 始终包含在内。picture、org_memberships、class_memberships 字段仅在 OAuth App 设置中开启相应可选 scope 时才会额外包含。"
         },
         "refresh": {
           "title": "刷新令牌",
@@ -952,6 +958,15 @@
           "jsAfter": "code_verifier 和 state 需要妥善保存在会话中，二者将分别用于第 3 步(令牌交换)的代码校验和回调校验。"
         }
       }
+    },
+    "scopes": {
+      "picture": "头像",
+      "pictureDesc": "共享用户 Akademiya 头像的 URL。",
+      "org_membership": "组织加入情况",
+      "org_membershipDesc": "共享用户加入的所有组织列表(名称、代码、权限)。",
+      "class_membership": "班级加入情况",
+      "class_membershipDesc": "共享用户加入的所有班级列表(名称、代码、权限)。",
+      "forcedHint": "由登录允许范围设置自动开启"
     }
   },
   "oauth": {
@@ -975,7 +990,10 @@
       "scopeClassNotice": "仅 {{className}}[{{classCode}}] 班级成员账号可以使用。",
       "scopeGoogleWorkspaceNotice": "仅 {{domain}} 域名的 Google 账号可以使用。",
       "googleOnlyNotice": "仅可使用 Google 登录。",
-      "akademiyaOnlyNotice": "不允许使用 Google 登录。"
+      "akademiyaOnlyNotice": "不允许使用 Google 登录。",
+      "sharePicture": "头像",
+      "shareOrgMembership": "已加入的组织列表",
+      "shareClassMembership": "已加入的班级列表"
     }
   },
   "privacy": {

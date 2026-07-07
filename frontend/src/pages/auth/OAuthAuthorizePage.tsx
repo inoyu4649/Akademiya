@@ -230,6 +230,9 @@ export default function OAuthAuthorizePage() {
       <ul className={styles.consentList}>
         <li>{t("oauth.authorize.shareName")}</li>
         <li>{t("oauth.authorize.shareEmail")}</li>
+        {info.enabledScopes.includes("picture") && <li>{t("oauth.authorize.sharePicture")}</li>}
+        {info.enabledScopes.includes("org_membership") && <li>{t("oauth.authorize.shareOrgMembership")}</li>}
+        {info.enabledScopes.includes("class_membership") && <li>{t("oauth.authorize.shareClassMembership")}</li>}
       </ul>
       <button className={s.btn} onClick={handleAllow} disabled={authorizing}>
         {authorizing ? t("common.loading") : t("oauth.authorize.allowBtn")}

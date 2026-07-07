@@ -32,7 +32,7 @@ Content-Type: application/json
   "refresh_token": "...",
   "token_type": "Bearer",
   "expires_in": 3600,
-  "scope": "openid profile email"
+  "scope": "profile email"
 }`;
 
 const USERINFO_EXAMPLE = `GET https://akademiya.kr/api/openoauth/userinfo
@@ -43,6 +43,11 @@ Authorization: Bearer {ACCESS_TOKEN}
   "sub": "1234",
   "name": "Hong Gildong",
   "email": "user@akademiya.kr"
+
+  // 아래 필드는 OAuth App 설정에서 해당 선택 scope를 켠 경우에만 추가된다
+  // "picture": "https://akademiya.kr/api/avatars/....png",
+  // "org_memberships": [{ "org_id": 1, "org_name": "...", "org_code": "HAFS", "permission": 3 }],
+  // "class_memberships": [{ "class_id": 1, "class_name": "...", "class_code": "HAFS0103", "org_id": 1, "org_name": "...", "permission": 1 }]
 }`;
 
 const REFRESH_EXAMPLE = `POST https://akademiya.kr/api/openoauth/token

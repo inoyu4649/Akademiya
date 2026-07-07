@@ -46,6 +46,14 @@ export const authApi = {
   deleteAccount: (password?: string) =>
     client.delete("/auth/account", { data: { password } }),
 
+  uploadAvatar: (file: File) => {
+    const form = new FormData();
+    form.append("avatar", file);
+    return client.post<{ avatarUrl: string }>("/avatars", form);
+  },
+
+  removeAvatar: () => client.delete<{ avatarUrl: null }>("/avatars"),
+
   oauthExchange: (code: string) =>
     axios.post<AuthResponse>("/api/auth/oauth-exchange", { code }, { withCredentials: true }),
 

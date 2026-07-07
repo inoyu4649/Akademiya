@@ -103,7 +103,11 @@
       "passwordTooShort": "비밀번호는 8자 이상이어야 합니다.",
       "passwordMismatch": "비밀번호가 일치하지 않습니다.",
       "developerModeLabel": "개발자 모드",
-      "developerModeHint": "활성화하면 좌측 사이드바에 개발자 도구가 표시되며, Akademiya OpenOAuth로 나만의 \"Akademiya로 로그인\" 연동 앱을 만들 수 있습니다."
+      "developerModeHint": "활성화하면 좌측 사이드바에 개발자 도구가 표시되며, Akademiya OpenOAuth로 나만의 \"Akademiya로 로그인\" 연동 앱을 만들 수 있습니다.",
+      "avatarChangeBtn": "사진 변경",
+      "avatarRemoveBtn": "기본 이미지로",
+      "avatarHint": "PNG, JPG, WEBP 형식만 지원하며 최대 5MB까지 업로드할 수 있습니다.",
+      "avatarInvalidType": "지원하지 않는 파일 형식입니다 (PNG, JPG, WEBP만 가능)."
     },
     "completeProfile": {
       "title": "프로필 완성",
@@ -812,7 +816,9 @@
       "reqReasonPlaceholder": "한도 확장이 필요한 이유를 입력하세요",
       "submitQuotaRequest": "확장 요청",
       "quotaRequested": "한도 확장 요청이 접수되었습니다.",
-      "submitBtn": "만들기"
+      "submitBtn": "만들기",
+      "scopesLabel": "선택적 Scope",
+      "requiredScopesHint": "이름과 이메일 주소는 항상 공유되는 필수 정보입니다. 아래 항목은 필요한 것만 선택하세요."
     },
     "loginMeans": {
       "akademiya": "Akademiya 전용",
@@ -896,11 +902,11 @@
       "sections": {
         "intro": {
           "title": "개요",
-          "body": "Akademiya OpenOAuth는 여러분의 서비스에 \"Akademiya로 로그인\" 기능을 붙일 수 있게 해주는 OAuth 2.0 인증 제공자(Identity Provider)입니다.\nGoogle, GitHub 등 다른 OAuth 제공자와 동일한 방식(Authorization Code + PKCE)으로 동작하며, Akademiya 계정을 가진 사용자가 여러분의 서비스에 별도 회원가입 없이 로그인할 수 있습니다.\n전달되는 정보는 사용자 ID(sub), 이름, 이메일뿐이며 그 외의 개인정보는 공유되지 않습니다."
+          "body": "Akademiya OpenOAuth는 여러분의 서비스에 \"Akademiya로 로그인\" 기능을 붙일 수 있게 해주는 OAuth 2.0 인증 제공자(Identity Provider)입니다.\nGoogle, GitHub 등 다른 OAuth 제공자와 동일한 방식(Authorization Code + PKCE)으로 동작하며, Akademiya 계정을 가진 사용자가 여러분의 서비스에 별도 회원가입 없이 로그인할 수 있습니다.\n이름과 이메일 주소(sub 포함)는 항상 전달되는 필수 정보입니다. 프로필 사진·조직 가입 현황·반 가입 현황은 OAuth App 소유자가 개발자 화면에서 선택적으로 켠 경우에만 함께 전달됩니다."
         },
         "setup": {
           "title": "사전 준비",
-          "body": "1. 회원정보 수정 메뉴에서 \"개발자 모드\"를 활성화하세요. 좌측 메뉴에 \"개발자 도구\"가 나타납니다.\n2. \"개발자 도구 → Akademiya OAuth → 새 OAuth App 만들기\"에서 앱을 생성하세요.\n- 내부 코드명: 영문/숫자/하이픈만 허용되며 생성 후 변경할 수 없습니다.\n- 외부 표출 이름: 로그인·동의 화면에 표시되는 이름으로, 언제든 수정할 수 있습니다.\n- 메인 사이트 URL: 서비스 대표 URL 1개(동의 화면의 링크로 사용됩니다).\n- 로그인 허용 수단: Akademiya 계정 전용 / Google 계정 전용 / 둘 다 허용.\n- 로그인 허용 범위: 전체 / 특정 조직 / 특정 반 / Google Workspace 도메인.\n3. 생성 시 발급되는 Client ID와 Client Secret은 이 화면을 닫으면 다시 볼 수 없습니다. 안전한 곳에 저장하세요. Client Secret은 반드시 서버에만 보관하고 프런트엔드 코드에 노출하지 마세요.\n4. 앱 설정의 \"신뢰할 수 있는 자바스크립트 출처\"에 여러분의 redirect_uri 오리진을 반드시 등록해야 합니다. 등록되지 않은 오리진으로는 로그인 요청이 거부됩니다."
+          "body": "1. 회원정보 수정 메뉴에서 \"개발자 모드\"를 활성화하세요. 좌측 메뉴에 \"개발자 도구\"가 나타납니다.\n2. \"개발자 도구 → Akademiya OAuth → 새 OAuth App 만들기\"에서 앱을 생성하세요.\n- 내부 코드명: 영문/숫자/하이픈만 허용되며 생성 후 변경할 수 없습니다.\n- 외부 표출 이름: 로그인·동의 화면에 표시되는 이름으로, 언제든 수정할 수 있습니다.\n- 메인 사이트 URL: 서비스 대표 URL 1개(동의 화면의 링크로 사용됩니다).\n- 로그인 허용 수단: Akademiya 계정 전용 / Google 계정 전용 / 둘 다 허용.\n- 로그인 허용 범위: 전체 / 특정 조직 / 특정 반 / Google Workspace 도메인.\n- 선택적 Scope: 프로필 사진 · 조직 가입 현황 · 반 가입 현황 중 이 앱에 필요한 정보만 체크박스로 켤 수 있습니다(이름·이메일은 항상 전달되는 필수 정보). 로그인 허용 범위를 조직/반으로 제한하면 해당 소속 정보 scope는 자동으로 켜집니다.\n3. 생성 시 발급되는 Client ID와 Client Secret은 이 화면을 닫으면 다시 볼 수 없습니다. 안전한 곳에 저장하세요. Client Secret은 반드시 서버에만 보관하고 프런트엔드 코드에 노출하지 마세요.\n4. 앱 설정의 \"신뢰할 수 있는 자바스크립트 출처\"에 여러분의 redirect_uri 오리진을 반드시 등록해야 합니다. 등록되지 않은 오리진으로는 로그인 요청이 거부됩니다."
         },
         "flow": {
           "title": "인증 플로우 요약",
@@ -922,7 +928,7 @@
         "step4": {
           "title": "4단계 — 사용자 정보 조회",
           "body": "발급받은 access_token으로 사용자 정보를 조회하세요.",
-          "bodyAfter": "scope에 profile이 없으면 name이, email이 없으면 email 필드가 응답에 포함되지 않습니다."
+          "bodyAfter": "name과 email은 항상 포함됩니다. picture·org_memberships·class_memberships 필드는 OAuth App 설정에서 해당 선택 scope를 켠 경우에만 추가로 포함됩니다."
         },
         "refresh": {
           "title": "리프레시 토큰",
@@ -952,6 +958,15 @@
           "jsAfter": "code_verifier와 state는 각각 3단계(토큰 교환)의 코드 검증과 콜백 검증에 사용되므로 세션에 안전하게 보관해야 합니다."
         }
       }
+    },
+    "scopes": {
+      "picture": "프로필 사진",
+      "pictureDesc": "사용자의 Akademiya 프로필 사진 URL을 공유합니다.",
+      "org_membership": "조직 가입 현황",
+      "org_membershipDesc": "사용자가 가입한 모든 조직 목록(이름·코드·권한)을 공유합니다.",
+      "class_membership": "반 가입 현황",
+      "class_membershipDesc": "사용자가 가입한 모든 반 목록(이름·코드·권한)을 공유합니다.",
+      "forcedHint": "로그인 허용 범위 설정에 의해 자동으로 켜짐"
     }
   },
   "oauth": {
@@ -975,7 +990,10 @@
       "scopeClassNotice": "{{className}}[{{classCode}}] 반에 가입된 계정만 이용 가능합니다.",
       "scopeGoogleWorkspaceNotice": "{{domain}} 도메인 Google 계정만 이용 가능합니다.",
       "googleOnlyNotice": "Google로 로그인만 사용할 수 있습니다.",
-      "akademiyaOnlyNotice": "Google로 로그인은 허용되지 않습니다."
+      "akademiyaOnlyNotice": "Google로 로그인은 허용되지 않습니다.",
+      "sharePicture": "프로필 사진",
+      "shareOrgMembership": "가입한 조직 목록",
+      "shareClassMembership": "가입한 반 목록"
     }
   },
   "privacy": {

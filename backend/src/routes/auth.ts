@@ -39,6 +39,7 @@ function userPayload(u: DbUser) {
     id: u.id as number,
     email: u.email as string,
     displayName: u.display_name as string,
+    avatarUrl: (u.avatar_url as string | null) ?? null,
     country: u.country as string | null,
     phone: u.phone as string | null,
     language: u.language as string | null,
@@ -131,7 +132,7 @@ router.post("/register", async (req, res) => {
     setRefreshCookie(res, refreshToken);
     res.status(201).json({
       accessToken,
-      user: { id: userId, email: email.toLowerCase(), displayName, country, phone, language: language || null, role: "user", developerMode: false },
+      user: { id: userId, email: email.toLowerCase(), displayName, avatarUrl: null, country, phone, language: language || null, role: "user", developerMode: false },
     });
   } catch (err) {
     console.error("[register]", err);
@@ -202,7 +203,7 @@ router.post("/refresh", async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      `SELECT rt.user_id, u.email, u.role, u.display_name, u.country, u.phone, u.language, u.is_banned, u.developer_mode
+      `SELECT rt.user_id, u.email, u.role, u.display_name, u.avatar_url, u.country, u.phone, u.language, u.is_banned, u.developer_mode
        FROM refresh_tokens rt
        JOIN users u ON u.id = rt.user_id
        WHERE rt.token_hash = ? AND rt.expires_at > NOW()`,
@@ -335,7 +336,7 @@ router.post("/reset-password", async (req, res) => {
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, display_name, country, phone, language, role, developer_mode FROM users WHERE id = ?",
+      "SELECT id, email, display_name, avatar_url, country, phone, language, role, developer_mode FROM users WHERE id = ?",
       [req.user!.id]
     );
     const users = rows as DbUser[];
@@ -405,7 +406,7 @@ router.patch("/profile", requireAuth, async (req, res) => {
     await pool.query(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
 
     const [updated] = await pool.query(
-      "SELECT id, email, display_name, country, phone, language, role, developer_mode FROM users WHERE id = ?",
+      "SELECT id, email, display_name, avatar_url, country, phone, language, role, developer_mode FROM users WHERE id = ?",
       [req.user!.id]
     );
     res.json(userPayload((updated as DbUser[])[0]));
@@ -509,7 +510,7 @@ router.post("/oauth-exchange", async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, display_name, country, phone, language, role, developer_mode FROM users WHERE id = ?",
+      "SELECT id, email, display_name, avatar_url, country, phone, language, role, developer_mode FROM users WHERE id = ?",
       [userId]
     );
     const users = rows as DbUser[];

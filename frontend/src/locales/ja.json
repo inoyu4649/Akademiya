@@ -103,7 +103,11 @@
       "passwordTooShort": "パスワードは8文字以上で入力してください。",
       "passwordMismatch": "パスワードが一致しません。",
       "developerModeLabel": "開発者モード",
-      "developerModeHint": "有効にすると、サイドバーに開発者ツールが表示され、Akademiya OpenOAuthで独自の「Akademiyaでログイン」連携アプリを作成できます。"
+      "developerModeHint": "有効にすると、サイドバーに開発者ツールが表示され、Akademiya OpenOAuthで独自の「Akademiyaでログイン」連携アプリを作成できます。",
+      "avatarChangeBtn": "写真を変更",
+      "avatarRemoveBtn": "デフォルト画像に戻す",
+      "avatarHint": "PNG、JPG、WEBP形式のみ対応、最大5MBまでアップロードできます。",
+      "avatarInvalidType": "対応していないファイル形式です(PNG、JPG、WEBPのみ対応)。"
     },
     "completeProfile": {
       "title": "プロフィールの完成",
@@ -812,7 +816,9 @@
       "reqReasonPlaceholder": "上限拡張が必要な理由を入力してください",
       "submitQuotaRequest": "拡張申請",
       "quotaRequested": "上限拡張申請を受け付けました。",
-      "submitBtn": "作成"
+      "submitBtn": "作成",
+      "scopesLabel": "選択的Scope",
+      "requiredScopesHint": "名前とメールアドレスは常に共有される必須情報です。以下は必要な項目だけを選択してください。"
     },
     "loginMeans": {
       "akademiya": "Akademiya専用",
@@ -896,11 +902,11 @@
       "sections": {
         "intro": {
           "title": "概要",
-          "body": "Akademiya OpenOAuthは、あなたのサービスに「Akademiyaでログイン」機能を追加できるOAuth 2.0 認証プロバイダー(Identity Provider)です。\nGoogleやGitHubなど他のOAuthプロバイダーと同じ方式(Authorization Code + PKCE)で動作し、Akademiyaアカウントを持つユーザーが別途会員登録せずにあなたのサービスにログインできます。\n共有される情報はユーザーID(sub)、名前、メールアドレスのみで、それ以外の個人情報は共有されません。"
+          "body": "Akademiya OpenOAuthは、あなたのサービスに「Akademiyaでログイン」機能を追加できるOAuth 2.0 認証プロバイダー(Identity Provider)です。\nGoogleやGitHubなど他のOAuthプロバイダーと同じ方式(Authorization Code + PKCE)で動作し、Akademiyaアカウントを持つユーザーが別途会員登録せずにあなたのサービスにログインできます。\n名前とメールアドレス(subを含む)は常に共有される必須情報です。プロフィール写真・組織加入状況・クラス加入状況は、OAuth Appの所有者が開発者ツールで選択的にオンにした場合のみ共有されます。"
         },
         "setup": {
           "title": "事前準備",
-          "body": "1. 会員情報編集メニューで「開発者モード」を有効にしてください。左側メニューに「開発者ツール」が表示されます。\n2.「開発者ツール → Akademiya OAuth → 新しいOAuthアプリを作成」でアプリを作成してください。\n- 内部コード名:英数字とハイフンのみ使用可能で、作成後は変更できません。\n- 外部表示名:ログイン・同意画面に表示される名前で、いつでも変更できます。\n- メインサイトURL:サービスを代表するURLを1つ(同意画面のリンクとして使用されます)。\n- ログイン許可手段:Akademiyaアカウント専用 / Googleアカウント専用 / 両方許可。\n- ログイン許可範囲:全体 / 特定の組織 / 特定のクラス / Google Workspaceドメイン。\n3. 作成時に発行されるクライアントIDとクライアントシークレットは、この画面を閉じると二度と確認できません。安全な場所に保存してください。クライアントシークレットは必ずサーバー側のみで保管し、フロントエンドのコードに露出させないでください。\n4. アプリ設定の「信頼できるJavaScriptオリジン」に、あなたのredirect_uriのオリジンを必ず登録してください。未登録のオリジンからのログイン要求は拒否されます。"
+          "body": "1. 会員情報編集メニューで「開発者モード」を有効にしてください。左側メニューに「開発者ツール」が表示されます。\n2.「開発者ツール → Akademiya OAuth → 新しいOAuthアプリを作成」でアプリを作成してください。\n- 内部コード名:英数字とハイフンのみ使用可能で、作成後は変更できません。\n- 外部表示名:ログイン・同意画面に表示される名前で、いつでも変更できます。\n- メインサイトURL:サービスを代表するURLを1つ(同意画面のリンクとして使用されます)。\n- ログイン許可手段:Akademiyaアカウント専用 / Googleアカウント専用 / 両方許可。\n- ログイン許可範囲:全体 / 特定の組織 / 特定のクラス / Google Workspaceドメイン。\n- 選択的Scope:プロフィール写真・組織加入状況・クラス加入状況のうち、このアプリに必要な情報だけをチェックボックスでオンにできます(名前・メールアドレスは常に共有される必須情報)。ログイン許可範囲を組織/クラスに制限すると、該当する加入状況scopeは自動的にオンになります。\n3. 作成時に発行されるクライアントIDとクライアントシークレットは、この画面を閉じると二度と確認できません。安全な場所に保存してください。クライアントシークレットは必ずサーバー側のみで保管し、フロントエンドのコードに露出させないでください。\n4. アプリ設定の「信頼できるJavaScriptオリジン」に、あなたのredirect_uriのオリジンを必ず登録してください。未登録のオリジンからのログイン要求は拒否されます。"
         },
         "flow": {
           "title": "認証フローの概要",
@@ -922,7 +928,7 @@
         "step4": {
           "title": "ステップ4 — ユーザー情報の取得",
           "body": "発行されたaccess_tokenでユーザー情報を取得してください。",
-          "bodyAfter": "scopeにprofileが含まれない場合はname、emailが含まれない場合はemailフィールドがレスポンスに含まれません。"
+          "bodyAfter": "nameとemailは常に含まれます。picture・org_memberships・class_membershipsフィールドは、OAuth Appの設定で該当する選択scopeがオンになっている場合のみ追加で含まれます。"
         },
         "refresh": {
           "title": "リフレッシュトークン",
@@ -952,6 +958,15 @@
           "jsAfter": "code_verifierとstateは、それぞれステップ3(トークン交換)のコード検証とコールバック検証に使用されるため、セッションに安全に保管してください。"
         }
       }
+    },
+    "scopes": {
+      "picture": "プロフィール写真",
+      "pictureDesc": "ユーザーのAkademiyaプロフィール写真のURLを共有します。",
+      "org_membership": "組織加入状況",
+      "org_membershipDesc": "ユーザーが加入している全組織のリスト(名前・コード・権限)を共有します。",
+      "class_membership": "クラス加入状況",
+      "class_membershipDesc": "ユーザーが加入している全クラスのリスト(名前・コード・権限)を共有します。",
+      "forcedHint": "ログイン許可範囲の設定により自動的にオンになります"
     }
   },
   "oauth": {
@@ -975,7 +990,10 @@
       "scopeClassNotice": "{{className}}[{{classCode}}] クラスに加入しているアカウントのみ利用できます。",
       "scopeGoogleWorkspaceNotice": "{{domain}} ドメインのGoogleアカウントのみ利用できます。",
       "googleOnlyNotice": "Googleログインのみ利用できます。",
-      "akademiyaOnlyNotice": "Googleログインは許可されていません。"
+      "akademiyaOnlyNotice": "Googleログインは許可されていません。",
+      "sharePicture": "プロフィール写真",
+      "shareOrgMembership": "加入している組織一覧",
+      "shareClassMembership": "加入しているクラス一覧"
     }
   },
   "privacy": {

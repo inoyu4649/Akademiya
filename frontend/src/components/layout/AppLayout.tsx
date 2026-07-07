@@ -487,7 +487,7 @@ export default function AppLayout() {
 
         {/* ── Version badge ── */}
         <div className={styles.versionBadge}>
-          Akademiya Web App version 1.1.3
+          Akademiya Web App version 1.1.4
         </div>
         <div className={styles.versionLinks}>
           <Link to="/privacy" className={styles.versionLink}>{t("nav.privacyPolicy", "개인정보 처리방침")}</Link>
@@ -501,7 +501,11 @@ export default function AppLayout() {
             onClick={closeMobile}
             className={({ isActive }) => `${styles.bottomItem} ${isActive ? styles.navActive : ""}`}
           >
-            <IconUser />
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt="" className={styles.userAvatar} />
+            ) : (
+              <IconUser />
+            )}
             <div className={styles.userInfo}>
               <span className={styles.userName}>{user?.displayName}</span>
               <span className={styles.userEmail}>{user?.email}</span>

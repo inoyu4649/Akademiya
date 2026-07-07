@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/auth.store";
-import { openoauthApi, type LoginMeans, type ScopeRange, type OAuthAppQuota } from "../../api/openoauth.api";
+import { openoauthApi, type LoginMeans, type ScopeRange, type OAuthAppQuota, type OptionalScope } from "../../api/openoauth.api";
 import { orgApi, type Org } from "../../api/org.api";
 import { classApi, type ClassItem } from "../../api/class.api";
+import { OPTIONAL_SCOPES, forcedScopesFor } from "../../utils/oauthScopes";
 import SecretRevealModal from "../../components/developer/SecretRevealModal";
 import styles from "./Developer.module.css";
 
@@ -94,6 +95,7 @@ export default function OAuthAppCreatePage() {
   const [scopeOrgId, setScopeOrgId] = useState<number | "">("");
   const [scopeClassId, setScopeClassId] = useState<number | "">("");
   const [scopeGoogleDomain, setScopeGoogleDomain] = useState("");
+  const [enabledScopes, setEnabledScopes] = useState<OptionalScope[]>([]);
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -122,6 +124,17 @@ export default function OAuthAppCreatePage() {
     if (loginMeans !== "google" && scopeRange === "google_workspace") setScopeRange("all");
   }, [loginMeans]);
 
+  // 조직/반 단위 로그인 범위는 해당 소속 정보 scope가 강제로 켜진다
+  const forcedScopes = forcedScopesFor(scopeRange);
+  useEffect(() => {
+    setEnabledScopes((prev) => [...new Set([...prev, ...forcedScopes])]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopeRange]);
+
+  function toggleScope(scope: OptionalScope, checked: boolean) {
+    setEnabledScopes((prev) => (checked ? [...new Set([...prev, scope])] : prev.filter((s) => s !== scope)));
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -144,6 +157,7 @@ export default function OAuthAppCreatePage() {
         scopeOrgId: scopeRange === "org" ? Number(scopeOrgId) : undefined,
         scopeClassId: scopeRange === "class" ? Number(scopeClassId) : undefined,
         scopeGoogleDomain: scopeRange === "google_workspace" ? scopeGoogleDomain.trim() : undefined,
+        enabledScopes,
       });
       setCreated({ id: res.data.id, clientId: res.data.clientId, clientSecret: res.data.clientSecret });
     } catch (err: unknown) {
@@ -278,6 +292,34 @@ export default function OAuthAppCreatePage() {
               {t("developer.create.quotaUsage", { used: quota.used, max: quota.max })}
             </p>
           )}
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>{t("developer.create.scopesLabel")}</label>
+          <p className={styles.hint} style={{ marginTop: -2, marginBottom: 8 }}>{t("developer.create.requiredScopesHint")}</p>
+          <div className={styles.radioGroup}>
+            {OPTIONAL_SCOPES.map((scope) => {
+              const forced = forcedScopes.includes(scope);
+              const checked = enabledScopes.includes(scope);
+              return (
+                <label key={scope} className={`${styles.radioOption} ${checked ? styles.radioOptionActive : ""}`}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={forced}
+                    onChange={(e) => toggleScope(scope, e.target.checked)}
+                  />
+                  <span>
+                    <span className={styles.radioLabel}>{t(`developer.scopes.${scope}`)}</span>
+                    <span className={styles.radioDesc}>
+                      {t(`developer.scopes.${scope}Desc`)}
+                      {forced ? ` — ${t("developer.scopes.forcedHint")}` : ""}
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
         </div>
 
         <div className={styles.btnRow}>

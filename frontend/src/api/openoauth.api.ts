@@ -2,6 +2,9 @@ import client from "./client";
 
 export type LoginMeans = "akademiya" | "google" | "both";
 export type ScopeRange = "all" | "org" | "class" | "google_workspace";
+// 필수 scope(이름·이메일)는 항상 부여되며 설정 대상이 아니다.
+// 선택 scope만 개발자 화면 체크박스로 켜고 끌 수 있다.
+export type OptionalScope = "picture" | "org_membership" | "class_membership";
 
 export interface OAuthApp {
   id: number;
@@ -13,6 +16,7 @@ export interface OAuthApp {
   scopeOrgId: number | null;
   scopeClassId: number | null;
   scopeGoogleDomain: string | null;
+  enabledScopes: OptionalScope[];
   clientId: string;
   createdAt: string;
 }
@@ -38,6 +42,7 @@ export interface OAuthAppCreate {
   scopeOrgId?: number;
   scopeClassId?: number;
   scopeGoogleDomain?: string;
+  enabledScopes?: OptionalScope[];
 }
 
 export interface OAuthAppUpdate {
@@ -48,6 +53,7 @@ export interface OAuthAppUpdate {
   scopeOrgId?: number | null;
   scopeClassId?: number | null;
   scopeGoogleDomain?: string | null;
+  enabledScopes?: OptionalScope[];
 }
 
 export interface OAuthStatsSeriesPoint {
@@ -90,6 +96,7 @@ export interface AuthorizeInfo {
   scopeOrg: { name: string; code: string } | null;
   scopeClass: { name: string; code: string } | null;
   scopeGoogleDomain: string | null;
+  enabledScopes: OptionalScope[];
 }
 
 export const openoauthApi = {
