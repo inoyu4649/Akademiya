@@ -18,7 +18,7 @@ const TARGET_DATE = '2026-06-17';
 const legacyPool = mysql.createPool({
   host:     process.env.LEGACY_GMC_DB_HOST || 'localhost',
   port:     parseInt(process.env.LEGACY_GMC_DB_PORT || '3306', 10),
-  user:     process.env.LEGACY_GMC_DB_USER || 'gmcauto',
+  user:     process.env.LEGACY_GMC_DB_USER || 'akademiya',
   password: process.env.LEGACY_GMC_DB_PASSWORD || '',
   database: process.env.LEGACY_GMC_DB_NAME || 'gmcauto',
   charset:  'utf8mb4',

@@ -42,7 +42,7 @@ if [[ -f "$(dirname "$0")/../.env" ]]; then
   source "$(dirname "$0")/../.env"
 fi
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-}"
-MYSQL_APP_USER="${MYSQL_APP_USER:-akademiya_app}"
+MYSQL_APP_USER="${MYSQL_APP_USER:-akademiya}"
 MYSQL_APP_PASSWORD="${MYSQL_APP_PASSWORD:-}"
 
 DUMP_DIR="/tmp/akademiya_migration_$(date +%Y%m%d_%H%M%S)"

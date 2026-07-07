@@ -175,7 +175,7 @@ nano .env
 
 ```dotenv
 MYSQL_ROOT_PASSWORD=강력한_루트_비밀번호_변경필수
-MYSQL_APP_USER=akademiya_app
+MYSQL_APP_USER=akademiya
 MYSQL_APP_PASSWORD=강력한_앱_비밀번호_변경필수
 ```
 
@@ -315,7 +315,7 @@ FRONTEND_URL=https://akademiya.kr
 # 여기서는 기본값만 작성해도 됩니다. (compose .env에서 MYSQL_APP_* 가 주입됨)
 DB_HOST=mysql
 DB_PORT=3306
-DB_USER=akademiya_app
+DB_USER=akademiya
 DB_PASSWORD=compose_.env의_MYSQL_APP_PASSWORD와_동일
 DB_NAME=akademiya
 

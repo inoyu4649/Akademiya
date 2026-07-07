@@ -6,7 +6,7 @@ import mysql from "mysql2/promise";
 export const pool = mysql.createPool({
   host: process.env.AKASHAALT_DB_HOST || "localhost",
   port: parseInt(process.env.AKASHAALT_DB_PORT || "3306", 10),
-  user: process.env.AKASHAALT_DB_USER || "akashaalt",
+  user: process.env.AKASHAALT_DB_USER || "akademiya",
   password: process.env.AKASHAALT_DB_PASSWORD || "",
   database: process.env.AKASHAALT_DB_NAME || "akashaalt",
   waitForConnections: true,

@@ -91,7 +91,7 @@ import mysql from 'mysql2/promise';
 const pool = mysql.createPool({
   host:             process.env.GMC_DB_HOST     || 'localhost',
   port:             parseInt(process.env.GMC_DB_PORT || '3306', 10),
-  user:             process.env.GMC_DB_USER     || 'gmcauto',
+  user:             process.env.GMC_DB_USER     || 'akademiya',
   password:         process.env.GMC_DB_PASSWORD || '',
   database:         process.env.GMC_DB_NAME     || 'gmcauto',
   waitForConnections: true,
