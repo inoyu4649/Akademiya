@@ -28,6 +28,17 @@ export interface ScheduleRow extends RowDataPacket {
   executed_at: string | null;
 }
 
+export interface RecurringScheduleRow extends RowDataPacket {
+  id: number;
+  student_no: string;
+  time: string;
+  time_code: string;
+  teacher_id: string;
+  reason: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface RetryRow extends RowDataPacket {
   id: number;
   retry_at: number;
@@ -97,7 +108,7 @@ export interface Session {
   cookies: Record<string, string>;
   studentNo: string;
   loginTime: string;
-  akademiyaUserId?: number;
+  akademiyaEmail?: string | null;
 }
 
 export interface SubmitPassResult {

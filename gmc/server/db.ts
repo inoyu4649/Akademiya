@@ -5,6 +5,7 @@ import { mkdirSync } from 'fs';
 import type {
   GmcUserRow, ScheduleRow, RetryRow, UsageStatRow,
   ConsentRow, RoleRow, ParsedStudentNo, SuspendPeriodRow, PushSubscriptionRow,
+  RecurringScheduleRow,
 } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -45,7 +46,23 @@ export async function initDb(): Promise<void> {
       created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       UNIQUE KEY uq_student_no (student_no),
-      UNIQUE KEY uq_akademiya_user (akademiya_user_id)
+      UNIQUE KEY uq_akademiya_user (akademiya_user_id),
+      UNIQUE KEY uq_akademiya_email (akademiya_email)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS gmc_recurring_schedules (
+      id          INT AUTO_INCREMENT PRIMARY KEY,
+      student_no  VARCHAR(20)  NOT NULL,
+      time        VARCHAR(5)   NOT NULL,
+      time_code   VARCHAR(5)   NOT NULL,
+      teacher_id  VARCHAR(50)  NOT NULL,
+      reason      TEXT,
+      created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_student_no (student_no),
+      UNIQUE KEY uq_time (time)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
@@ -156,15 +173,6 @@ export async function initDb(): Promise<void> {
 
 // ========== 인증 정보 ==========
 
-export async function saveCredentials(studentNo: string, password: string): Promise<void> {
-  await pool.execute(
-    `INSERT INTO gmc_users (student_no, password, updated_at)
-     VALUES (?, ?, NOW())
-     ON DUPLICATE KEY UPDATE password = VALUES(password), updated_at = NOW()`,
-    [studentNo, password]
-  );
-}
-
 export async function getCredentials(studentNo: string): Promise<GmcUserRow | null> {
   const [rows] = await pool.execute<GmcUserRow[]>(
     'SELECT id, student_no, password, role, akademiya_user_id, akademiya_email FROM gmc_users WHERE student_no = ?',
@@ -175,23 +183,6 @@ export async function getCredentials(studentNo: string): Promise<GmcUserRow | nu
 
 export async function deleteCredentials(studentNo: string): Promise<void> {
   await pool.execute('DELETE FROM gmc_users WHERE student_no = ?', [studentNo]);
-}
-
-export async function getUserRole(studentNo: string): Promise<number> {
-  const [rows] = await pool.execute<RoleRow[]>(
-    'SELECT COALESCE(role, 0) AS role FROM gmc_users WHERE student_no = ?',
-    [studentNo]
-  );
-  return rows[0]?.role ?? 0;
-}
-
-export async function setUserRole(studentNo: string, role: number): Promise<void> {
-  await pool.execute(
-    `INSERT INTO gmc_users (student_no, password, role, updated_at)
-     VALUES (?, '', ?, NOW())
-     ON DUPLICATE KEY UPDATE role = VALUES(role), updated_at = NOW()`,
-    [studentNo, role]
-  );
 }
 
 export async function getAllCredentials(): Promise<GmcUserRow[]> {
@@ -220,11 +211,12 @@ export async function saveAkademiyaUser({ akademiyaUserId, akademiyaEmail, stude
        (akademiya_user_id, akademiya_email, student_no, password, role, updated_at)
      VALUES (?, ?, ?, ?, ?, NOW())
      ON DUPLICATE KEY UPDATE
-       akademiya_email = VALUES(akademiya_email),
-       student_no      = COALESCE(VALUES(student_no), student_no),
-       password        = COALESCE(VALUES(password), password),
-       role            = VALUES(role),
-       updated_at      = NOW()`,
+       akademiya_user_id = COALESCE(akademiya_user_id, VALUES(akademiya_user_id)),
+       akademiya_email   = VALUES(akademiya_email),
+       student_no        = COALESCE(VALUES(student_no), student_no),
+       password          = COALESCE(VALUES(password), password),
+       role              = VALUES(role),
+       updated_at        = NOW()`,
     [akademiyaUserId, akademiyaEmail, studentNo || null, password || null, role ?? 0]
   );
 }
@@ -235,6 +227,36 @@ export async function getByAkademiyaUserId(akademiyaUserId: number): Promise<Gmc
     [akademiyaUserId]
   );
   return rows[0] ?? null;
+}
+
+export async function getByAkademiyaEmail(email: string): Promise<GmcUserRow | null> {
+  const [rows] = await pool.execute<GmcUserRow[]>(
+    'SELECT * FROM gmc_users WHERE akademiya_email = ?',
+    [email]
+  );
+  return rows[0] ?? null;
+}
+
+// ── 권한(role) — 이메일(Akademiya 계정) 기준 ──────────────────────────────
+// 학번은 재입력/변경될 수 있어 권한 키로 부적합(Akademiya 계정에서 권한이 정상
+// 동작하지 않던 버그의 원인) → 불변에 가까운 Akademiya 이메일을 권한 조회/설정의
+// 기준으로 사용한다. 학번은 통계 표시용으로만 별도 유지.
+export async function getUserRoleByEmail(email: string | null | undefined): Promise<number> {
+  if (!email) return 0;
+  const [rows] = await pool.execute<RoleRow[]>(
+    'SELECT COALESCE(role, 0) AS role FROM gmc_users WHERE akademiya_email = ?',
+    [email]
+  );
+  return rows[0]?.role ?? 0;
+}
+
+export async function setUserRoleByEmail(email: string, role: number): Promise<void> {
+  await pool.execute(
+    `INSERT INTO gmc_users (akademiya_email, role, updated_at)
+     VALUES (?, ?, NOW())
+     ON DUPLICATE KEY UPDATE role = VALUES(role), updated_at = NOW()`,
+    [email, role]
+  );
 }
 
 export async function linkGoingHafsCredentials(akademiyaUserId: number, studentNo: string, password: string, role: number): Promise<void> {
@@ -292,38 +314,6 @@ export async function getMySchedule(studentNo: string, date: string): Promise<Sc
   return rows[0] ?? null;
 }
 
-export async function getTodaySchedules(date: string): Promise<ScheduleRow[]> {
-  const [rows] = await pool.execute<ScheduleRow[]>(
-    'SELECT * FROM schedules WHERE date = ?',
-    [date]
-  );
-  return rows;
-}
-
-export async function getSchedulesByDate(date: string): Promise<ScheduleRow[]> {
-  const [rows] = await pool.execute<ScheduleRow[]>(
-    'SELECT * FROM schedules WHERE date = ?',
-    [date]
-  );
-  return rows;
-}
-
-export async function getPendingSchedule(time: string, date: string): Promise<ScheduleRow | null> {
-  const [rows] = await pool.execute<ScheduleRow[]>(
-    'SELECT * FROM schedules WHERE time = ? AND date = ? AND executed = 0',
-    [time, date]
-  );
-  return rows[0] ?? null;
-}
-
-export async function cancelSchedule(time: string, date: string, studentNo: string): Promise<{ changes: number }> {
-  const [res] = await pool.execute<ResultSetHeader>(
-    'DELETE FROM schedules WHERE time = ? AND date = ? AND student_no = ?',
-    [time, date, studentNo]
-  );
-  return { changes: res.affectedRows };
-}
-
 export async function markScheduleExecuted(time: string, date: string, success: boolean, message: string): Promise<void> {
   await pool.execute(
     `UPDATE schedules
@@ -333,11 +323,54 @@ export async function markScheduleExecuted(time: string, date: string, success: 
   );
 }
 
-export async function updateScheduleSessionId(studentNo: string, date: string, newSessionId: string): Promise<void> {
+// ========== 반복 등록 (자정 복사 대체) ==========
+// 특정 '날짜'가 아니라 사용자별 '표준 반복 등록'(시간+야자코드+사유)을 저장한다.
+// 신청 가능일(평일·공휴일·중단기간 아님) 여부는 매번 DB(공휴일 캐시/중단기간 테이블)로
+// 그 자리에서 판단하며, 스케줄러가 자정에 다음날 행을 미리 만들어두지 않는다.
+
+export async function upsertRecurringSchedule(
+  studentNo: string, time: string, timeCode: string, teacherId: string, reason: string
+): Promise<void> {
   await pool.execute(
-    'UPDATE schedules SET session_id = ? WHERE student_no = ? AND date = ?',
-    [newSessionId, studentNo, date]
+    `INSERT INTO gmc_recurring_schedules (student_no, time, time_code, teacher_id, reason)
+     VALUES (?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       time       = VALUES(time),
+       time_code  = VALUES(time_code),
+       teacher_id = VALUES(teacher_id),
+       reason     = VALUES(reason),
+       updated_at = NOW()`,
+    [studentNo, time, timeCode, teacherId, reason || '']
   );
+}
+
+export async function getRecurringByStudent(studentNo: string): Promise<RecurringScheduleRow | null> {
+  const [rows] = await pool.execute<RecurringScheduleRow[]>(
+    'SELECT * FROM gmc_recurring_schedules WHERE student_no = ?',
+    [studentNo]
+  );
+  return rows[0] ?? null;
+}
+
+export async function getRecurringByTime(time: string): Promise<RecurringScheduleRow | null> {
+  const [rows] = await pool.execute<RecurringScheduleRow[]>(
+    'SELECT * FROM gmc_recurring_schedules WHERE time = ?',
+    [time]
+  );
+  return rows[0] ?? null;
+}
+
+export async function getAllRecurring(): Promise<RecurringScheduleRow[]> {
+  const [rows] = await pool.execute<RecurringScheduleRow[]>('SELECT * FROM gmc_recurring_schedules');
+  return rows;
+}
+
+export async function deleteRecurringByStudent(studentNo: string): Promise<{ changes: number }> {
+  const [res] = await pool.execute<ResultSetHeader>(
+    'DELETE FROM gmc_recurring_schedules WHERE student_no = ?',
+    [studentNo]
+  );
+  return { changes: res.affectedRows };
 }
 
 // ========== 재시도 큐 ==========
@@ -400,6 +433,14 @@ export async function getUsageStatsByDate(date: string): Promise<UsageStatRow[]>
   const [rows] = await pool.execute<UsageStatRow[]>(
     'SELECT * FROM usage_stats WHERE apply_date = ? ORDER BY id DESC',
     [date]
+  );
+  return rows;
+}
+
+export async function getUsageStatsByStudent(studentNo: string, limit = 20): Promise<UsageStatRow[]> {
+  const [rows] = await pool.execute<UsageStatRow[]>(
+    'SELECT * FROM usage_stats WHERE student_no = ? ORDER BY id DESC LIMIT ?',
+    [studentNo, limit]
   );
   return rows;
 }

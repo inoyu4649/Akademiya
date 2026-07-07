@@ -10,11 +10,14 @@
 mysql -u root -p"${MYSQL_ROOT_PASSWORD}" <<SQL
 CREATE DATABASE IF NOT EXISTS \`gmcauto\`
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS \`gmcauto3\`
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE DATABASE IF NOT EXISTS \`akashaalt\`
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 GRANT ALL PRIVILEGES ON \`akademiya\`.* TO '${MYSQL_USER}'@'%';
 GRANT ALL PRIVILEGES ON \`gmcauto\`.*   TO '${MYSQL_USER}'@'%';
+GRANT ALL PRIVILEGES ON \`gmcauto3\`.*  TO '${MYSQL_USER}'@'%';
 GRANT ALL PRIVILEGES ON \`akashaalt\`.* TO '${MYSQL_USER}'@'%';
 FLUSH PRIVILEGES;
 SQL

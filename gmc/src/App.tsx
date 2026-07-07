@@ -1,13 +1,18 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import './App.css'
 import LoginPage from './components/LoginPage'
-import Dashboard from './components/Dashboard'
+import GmcLayout from './components/layout/GmcLayout'
+import HomePage, { PassHistory } from './components/Dashboard'
+import PassForm from './components/PassForm'
 import PrivacyPolicyModal from './components/PrivacyPolicyModal'
 import TermsOfUseModal from './components/TermsOfUseModal'
 import PatchNotesModal, { GMC_PATCH_NOTES_VERSION } from './components/PatchNotesModal'
 import { startAkademiyaLogin } from './utils/akademiyaOAuth'
-import type { SessionData } from './types'
+import type { SessionData, LogEntry } from './types'
+
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'))
 
 const SESSION_KEY = 'gmcauto_session'
 const PATCH_NOTES_SEEN_KEY = 'gmcauto_patch_notes_seen_version'
@@ -28,11 +33,17 @@ function App() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false)
   const [showTermsModal, setShowTermsModal] = useState(false)
   const [patchNotesDismissed, setPatchNotesDismissed] = useState(false)
+  const [logs, setLogs] = useState<LogEntry[]>([])
 
   // 재접속/새로고침 시에는 항상 시스템(브라우저·PWA) 테마부터 시작 — 이전 토글 선택은 저장하지 않음
   const [theme, setTheme] = useState<string>(getSystemTheme)
   // 이번 세션에서 토글 버튼으로 수동 전환했는지 (메모리에만 유지, 새로고침하면 사라짐)
   const themeManualRef = useRef(false)
+
+  const addLog = useCallback((message: string, type: LogEntry['type'] = 'info') => {
+    const time = new Date().toLocaleTimeString('ko-KR', { hour12: false })
+    setLogs(prev => [...prev, { time, message, type }])
+  }, [])
 
   useEffect(() => {
     applyTheme(theme)
@@ -156,7 +167,7 @@ function App() {
     !patchNotesDismissed && patchNotesSeenVersion < GMC_PATCH_NOTES_VERSION
 
   return (
-    <>
+    <BrowserRouter>
       {showPrivacyModal && session && (
         <PrivacyPolicyModal
           sessionId={session.sessionId}
@@ -188,10 +199,6 @@ function App() {
         />
       )}
 
-      <div className="top-bar">
-        {t('app.contact')} &nbsp;/&nbsp; {t('app.madeWith')}
-      </div>
-
       {!bootChecked
         ? (
           <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -200,22 +207,61 @@ function App() {
           </div>
         )
         : !session
-          ? <LoginPage onLogin={handleLogin} sessionExpired={sessionExpired} theme={theme} toggleTheme={toggleTheme} />
-          : <Dashboard session={session} onLogout={handleLogout} onAccountDelete={handleAccountDelete} theme={theme} toggleTheme={toggleTheme} />
+          ? (
+            <>
+              <div className="top-bar">
+                {t('app.contact')} &nbsp;/&nbsp; {t('app.madeWith')}
+              </div>
+              <LoginPage onLogin={handleLogin} sessionExpired={sessionExpired} theme={theme} toggleTheme={toggleTheme} />
+              <footer className="footer">
+                <a href="https://akademiya.kr" target="_blank" rel="noopener noreferrer" className="powered-by-link">
+                  <img
+                    src={theme === 'light' ? '/poweredBy_light.png' : '/poweredBy_dark.png'}
+                    alt="Powered by Akademiya"
+                    className="powered-by-img"
+                  />
+                </a>
+                {t('app.unofficial')}<br />
+                <strong style={{ color: 'var(--warning)' }}>{t('app.securityWarning')}</strong>
+              </footer>
+            </>
+          )
+          : (
+            <Routes>
+              <Route
+                element={
+                  <GmcLayout
+                    session={session}
+                    onLogout={handleLogout}
+                    onAccountDelete={handleAccountDelete}
+                    theme={theme}
+                    toggleTheme={toggleTheme}
+                  />
+                }
+              >
+                <Route index element={<HomePage session={session} logs={logs} addLog={addLog} />} />
+                <Route path="apply" element={<PassForm session={session} addLog={addLog} />} />
+                <Route path="history" element={<PassHistory session={session} />} />
+                <Route
+                  path="admin"
+                  element={
+                    (session.role ?? 0) >= 1 ? (
+                      <Suspense fallback={
+                        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-secondary)' }}>
+                          <div className="spinner" style={{ margin: '0 auto 12px', width: '26px', height: '26px', borderColor: 'var(--border)', borderTopColor: 'var(--primary)' }} />
+                        </div>
+                      }>
+                        <AdminDashboard session={session} />
+                      </Suspense>
+                    ) : <Navigate to="/" replace />
+                  }
+                />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Route>
+            </Routes>
+          )
       }
-
-      <footer className="footer">
-        <a href="https://akademiya.kr" target="_blank" rel="noopener noreferrer" className="powered-by-link">
-          <img
-            src={theme === 'light' ? '/poweredBy_light.png' : '/poweredBy_dark.png'}
-            alt="Powered by Akademiya"
-            className="powered-by-img"
-          />
-        </a>
-        {t('app.unofficial')}<br />
-        <strong style={{ color: 'var(--warning)' }}>{t('app.securityWarning')}</strong>
-      </footer>
-    </>
+    </BrowserRouter>
   )
 }
 

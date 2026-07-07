@@ -4,6 +4,7 @@ export interface SessionData {
   sessionId: string;
   studentNo: string;
   studentName: string;
+  akademiyaEmail?: string | null;
   role: number;
   needsPrivacyConsent: boolean;
   needsTermsConsent: boolean;

@@ -544,11 +544,11 @@ function SuspendManager({ session }: SuspendManagerProps) {
 
 function UserManager({ session, roleNames, ROLE_COLORS }: UserManagerProps) {
   const { t } = useTranslation()
-  const [users, setUsers]               = useState<UserRecord[]>([])
-  const [inputStudentNo, setInputStudentNo] = useState('')
-  const [inputRole, setInputRole]       = useState('1')
-  const [saving, setSaving]             = useState(false)
-  const [message, setMessage]           = useState<{ success: boolean; text: string } | null>(null)
+  const [users, setUsers]           = useState<UserRecord[]>([])
+  const [inputEmail, setInputEmail] = useState('')
+  const [inputRole, setInputRole]   = useState('1')
+  const [saving, setSaving]         = useState(false)
+  const [message, setMessage]       = useState<{ success: boolean; text: string } | null>(null)
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -560,14 +560,14 @@ function UserManager({ session, roleNames, ROLE_COLORS }: UserManagerProps) {
 
   useEffect(() => { queueMicrotask(() => fetchUsers()) }, [fetchUsers])
 
-  const applyRole = useCallback(async (studentNo: string, role: number) => {
+  const applyRole = useCallback(async (email: string, role: number) => {
     setSaving(true)
     setMessage(null)
     try {
       const res  = await fetch('/api/admin/users/role', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ sessionId: session.sessionId, studentNo, role }),
+        body:    JSON.stringify({ sessionId: session.sessionId, email, role }),
       })
       const data = await res.json() as { success: boolean; message?: string }
       setMessage({ success: data.success, text: data.message || '' })
@@ -580,10 +580,10 @@ function UserManager({ session, roleNames, ROLE_COLORS }: UserManagerProps) {
   }, [session.sessionId, fetchUsers])
 
   const handleGrant = () => {
-    const no = inputStudentNo.trim()
-    if (!no) return
-    applyRole(no, parseInt(inputRole, 10))
-    setInputStudentNo('')
+    const email = inputEmail.trim()
+    if (!email) return
+    applyRole(email, parseInt(inputRole, 10))
+    setInputEmail('')
   }
 
   const inputStyle: React.CSSProperties = {
@@ -604,13 +604,13 @@ function UserManager({ session, roleNames, ROLE_COLORS }: UserManagerProps) {
         borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginBottom: '10px',
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{t('admin.users.studentNoLabel')}</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{t('admin.users.emailLabel')}</span>
           <input
-            value={inputStudentNo}
-            onChange={e => setInputStudentNo(e.target.value)}
+            value={inputEmail}
+            onChange={e => setInputEmail(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleGrant()}
-            placeholder={t('admin.users.studentNoPlaceholder')}
-            style={{ ...inputStyle, width: '100px' }}
+            placeholder={t('admin.users.emailPlaceholder')}
+            style={{ ...inputStyle, width: '190px' }}
           />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
@@ -624,7 +624,7 @@ function UserManager({ session, roleNames, ROLE_COLORS }: UserManagerProps) {
         <button
           className="btn btn-primary"
           onClick={handleGrant}
-          disabled={saving || !inputStudentNo.trim()}
+          disabled={saving || !inputEmail.trim()}
           style={{ fontSize: '12px', padding: '6px 12px' }}
         >
           {t('admin.users.applyBtn')}
@@ -659,6 +659,7 @@ function UserManager({ session, roleNames, ROLE_COLORS }: UserManagerProps) {
             <thead>
               <tr style={{ background: 'var(--bg)', borderBottom: '2px solid var(--border)' }}>
                 {[
+                  t('admin.users.colEmail'),
                   t('admin.users.colStudentNo'),
                   t('admin.users.colRole'),
                   t('admin.users.colLastActive'),
@@ -670,8 +671,9 @@ function UserManager({ session, roleNames, ROLE_COLORS }: UserManagerProps) {
             </thead>
             <tbody>
               {users.map((u, idx) => (
-                <tr key={u.student_no} style={{ borderBottom: '1px solid var(--border)', background: idx % 2 === 0 ? 'var(--card-bg)' : 'var(--bg)' }}>
-                  <td style={{ padding: '5px 10px', fontWeight: 500 }}>{u.student_no}</td>
+                <tr key={u.akademiya_email ?? u.student_no ?? idx} style={{ borderBottom: '1px solid var(--border)', background: idx % 2 === 0 ? 'var(--card-bg)' : 'var(--bg)' }}>
+                  <td style={{ padding: '5px 10px' }}>{u.akademiya_email || '-'}</td>
+                  <td style={{ padding: '5px 10px', fontWeight: 500 }}>{u.student_no || '-'}</td>
                   <td style={{ padding: '5px 10px' }}>
                     <span style={{ color: ROLE_COLORS[u.role], fontWeight: 600 }}>
                       {u.role} — {roleNames[u.role] || '-'}
@@ -681,12 +683,14 @@ function UserManager({ session, roleNames, ROLE_COLORS }: UserManagerProps) {
                     {u.updated_at ? u.updated_at.slice(0, 10) : '-'}
                   </td>
                   <td style={{ padding: '5px 10px' }}>
-                    {u.student_no === session.studentNo ? (
+                    {u.akademiya_email === session.akademiyaEmail ? (
                       <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{t('admin.users.self')}</span>
+                    ) : !u.akademiya_email ? (
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>-</span>
                     ) : (
                       <button
                         className="btn btn-outline"
-                        onClick={() => applyRole(u.student_no, 0)}
+                        onClick={() => applyRole(u.akademiya_email!, 0)}
                         disabled={saving}
                         style={{ fontSize: '11px', padding: '2px 8px', color: 'var(--danger)', borderColor: 'var(--danger)' }}
                       >

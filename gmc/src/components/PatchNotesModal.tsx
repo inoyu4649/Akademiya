@@ -1,6 +1,6 @@
 import type React from 'react'
 
-export const GMC_PATCH_NOTES_VERSION = 2
+export const GMC_PATCH_NOTES_VERSION = 3
 
 interface PatchNoteEntry {
   version: number
@@ -11,6 +11,17 @@ interface PatchNoteEntry {
 
 // 새 업데이트를 배포할 때마다 맨 위에 항목을 추가하고 GMC_PATCH_NOTES_VERSION을 올리세요.
 const PATCH_NOTES: PatchNoteEntry[] = [
+  {
+    version: 3,
+    date: '2026-07-08',
+    title: 'GMCAuto 3.0 업데이트',
+    items: [
+      '로그인 방식이 "Akademiya로 로그인" 하나로 완전히 통합되었습니다.',
+      '권한 관리 기준이 학번에서 Akademiya 계정(이메일)으로 변경되어, Akademiya 계정에서도 권한이 정상적으로 유지됩니다.',
+      '자정에 예약을 복사하던 방식을 없애고, 등록해두면 신청 가능한 날마다 자동으로 신청되는 방식으로 개선했습니다.',
+      '좌측 메뉴 구조로 전면 개편되었고, 예약 현황을 분 단위 타임라인으로 확인할 수 있습니다.',
+    ],
+  },
   {
     version: 2,
     date: '2026-07-05',

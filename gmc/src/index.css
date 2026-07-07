@@ -6,6 +6,8 @@
 /* ── 라이트 테마 (기본) ───────────────────────────────────────── */
 :root,
 [data-theme="light"] {
+  --sidebar-width:  240px;
+
   --primary:        #2563eb;
   --primary-hover:  #1d4ed8;
   --primary-light:  #dbeafe;
@@ -30,11 +32,12 @@
   --card-bg:        #ffffff;
   --border:         #e5e7eb;
 
-  --shadow:         0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
-  --shadow-lg:      0 10px 15px -3px rgba(0,0,0,0.10), 0 4px 6px -2px rgba(0,0,0,0.05);
+  --shadow:         0 1px 3px rgba(37,99,235,0.08), 0 1px 2px rgba(15,23,42,0.04);
+  --shadow-lg:      0 14px 32px -10px rgba(37,99,235,0.22), 0 4px 10px -4px rgba(15,23,42,0.06);
 
-  --radius:         8px;
-  --radius-sm:      4px;
+  --radius:         14px;
+  --radius-sm:      6px;
+  --radius-lg:      22px;
 
   /* 라이트 모드에서는 버튼 텍스트 흰색 */
   --btn-primary-text: #ffffff;
@@ -68,8 +71,8 @@
   --card-bg:        #1e293b;
   --border:         #334155;
 
-  --shadow:         0 1px 3px rgba(0,0,0,0.40);
-  --shadow-lg:      0 10px 15px -3px rgba(0,0,0,0.40);
+  --shadow:         0 2px 8px rgba(0,0,0,0.35);
+  --shadow-lg:      0 16px 36px -10px rgba(96,165,250,0.22), 0 6px 14px -6px rgba(0,0,0,0.45);
 
   /* 다크 모드에서는 밝은 primary(#60a5fa) 위에 어두운 텍스트 */
   --btn-primary-text: #0a1929;

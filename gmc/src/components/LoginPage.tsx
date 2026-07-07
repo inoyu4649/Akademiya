@@ -36,21 +36,8 @@ interface AkUserInfo {
   email?: string
 }
 
-function detectIsPwa(): boolean {
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    (navigator as Navigator & { standalone?: boolean }).standalone === true
-  )
-}
-
 export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme }: LoginPageProps) {
   const { t } = useTranslation()
-  const [isPwa]                 = useState(detectIsPwa)
-  const [tab, setTab]           = useState<'gmc' | 'akademiya'>('akademiya')
-  const [studentNo, setStudentNo] = useState('')
-  const [password, setPassword]   = useState('')
-  const [loading, setLoading]     = useState(false)
-  const [error, setError]         = useState('')
 
   const [akStep, setAkStep]         = useState<AkStep>('idle')
   const [akUserInfo, setAkUserInfo]  = useState<AkUserInfo | null>(null)
@@ -77,7 +64,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
       const data = await res.json() as {
         success: boolean; message?: string;
         linked?: boolean; loginFailed?: boolean;
-        sessionId?: string; studentNo?: string; studentName?: string;
+        sessionId?: string; studentNo?: string; studentName?: string; akademiyaEmail?: string | null;
         role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
         userInfo?: AkUserInfo; linkTicket?: string;
       }
@@ -92,6 +79,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
           sessionId: data.sessionId!,
           studentNo: data.studentNo!,
           studentName: data.studentName || '',
+          akademiyaEmail: data.akademiyaEmail ?? null,
           role: data.role ?? 0,
           needsPrivacyConsent: data.needsPrivacyConsent ?? false,
           needsTermsConsent: data.needsTermsConsent ?? false,
@@ -120,47 +108,10 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
     const code   = params.get('code')
     const state  = params.get('state')
     if (code) {
-      queueMicrotask(() => {
-        setTab('akademiya')
-        verifyAkademiyaCode(code, state)
-      })
+      queueMicrotask(() => verifyAkademiyaCode(code, state))
       window.history.replaceState({}, '', window.location.pathname)
     }
   }, [verifyAkademiyaCode])
-
-  const handleGmcSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    try {
-      const res  = await fetch('/api/login', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ studentNo, password }),
-      })
-      const data = await res.json() as {
-        success: boolean; message?: string;
-        sessionId: string; studentNo: string; studentName?: string;
-        role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
-      }
-      if (data.success) {
-        onLogin({
-          sessionId: data.sessionId,
-          studentNo: data.studentNo,
-          studentName: data.studentName || '',
-          role: data.role ?? 0,
-          needsPrivacyConsent: data.needsPrivacyConsent ?? false,
-          needsTermsConsent: data.needsTermsConsent ?? false,
-        })
-      } else {
-        setError(data.message || t('auth.loginFailed', '로그인에 실패했습니다.'))
-      }
-    } catch {
-      setError(t('auth.serverError', '서버에 연결할 수 없습니다.'))
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleAkademiyaLogin = () => {
     startAkademiyaLogin().catch(() => setAkError(t('auth.serverError')))
@@ -182,7 +133,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
       })
       const data = await res.json() as {
         success: boolean; message?: string;
-        sessionId: string; studentNo: string; studentName?: string;
+        sessionId: string; studentNo: string; studentName?: string; akademiyaEmail?: string | null;
         role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
       }
       if (data.success) {
@@ -191,6 +142,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
           sessionId: data.sessionId,
           studentNo: data.studentNo,
           studentName: data.studentName || '',
+          akademiyaEmail: data.akademiyaEmail ?? null,
           role: data.role ?? 0,
           needsPrivacyConsent: data.needsPrivacyConsent ?? true,
           needsTermsConsent: data.needsTermsConsent ?? true,
@@ -224,146 +176,108 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
               alt="GMCAuto"
               style={{ height: '48px', objectFit: 'contain' }}
             />
-            <h1>GMCAuto 2</h1>
+            <h1>GMCAuto 3</h1>
           </div>
           <p>{t('app.subtitle')}</p>
         </div>
 
-        {!isPwa && (
-          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
-            {[
-              { id: 'akademiya' as const, label: t('auth.tabAkademiya', 'Akademiya 로그인') },
-              { id: 'gmc' as const,       label: t('auth.tabGmc',       'GMCAuto 계정') },
-            ].map(tb => (
-              <button
-                key={tb.id}
-                onClick={() => { setTab(tb.id); setError(''); setAkError(''); setAkStep('idle') }}
-                style={{
-                  flex: 1, padding: '12px', border: 'none', background: 'none', cursor: 'pointer',
-                  fontSize: '13.5px', fontWeight: tab === tb.id ? '600' : '400',
-                  color: tab === tb.id ? 'var(--primary)' : 'var(--text-secondary)',
-                  borderBottom: tab === tb.id ? '2px solid var(--primary)' : '2px solid transparent',
-                  transition: 'all 0.2s',
-                }}
-              >
-                {tb.label}
-              </button>
-            ))}
-          </div>
-        )}
-
         <div className="card-body">
-          {isPwa && (
-            <p style={{ textAlign: 'center', marginBottom: '14px', fontSize: '12px', color: 'var(--text-muted)' }}>
-              {t('auth.pwaAkademiyaOnly', '설치된 앱에서는 Akademiya 로그인만 사용할 수 있습니다.')}
-            </p>
-          )}
-          {sessionExpired && tab === 'akademiya' && !akError && (
+          {sessionExpired && !akError && (
             <div className="alert alert-warning">{t('auth.sessionExpired')}</div>
           )}
+          {akError && <div className="alert alert-error">{akError}</div>}
 
-          {tab === 'gmc' && !isPwa && (
+          {akStep === 'idle' && (
             <>
-              {error && <div className="alert alert-error">{error}</div>}
-              <form onSubmit={handleGmcSubmit}>
-                <div className="form-group">
-                  <label htmlFor="studentNo">{t('auth.studentNoLabel')}</label>
-                  <input id="studentNo" type="text" placeholder={t('auth.studentNoPlaceholder')}
-                    value={studentNo} onChange={e => setStudentNo(e.target.value)}
-                    autoComplete="username" required />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="password">{t('auth.passwordLabel')}</label>
-                  <input id="password" type="password" placeholder={t('auth.passwordPlaceholder')}
-                    value={password} onChange={e => setPassword(e.target.value)}
-                    autoComplete="current-password" required />
-                </div>
-                <button type="submit" className="btn btn-primary btn-block btn-lg"
-                  disabled={loading || !studentNo || !password}>
-                  {loading ? <><span className="spinner" />{t('auth.logging')}</> : t('auth.loginBtn')}
-                </button>
-              </form>
-              <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                {t('auth.loginHelp')}<br />
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t('auth.recaptchaNote')}</span>
+              <div style={{
+                padding: '14px 16px', background: 'var(--primary-light)',
+                borderRadius: 'var(--radius-sm)', marginBottom: '20px',
+                fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6',
+              }}>
+                <strong style={{ color: 'var(--primary)', display: 'block', marginBottom: '4px' }}>
+                  {t('auth.ak.desc')}
+                </strong>
+                {t('auth.ak.descSub')}
+                <br />
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', display: 'inline-block' }}>
+                  {t('auth.ak.descSub2')}
+                </span>
+              </div>
+              <button className="akademiya-login-btn" onClick={handleAkademiyaLogin}>
+                <img
+                  src="https://akademiya.kr/brand/akademiya-icon-32.png"
+                  srcSet="https://akademiya.kr/brand/akademiya-icon-64.png 2x"
+                  width="20" height="20" alt=""
+                />
+                <span>{t('auth.ak.loginBtn')}</span>
+              </button>
+              <p style={{ textAlign: 'center', marginTop: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                {t('auth.viaAkademiya')}
+              </p>
+              <p style={{ textAlign: 'center', marginTop: '4px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                {t('auth.ak.hafsOnly')}
               </p>
             </>
           )}
 
-          {tab === 'akademiya' && (
+          {akStep === 'verifying' && (
+            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
+              <div className="spinner" style={{ margin: '0 auto 12px', borderColor: 'var(--border)', borderTopColor: 'var(--primary)', width: '28px', height: '28px' }} />
+              {t('auth.ak.verifying')}
+            </div>
+          )}
+
+          {(akStep === 'link_needed' || akStep === 'linking') && akUserInfo && (
             <>
-              {akError && <div className="alert alert-error">{akError}</div>}
-
-              {akStep === 'idle' && (
-                <>
-                  <div style={{
-                    padding: '14px 16px', background: 'var(--primary-light)',
-                    borderRadius: 'var(--radius-sm)', marginBottom: '20px',
-                    fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6',
-                  }}>
-                    <strong style={{ color: 'var(--primary)', display: 'block', marginBottom: '4px' }}>
-                      {t('auth.ak.desc')}
-                    </strong>
-                    {t('auth.ak.descSub')}
-                    <br />
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', display: 'inline-block' }}>
-                      {t('auth.ak.descSub2')}
-                    </span>
-                  </div>
-                  <button className="btn btn-primary btn-block btn-lg" onClick={handleAkademiyaLogin}>
-                    {t('auth.ak.loginBtn')}
-                  </button>
-                  <p style={{ textAlign: 'center', marginTop: '14px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {t('auth.ak.hafsOnly')}
-                  </p>
-                </>
-              )}
-
-              {akStep === 'verifying' && (
-                <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
-                  <div className="spinner" style={{ margin: '0 auto 12px', borderColor: 'var(--border)', borderTopColor: 'var(--primary)', width: '28px', height: '28px' }} />
-                  {t('auth.ak.verifying')}
+              <div style={{
+                padding: '10px 14px', background: 'var(--primary-light)',
+                borderRadius: 'var(--radius-sm)', marginBottom: '14px', fontSize: '13px',
+              }}>
+                <strong style={{ color: 'var(--primary)' }}>{akUserInfo.displayName}</strong>
+                <span style={{ color: 'var(--text-secondary)', marginLeft: '8px' }}>{akUserInfo.email}</span>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+                {t('auth.ak.linkDesc')}
+              </p>
+              <form onSubmit={handleAkademiyaLink}>
+                <div className="form-group">
+                  <label htmlFor="akStudentNo">{t('auth.studentNoLabel')}</label>
+                  <input id="akStudentNo" type="text" placeholder={t('auth.studentNoPlaceholder')}
+                    value={akStudentNo} onChange={e => setAkStudentNo(e.target.value)}
+                    autoComplete="username" required />
                 </div>
-              )}
-
-              {(akStep === 'link_needed' || akStep === 'linking') && akUserInfo && (
-                <>
-                  <div style={{
-                    padding: '10px 14px', background: 'var(--primary-light)',
-                    borderRadius: 'var(--radius-sm)', marginBottom: '14px', fontSize: '13px',
-                  }}>
-                    <strong style={{ color: 'var(--primary)' }}>{akUserInfo.displayName}</strong>
-                    <span style={{ color: 'var(--text-secondary)', marginLeft: '8px' }}>{akUserInfo.email}</span>
-                  </div>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
-                    {t('auth.ak.linkDesc')}
-                  </p>
-                  <form onSubmit={handleAkademiyaLink}>
-                    <div className="form-group">
-                      <label htmlFor="akStudentNo">{t('auth.studentNoLabel')}</label>
-                      <input id="akStudentNo" type="text" placeholder={t('auth.studentNoPlaceholder')}
-                        value={akStudentNo} onChange={e => setAkStudentNo(e.target.value)}
-                        autoComplete="username" required />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="akPassword">{t('auth.ak.goingPasswordLabel')}</label>
-                      <input id="akPassword" type="password" placeholder={t('auth.ak.goingPasswordPlaceholder')}
-                        value={akPassword} onChange={e => setAkPassword(e.target.value)}
-                        autoComplete="current-password" required />
-                    </div>
-                    <button type="submit" className="btn btn-primary btn-block btn-lg"
-                      disabled={akStep === 'linking' || !akStudentNo || !akPassword}>
-                      {akStep === 'linking' ? <><span className="spinner" />{t('auth.logging')}</> : t('auth.ak.linkBtn')}
-                    </button>
-                  </form>
-                  <button className="btn btn-outline" style={{ width: '100%', marginTop: '10px', fontSize: '13px' }}
-                    onClick={() => { setAkStep('idle'); setAkError(''); setAkUserInfo(null); setAkLinkTicket('') }}>
-                    {t('common.cancel', '취소')}
-                  </button>
-                </>
-              )}
+                <div className="form-group">
+                  <label htmlFor="akPassword">{t('auth.ak.goingPasswordLabel')}</label>
+                  <input id="akPassword" type="password" placeholder={t('auth.ak.goingPasswordPlaceholder')}
+                    value={akPassword} onChange={e => setAkPassword(e.target.value)}
+                    autoComplete="current-password" required />
+                </div>
+                <button type="submit" className="btn btn-primary btn-block btn-lg"
+                  disabled={akStep === 'linking' || !akStudentNo || !akPassword}>
+                  {akStep === 'linking' ? <><span className="spinner" />{t('auth.logging')}</> : t('auth.ak.linkBtn')}
+                </button>
+              </form>
+              <button className="btn btn-outline" style={{ width: '100%', marginTop: '10px', fontSize: '13px' }}
+                onClick={() => { setAkStep('idle'); setAkError(''); setAkUserInfo(null); setAkLinkTicket('') }}>
+                {t('common.cancel', '취소')}
+              </button>
             </>
           )}
+
+          {/* 기존 GMCAuto 계정 안내 — 3.1 버전에서 삭제 예정이므로 하드코딩(i18n 미적용) */}
+          <div style={{
+            marginTop: '20px', padding: '14px 16px',
+            background: 'var(--primary-light)', border: '1px solid var(--primary)',
+            borderRadius: 'var(--radius-sm)', fontSize: '12.5px', lineHeight: '1.7',
+          }}>
+            <strong style={{ color: 'var(--primary)', display: 'block', marginBottom: '4px' }}>
+              기존 GMCAuto 계정은 어떻게 되었나요?
+            </strong>
+            <span style={{ color: 'var(--text-secondary)' }}>
+              2026년 2학기를 맞이하여, GMCAuto의 대규모 업데이트가 진행되어 상위 서비스인 Akademiya 계정으로 일원화되었습니다.
+              불편하시더라도 재등록 부탁드립니다. 로그인 방식은 학교 Google 계정을 사용하면 간단합니다.
+            </span>
+          </div>
         </div>
       </div>
     </div>

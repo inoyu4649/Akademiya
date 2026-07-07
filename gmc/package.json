@@ -1,15 +1,16 @@
 {
   "name": "gmcauto2",
   "private": true,
-  "version": "2.9.1",
+  "version": "3.0.0",
   "type": "module",
-  "description": "GMCAuto 2 - GMC PASS 자동신청 프로그램 (Akademiya 통합 버전)",
+  "description": "GMCAuto 3 - GMC PASS 자동신청 프로그램 (Akademiya 통합 버전)",
   "scripts": {
     "dev": "vite --host",
     "server": "tsx server/index.ts",
     "start": "concurrently \"npm run server\" \"npm run dev\"",
     "build": "vite build",
     "prod": "npm run build && tsx server/index.ts",
+    "migrate:legacy": "tsx scripts/migrate-legacy-2026-06-17.ts",
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json --noEmit"
@@ -29,6 +30,7 @@
     "react-dom": "^19.2.4",
     "react-i18next": "^15.4.0",
     "react-is": "^19.0.0",
+    "react-router-dom": "^7.16.0",
     "recharts": "^3.8.1",
     "set-cookie-parser": "^3.1.0",
     "tough-cookie": "^6.0.1",

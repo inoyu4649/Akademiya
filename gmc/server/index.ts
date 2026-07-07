@@ -12,17 +12,17 @@ import iconv from 'iconv-lite';
 import { generateRecaptchaToken, findChromePath } from './recaptcha.js';
 import {
   initDb,
-  registerSchedule, getScheduleAt, getMySchedule, getTodaySchedules,
-  getPendingSchedule, cancelSchedule, markScheduleExecuted,
-  recordUsage, getUsageStats, getUsageStatsByDate, getUsageStatsSummary, getAdminStats,
-  updateScheduleSessionId,
-  saveCredentials, getCredentials, deleteCredentials,
-  getUserRole, setUserRole, getAllCredentials, deleteFailedStats,
-  getSchedulesByDate,
+  registerSchedule, getScheduleAt, getMySchedule,
+  markScheduleExecuted,
+  recordUsage, getUsageStats, getUsageStatsByDate, getUsageStatsSummary, getUsageStatsByStudent, getAdminStats,
+  getCredentials, deleteCredentials,
+  getAllCredentials, deleteFailedStats,
+  getUserRoleByEmail, setUserRoleByEmail,
+  upsertRecurringSchedule, getRecurringByStudent, getRecurringByTime, getAllRecurring, deleteRecurringByStudent,
   addRetry, getDueRetry, deleteRetry,
   backupDb,
   cleanupOldSchedules,
-  saveAkademiyaUser, getByAkademiyaUserId, linkGoingHafsCredentials,
+  saveAkademiyaUser, getByAkademiyaUserId, getByAkademiyaEmail, linkGoingHafsCredentials,
   getPrivacyConsent, savePrivacyConsent,
   getTermsConsent, saveTermsConsent,
   getSuspendPeriods, addSuspendPeriod, deleteSuspendPeriod, getActiveSuspendPeriodForDate,
@@ -73,6 +73,9 @@ const AKADEMIYA_OAUTH_CLIENT_SECRET = process.env.AKADEMIYA_OAUTH_CLIENT_SECRET 
 const AKADEMIYA_OAUTH_AUTHORIZE_URL = process.env.AKADEMIYA_OAUTH_AUTHORIZE_URL || 'https://akademiya.kr/oauth/authorize';
 const AKADEMIYA_OAUTH_REDIRECT_URI  = process.env.AKADEMIYA_OAUTH_REDIRECT_URI || 'https://gmc.akademiya.kr/auth/callback';
 const AKADEMIYA_OAUTH_SCOPE = 'openid profile email';
+
+// ── GMCAuto 공개 API (서버-서버, 다른 서비스가 학교 사이트를 직접 두드리지 않도록) ──
+const GMC_PUBLIC_API_KEY = process.env.GMC_PUBLIC_API_KEY || '';
 
 const chromePath = findChromePath();
 console.log(chromePath ? `Chrome 발견: ${chromePath}` : 'Chrome 미발견');
@@ -349,7 +352,10 @@ async function submitPassWithLogin(studentNo: string, applyDate: string, timeCod
   }
 }
 
-// ========== 스케줄러 ==========
+// ========== 스케줄러 (DB 기반 반복 등록 — 자정 복사 없음) ==========
+// 오늘이 신청 가능일이면, 현재 분(HH:MM)에 해당하는 반복 등록을 찾아 "그 자리에서"
+// 오늘 날짜의 schedules 행을 만들고 곧바로 실행한다. 미리 다음날 행을 만들어두지
+// 않으므로 중단 기간이 뒤늦게 바뀌어도 잘못된 날짜가 열려 있는 문제가 생기지 않는다.
 let schedulerBusy = false;
 setInterval(async () => {
   if (schedulerBusy) return;
@@ -367,7 +373,16 @@ setInterval(async () => {
     const mm = String(now.getMinutes()).padStart(2, '0');
     const key = `${hh}:${mm}`;
     const today = todayStr();
-    const entry = await getPendingSchedule(key, today);
+
+    // 같은 분(HH:MM) 안에서 5초마다 여러 번 tick이 도는 것을 방지 (이미 오늘자 행이 있으면 skip)
+    const already = await getScheduleAt(key, today);
+    if (already) return;
+
+    const recurring = await getRecurringByTime(key);
+    if (!recurring) return;
+
+    await registerSchedule(key, today, 'auto_recurring', recurring.student_no, recurring.time_code, recurring.teacher_id, recurring.reason || '');
+    const entry = await getScheduleAt(key, today);
     if (entry) await processSchedule(entry, key, today);
   } catch (err) {
     console.error('[스케줄러] 예외:', (err as Error).message);
@@ -460,37 +475,22 @@ async function processRetry(retry: Awaited<ReturnType<typeof getDueRetry>> & obj
   }
 }
 
-// ========== 자정 스케줄 자동 복사 ==========
-let lastCopiedDate = '';
+// ========== 매일 1회: 휴일·중단기간 개시 안내 + 정리 (자정 복사 없음) ==========
+// 반복 등록은 스케줄러 tick이 그날그날 직접 실행하므로 여기서는 아무 행도 만들지
+// 않는다. 휴일/중단기간이 "오늘부터" 시작되는 경우에만 반복 등록자 전원에게
+// 1회 안내 푸시를 보내고, 7일 지난 실행 기록을 정리한다.
+let lastDailyCheckDate = '';
 setInterval(async () => {
   const now = new Date();
   if (now.getHours() !== 0 || now.getMinutes() !== 0) return;
 
   const today = todayStr();
-  if (lastCopiedDate === today) return;
-  lastCopiedDate = today;
+  if (lastDailyCheckDate === today) return;
+  lastDailyCheckDate = today;
 
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  await ensureMonthLoaded(dateStr(tomorrow));
+  await ensureMonthLoaded(today);
 
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = dateStr(yesterday);
-
-  // 중단 기간 체크: 오늘이 중단 기간 시작일이면 종료일 다음 첫 평일로 복사
   const suspendPeriod = await getActiveSuspendPeriodForDate(today);
-  let targetStr: string;
-  if (suspendPeriod) {
-    const afterEnd = new Date(suspendPeriod.end_date);
-    afterEnd.setDate(afterEnd.getDate() + 1);
-    targetStr = findNextWorkday(afterEnd);
-    console.log(`[자정 복사] 중단 기간 (${suspendPeriod.start_date}~${suspendPeriod.end_date}) → 재개일 ${targetStr}로 복사`);
-  } else {
-    targetStr = effectiveDate();
-  }
-
-  // ── 트리거 #4/#5: 휴일·중단기간 개시일 첫 알림 ──────────────────
   const isSuspendStart = suspendPeriod !== null && suspendPeriod.start_date === today;
 
   let isFirstHolidayDay = false;
@@ -506,42 +506,32 @@ setInterval(async () => {
     }
   }
 
-  const prevSchedules = await getSchedulesByDate(yesterdayStr);
-
   if (isSuspendStart || isFirstHolidayDay) {
-    const uniqueStudents = [...new Set(
-      prevSchedules.filter(e => e.session_id !== 'auto_retry').map(e => e.student_no)
-    )];
-    for (const sno of uniqueStudents) {
+    let targetStr: string;
+    if (isSuspendStart && suspendPeriod) {
+      const afterEnd = new Date(suspendPeriod.end_date);
+      afterEnd.setDate(afterEnd.getDate() + 1);
+      targetStr = findNextWorkday(afterEnd);
+    } else {
+      targetStr = effectiveDate();
+    }
+
+    const recurringUsers = await getAllRecurring();
+    for (const r of recurringUsers) {
       if (isSuspendStart && suspendPeriod) {
-        await sendPushToStudent(sno, 'GMCAuto',
-          `[${sno}] ${suspendPeriod.start_date}부터 중단 기간입니다. 재개일(${targetStr})에 신청이 재개됩니다.`
+        await sendPushToStudent(r.student_no, 'GMCAuto',
+          `[${r.student_no}] ${suspendPeriod.start_date}부터 중단 기간입니다. 재개일(${targetStr})부터 자동으로 다시 신청됩니다.`
         );
       } else {
-        await sendPushToStudent(sno, 'GMCAuto',
-          `[${sno}] ${today}부터 금요일/휴일입니다. 다음 평일(${targetStr})에 신청이 재개됩니다.`
+        await sendPushToStudent(r.student_no, 'GMCAuto',
+          `[${r.student_no}] ${today}부터 금요일/휴일입니다. 다음 신청 가능일(${targetStr})에 자동으로 신청됩니다.`
         );
       }
     }
   }
 
-  if (prevSchedules.length === 0) {
-    console.log(`[자정 복사] 전날(${yesterdayStr}) 스케줄 없음`);
-    return;
-  }
-
-  let copied = 0;
-  for (const entry of prevSchedules) {
-    if (entry.session_id === 'auto_retry') continue;
-    const existing = await getScheduleAt(entry.time, targetStr);
-    if (existing) continue;
-    await registerSchedule(entry.time, targetStr, 'auto_copy', entry.student_no, entry.time_code, 'gmcauto', entry.reason || '');
-    copied++;
-  }
-  console.log(`[자정 복사] ${yesterdayStr} → ${targetStr}: ${copied}개 복사됨`);
-
   const cleaned = await cleanupOldSchedules();
-  if (cleaned > 0) console.log(`[자정 정리] 7일 지난 스케줄 ${cleaned}개 삭제`);
+  if (cleaned > 0) console.log(`[정리] 7일 지난 스케줄 ${cleaned}개 삭제`);
 }, 15000);
 
 // ========== 매일 08:00 DB 백업 ==========
@@ -581,107 +571,6 @@ cleanupOldBackups();
 // ========== 헬스체크 ==========
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// ========== 로그인 (GMCAuto 계정) ==========
-app.post('/api/login', async (req: Request, res: Response) => {
-  const { studentNo, password } = req.body as { studentNo: string; password: string };
-
-  if (!studentNo || !password) {
-    return res.status(400).json({ success: false, message: '학번과 비밀번호를 입력하세요.' });
-  }
-
-  if (/^0\d{5}$/.test(studentNo)) {
-    return res.json({ success: false, message: '고유번호가 아닌 학번을 입력해주세요!' });
-  }
-
-  try {
-    const client = createClient();
-    const cookies: Record<string, string> = {};
-
-    console.log(`[${studentNo}] 로그인 시도 - reCAPTCHA v3 토큰 생성 중...`);
-
-    let recaptchaToken: string;
-    try {
-      recaptchaToken = await generateRecaptchaToken(chromePath);
-      console.log(`[${studentNo}] reCAPTCHA 토큰 OK (${recaptchaToken.length}자)`);
-    } catch (err) {
-      return res.json({ success: false, message: `reCAPTCHA 토큰 생성 실패: ${(err as Error).message}` });
-    }
-
-    const pageRes = await client.get('/mobile/login/login.html');
-    extractCookies(pageRes).forEach(c => { cookies[c.name] = c.value; });
-
-    const loginData = buildEucKrBody({
-      student_no: studentNo,
-      student_pw: password,
-      login_type: 'S',
-      'g-recaptcha': recaptchaToken,
-      auto_id: '',
-    });
-
-    const loginRes = await client.post('/mobile/login/login_process.php', loginData, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Cookie': cookieStr(cookies),
-        'Referer': `${BASE_URL}/mobile/login/login.html`,
-        'Origin': BASE_URL,
-      },
-    });
-    extractCookies(loginRes).forEach(c => { cookies[c.name] = c.value; });
-    const loginBody = decodeResponse(loginRes);
-
-    const loginAlert = extractAlert(loginBody);
-    if (loginAlert && !loginAlert.includes('성공')) {
-      console.log(`[${studentNo}] 로그인 응답: "${loginAlert}"`);
-      return res.json({ success: false, message: loginAlert });
-    }
-
-    const gmcRes = await client.get('/mobile/gmc/gmc_list.html', {
-      headers: { 'Cookie': cookieStr(cookies) },
-    });
-    extractCookies(gmcRes).forEach(c => { cookies[c.name] = c.value; });
-    const gmcBody = decodeResponse(gmcRes);
-
-    if (isLoginRedirect(gmcBody)) {
-      return res.json({ success: false, message: '로그인에 실패했습니다. 학번과 비밀번호를 확인하세요.' });
-    }
-
-    let studentName = '';
-    const nameFromLogin = loginBody.match(/([가-힣]{2,4})\s*학생/);
-    if (nameFromLogin) {
-      studentName = nameFromLogin[1];
-    } else {
-      const $gmc = cheerio.load(gmcBody);
-      const headerText = $gmc('.header, .top_area, .user_info, #header').text();
-      const nameFromHeader = headerText.match(/([가-힣]{2,4})\s*학생/);
-      if (nameFromHeader) studentName = nameFromHeader[1];
-    }
-
-    const sessionId = `session_${crypto.randomBytes(24).toString('hex')}`;
-    sessions.set(sessionId, { cookies, studentNo, loginTime: new Date().toISOString() });
-
-    await saveCredentials(studentNo, password);
-
-    const existing = await getMySchedule(studentNo, todayStr());
-    if (existing) {
-      await updateScheduleSessionId(studentNo, todayStr(), sessionId);
-      console.log(`[${studentNo}] 기존 스케줄 세션 갱신 (${existing.time})`);
-    }
-
-    const role = await getUserRole(studentNo);
-    const dbUser = await getCredentials(studentNo);
-    const privacyConsentedVersion = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
-    const termsConsentedVersion   = dbUser ? await getTermsConsent(dbUser.id) : 0;
-    const needsPrivacyConsent = privacyConsentedVersion < GMC_PRIVACY_POLICY_VERSION;
-    const needsTermsConsent   = termsConsentedVersion   < GMC_TERMS_OF_USE_VERSION;
-    console.log(`[${studentNo}] 로그인 성공 ${studentName ? `(${studentName})` : ''} (권한 ${role})`);
-    return res.json({ success: true, message: '로그인 성공', sessionId, studentName, studentNo, role, needsPrivacyConsent, needsTermsConsent });
-
-  } catch (error) {
-    console.error('Login error:', (error as Error).message);
-    return res.status(500).json({ success: false, message: `서버 오류: ${(error as Error).message}` });
-  }
 });
 
 // ========== Akademiya OpenOAuth 연동 ==========
@@ -751,7 +640,10 @@ app.post('/api/akademiya/oauth-callback', async (req: Request, res: Response) =>
     }
     const displayName = name || email?.split('@')[0] || '';
 
-    const gmcUser = await getByAkademiyaUserId(userId);
+    // 이메일이 Primary Identifier이므로, akademiya_user_id로 못 찾으면 이메일로도 조회한다
+    // (관리자가 아직 한 번도 로그인하지 않은 이메일에 미리 권한을 부여해둔 경우를 위함)
+    let gmcUser = await getByAkademiyaUserId(userId);
+    if (!gmcUser && email) gmcUser = await getByAkademiyaEmail(email);
 
     // 기존 연동 사용자: role은 GMCAuto 관리자 화면에서만 관리하며 여기서는 절대 재계산하지 않는다
     // (Akademiya 계정 로그인 시 권한이 초기화되던 버그 수정 — hafsOrgPerm 기반 재계산 로직 제거)
@@ -774,11 +666,9 @@ app.post('/api/akademiya/oauth-callback', async (req: Request, res: Response) =>
       sessions.set(sessionId, {
         cookies: loginResult.cookies,
         studentNo: gmcUser.student_no,
+        akademiyaEmail: email ?? null,
         loginTime: new Date().toISOString(),
       });
-
-      const existing = await getMySchedule(gmcUser.student_no, todayStr());
-      if (existing) await updateScheduleSessionId(gmcUser.student_no, todayStr(), sessionId);
 
       const privacyConsentedVer = await getPrivacyConsent(gmcUser.id);
       const termsConsentedVer   = await getTermsConsent(gmcUser.id);
@@ -788,16 +678,22 @@ app.post('/api/akademiya/oauth-callback', async (req: Request, res: Response) =>
         sessionId,
         studentNo: gmcUser.student_no,
         studentName: displayName || '',
+        akademiyaEmail: email ?? null,
         role: gmcUser.role,
         needsPrivacyConsent: privacyConsentedVer < GMC_PRIVACY_POLICY_VERSION,
         needsTermsConsent:   termsConsentedVer   < GMC_TERMS_OF_USE_VERSION,
       });
     }
 
-    // 신규 Akademiya 사용자: role은 항상 0(일반)으로 시작, 이후 GMCAuto 관리자만 변경 가능
-    if (!gmcUser) {
-      await saveAkademiyaUser({ akademiyaUserId: userId, akademiyaEmail: email || null, studentNo: null, password: null, role: 0 });
-    }
+    // 신규(또는 아직 Going HAFS 계정 미연동) Akademiya 사용자 — 기존 role(관리자가 이메일로
+    // 미리 부여해둔 값)이 있으면 그대로 보존하고, 없으면 0(일반)으로 시작한다.
+    await saveAkademiyaUser({
+      akademiyaUserId: userId,
+      akademiyaEmail: email || null,
+      studentNo: gmcUser?.student_no ?? null,
+      password: gmcUser?.password ?? null,
+      role: gmcUser?.role ?? 0,
+    });
 
     return res.json({
       success: true,
@@ -900,10 +796,10 @@ app.post('/api/akademiya/link', async (req: Request, res: Response) => {
     linkTickets.delete(linkTicket!); // 연동 성공 → 티켓 1회용 폐기
 
     const sessionId = `ak_${crypto.randomBytes(24).toString('hex')}`;
-    sessions.set(sessionId, { cookies, studentNo, loginTime: new Date().toISOString() });
+    sessions.set(sessionId, { cookies, studentNo, akademiyaEmail, loginTime: new Date().toISOString() });
 
     console.log(`[Akademiya 연동 완료] ${akademiyaEmail} → ${studentNo} (role ${role})`);
-    return res.json({ success: true, sessionId, studentNo, studentName, role, needsPrivacyConsent: true, needsTermsConsent: true });
+    return res.json({ success: true, sessionId, studentNo, studentName, akademiyaEmail, role, needsPrivacyConsent: true, needsTermsConsent: true });
 
   } catch (err) {
     console.error('[Akademiya 연동 오류]', (err as Error).message);
@@ -1084,55 +980,57 @@ app.post('/api/schedule/register', async (req: Request, res: Response) => {
   }
   if (!timeCode) return res.json({ success: false, message: '야자 시간을 선택하세요.' });
 
-  const { date: targetDate, suspended } = await getTargetDateInfo();
-  const weekend = isWeekend();
-  const existing = await getScheduleAt(time, targetDate);
+  const existing = await getRecurringByTime(time);
   if (existing && existing.student_no !== session.studentNo) {
     return res.json({ success: false, message: `${time}에 이미 다른 사용자가 등록되어 있습니다.` });
   }
 
-  await registerSchedule(time, targetDate, sessionId, session.studentNo, timeCode, 'gmcauto', reason || '');
-  console.log(`[스케줄] ${session.studentNo} → ${time} 등록 (${targetDate})`);
+  await upsertRecurringSchedule(session.studentNo, time, timeCode, 'gmcauto', reason || '');
+  console.log(`[반복등록] ${session.studentNo} → ${time} 등록`);
   // 트리거 #1: 신청 예약 푸시
-  await sendPushToStudent(session.studentNo, 'GMCAuto', `[${session.studentNo}] ${time} 신청 예약되었습니다.`);
-  const suffix = suspended ? ` (재개일: ${targetDate})` : weekend ? ` (다음 평일: ${targetDate})` : '';
-  return res.json({ success: true, message: `${time}에 자동 신청이 등록되었습니다${suffix}.` });
+  await sendPushToStudent(session.studentNo, 'GMCAuto', `[${session.studentNo}] ${time} 자동 신청이 등록되었습니다.`);
+  return res.json({
+    success: true,
+    message: `${time}에 자동 신청이 등록되었습니다. 앞으로 매 신청 가능일(평일/중단기간 제외)에 자동으로 신청됩니다.`,
+  });
 });
 
 app.post('/api/schedule/cancel', async (req: Request, res: Response) => {
-  const { sessionId, time } = req.body as { sessionId: string; time: string };
+  const { sessionId } = req.body as { sessionId: string };
   const session = sessions.get(sessionId);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
 
-  const { date: cancelDate } = await getTargetDateInfo();
-  const result = await cancelSchedule(time, cancelDate, session.studentNo);
-  if (result.changes === 0) return res.json({ success: false, message: '스케줄을 찾을 수 없습니다.' });
-  return res.json({ success: true, message: `${time} 해제 완료` });
+  const result = await deleteRecurringByStudent(session.studentNo);
+  if (result.changes === 0) return res.json({ success: false, message: '등록된 자동 신청이 없습니다.' });
+  return res.json({ success: true, message: '자동 신청이 해제되었습니다.' });
 });
 
 app.get('/api/schedule/status', async (req: Request, res: Response) => {
   const session = sessions.get(req.query.sessionId as string);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
 
-  const { date: target, suspended, suspendEnd, resumeDate } = await getTargetDateInfo();
+  const { date: targetDate, suspended, suspendEnd, resumeDate } = await getTargetDateInfo();
   const weekend = isWeekend();
-  const my = await getMySchedule(session.studentNo, target);
-  const all = await getTodaySchedules(target);
-  const takenSlots = all.map(e => e.time);
+  const validToday = targetDate === todayStr();
+
+  const recurring = await getRecurringByStudent(session.studentNo);
+  const allRecurring = await getAllRecurring();
+  const takenSlots = allRecurring.map(r => r.time);
 
   let mySchedule = null;
-  if (my) {
+  if (recurring) {
+    const todayRow = validToday ? await getMySchedule(session.studentNo, todayStr()) : null;
     mySchedule = {
-      time: my.time,
-      timeCode: my.time_code,
-      teacherId: my.teacher_id,
-      reason: my.reason,
-      executed: !!my.executed,
-      result: my.executed ? { success: !!my.result_ok, message: my.result_msg } : null,
+      time: recurring.time,
+      timeCode: recurring.time_code,
+      teacherId: recurring.teacher_id,
+      reason: recurring.reason,
+      executed: !!todayRow?.executed,
+      result: todayRow?.executed ? { success: !!todayRow.result_ok, message: todayRow.result_msg } : null,
     };
   }
 
-  return res.json({ success: true, mySchedule, takenSlots, targetDate: target, isWeekend: weekend, suspended, suspendEnd, resumeDate });
+  return res.json({ success: true, mySchedule, takenSlots, targetDate, isWeekend: weekend, suspended, suspendEnd, resumeDate });
 });
 
 // ========== 관리자 API ==========
@@ -1140,7 +1038,7 @@ app.get('/api/schedule/status', async (req: Request, res: Response) => {
 app.get('/api/admin/stats', async (req: Request, res: Response) => {
   const session = sessions.get(req.query.sessionId as string);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
-  const role = await getUserRole(session.studentNo);
+  const role = await getUserRoleByEmail(session.akademiyaEmail);
   if (role < 1) return res.status(403).json({ success: false, message: '권한 없음' });
 
   const { grade, cls, dateFrom, dateTo } = req.query as Record<string, string | undefined>;
@@ -1154,7 +1052,7 @@ app.post('/api/admin/stats/delete-failures', async (req: Request, res: Response)
   };
   const session = sessions.get(sessionId);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
-  const role = await getUserRole(session.studentNo);
+  const role = await getUserRoleByEmail(session.akademiyaEmail);
   if (role < 3) return res.status(403).json({ success: false, message: '권한 없음 (권한 3 필요)' });
 
   const deleted = await deleteFailedStats({ grade:grade||null, cls:cls||null, dateFrom:dateFrom||null, dateTo:dateTo||null });
@@ -1165,7 +1063,7 @@ app.post('/api/admin/stats/delete-failures', async (req: Request, res: Response)
 app.get('/api/admin/users', async (req: Request, res: Response) => {
   const session = sessions.get(req.query.sessionId as string);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
-  const role = await getUserRole(session.studentNo);
+  const role = await getUserRoleByEmail(session.akademiyaEmail);
   if (role < 3) return res.status(403).json({ success: false, message: '권한 없음' });
 
   const users = await getAllCredentials();
@@ -1173,24 +1071,24 @@ app.get('/api/admin/users', async (req: Request, res: Response) => {
 });
 
 app.post('/api/admin/users/role', async (req: Request, res: Response) => {
-  const { sessionId, studentNo, role } = req.body as { sessionId: string; studentNo: string; role: number };
+  const { sessionId, email, role } = req.body as { sessionId: string; email: string; role: number };
   const session = sessions.get(sessionId);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
-  const myRole = await getUserRole(session.studentNo);
+  const myRole = await getUserRoleByEmail(session.akademiyaEmail);
   if (myRole < 3) return res.status(403).json({ success: false, message: '권한 없음' });
 
-  if (!studentNo) return res.json({ success: false, message: '학번을 입력하세요.' });
+  if (!email) return res.json({ success: false, message: '이메일을 입력하세요.' });
   const newRole = parseInt(String(role), 10);
   if (isNaN(newRole) || newRole < 0 || newRole > 3) {
     return res.json({ success: false, message: '유효하지 않은 권한 값입니다.' });
   }
-  if (studentNo === session.studentNo) {
+  if (email === session.akademiyaEmail) {
     return res.json({ success: false, message: '자신의 권한은 변경할 수 없습니다.' });
   }
 
-  await setUserRole(studentNo, newRole);
-  console.log(`[관리자] ${session.studentNo} → ${studentNo} 권한 ${newRole} 설정`);
-  return res.json({ success: true, message: `${studentNo} 권한이 ${newRole}으로 설정되었습니다.` });
+  await setUserRoleByEmail(email, newRole);
+  console.log(`[관리자] ${session.akademiyaEmail} → ${email} 권한 ${newRole} 설정`);
+  return res.json({ success: true, message: `${email} 권한이 ${newRole}으로 설정되었습니다.` });
 });
 
 // ========== GMC PASS 중단 기간 API ==========
@@ -1198,7 +1096,7 @@ app.post('/api/admin/users/role', async (req: Request, res: Response) => {
 app.get('/api/admin/suspend', async (req: Request, res: Response) => {
   const session = sessions.get(req.query.sessionId as string);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
-  const role = await getUserRole(session.studentNo);
+  const role = await getUserRoleByEmail(session.akademiyaEmail);
   if (role < 3) return res.status(403).json({ success: false, message: '권한 없음' });
   const periods = await getSuspendPeriods();
   return res.json({ success: true, periods });
@@ -1208,7 +1106,7 @@ app.post('/api/admin/suspend', async (req: Request, res: Response) => {
   const { sessionId, startDate, endDate } = req.body as { sessionId: string; startDate: string; endDate: string };
   const session = sessions.get(sessionId);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
-  const role = await getUserRole(session.studentNo);
+  const role = await getUserRoleByEmail(session.akademiyaEmail);
   if (role < 3) return res.status(403).json({ success: false, message: '권한 없음' });
   if (!startDate || !endDate || startDate > endDate) {
     return res.json({ success: false, message: '유효하지 않은 날짜 범위입니다.' });
@@ -1221,7 +1119,7 @@ app.post('/api/admin/suspend', async (req: Request, res: Response) => {
 app.delete('/api/admin/suspend/:id', async (req: Request, res: Response) => {
   const session = sessions.get(req.query.sessionId as string);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
-  const role = await getUserRole(session.studentNo);
+  const role = await getUserRoleByEmail(session.akademiyaEmail);
   if (role < 3) return res.status(403).json({ success: false, message: '권한 없음' });
   const periodId = parseInt(req.params.id as string, 10);
   await deleteSuspendPeriod(periodId);
@@ -1233,7 +1131,7 @@ app.delete('/api/admin/suspend/:id', async (req: Request, res: Response) => {
 app.get('/api/stats', async (req: Request, res: Response) => {
   const session = sessions.get(req.query.sessionId as string);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
-  const role = await getUserRole(session.studentNo);
+  const role = await getUserRoleByEmail(session.akademiyaEmail);
   if (role < 1) return res.status(403).json({ success: false, message: '권한 없음' });
 
   const { date, limit } = req.query as Record<string, string | undefined>;
@@ -1298,7 +1196,7 @@ app.get('/api/session/check', async (req: Request, res: Response) => {
       return res.json({ valid: false, expired: true });
     }
 
-    const role = await getUserRole(session.studentNo);
+    const role = await getUserRoleByEmail(session.akademiyaEmail);
     const dbUser = await getCredentials(session.studentNo);
     const privacyVer = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
     const termsVer   = dbUser ? await getTermsConsent(dbUser.id)   : 0;
@@ -1307,7 +1205,7 @@ app.get('/api/session/check', async (req: Request, res: Response) => {
       needsTermsConsent:   termsVer   < GMC_TERMS_OF_USE_VERSION });
   } catch (err) {
     console.warn(`[세션 확인] 네트워크 오류 (skip deep check): ${(err as Error).message}`);
-    const role = await getUserRole(session.studentNo);
+    const role = await getUserRoleByEmail(session.akademiyaEmail);
     const dbUser = await getCredentials(session.studentNo);
     const privacyVer = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
     const termsVer   = dbUser ? await getTermsConsent(dbUser.id)   : 0;
@@ -1342,7 +1240,7 @@ app.post('/api/privacy/consent', async (req: Request, res: Response) => {
     return res.status(400).json({ success: false, message: 'INVALID_VERSION' });
   }
   try {
-    const user = (session.akademiyaUserId ? await getByAkademiyaUserId(session.akademiyaUserId) : null)
+    const user = (session.akademiyaEmail ? await getByAkademiyaEmail(session.akademiyaEmail) : null)
       || await getCredentials(session.studentNo);
     if (!user) return res.status(404).json({ success: false, message: '사용자 없음' });
     await savePrivacyConsent(user.id, version);
@@ -1362,7 +1260,7 @@ app.post('/api/terms/consent', async (req: Request, res: Response) => {
     return res.status(400).json({ success: false, message: 'INVALID_VERSION' });
   }
   try {
-    const user = (session.akademiyaUserId ? await getByAkademiyaUserId(session.akademiyaUserId) : null)
+    const user = (session.akademiyaEmail ? await getByAkademiyaEmail(session.akademiyaEmail) : null)
       || await getCredentials(session.studentNo);
     if (!user) return res.status(404).json({ success: false, message: '사용자 없음' });
     await saveTermsConsent(user.id, version);
@@ -1384,6 +1282,42 @@ app.post('/api/account/delete', async (req: Request, res: Response) => {
   return res.json({ success: true, message: '저장된 인증 정보가 삭제되었습니다.' });
 });
 
+// ========== GMCAuto 공개 API v1 ==========
+// 다른 서비스(Akademiya 등)가 학교 홈페이지를 직접 조회해 동시접속 차단을 유발하지 않도록,
+// 서버-서버 전용으로 신청 여부/예약 시간/신청 내역을 제공한다. 세션이 아닌 API Key로 인증.
+app.get('/api/public/v1/status/:studentNo', async (req: Request, res: Response) => {
+  const apiKey = req.header('X-Api-Key');
+  if (!GMC_PUBLIC_API_KEY || apiKey !== GMC_PUBLIC_API_KEY) {
+    return res.status(401).json({ success: false, message: 'API Key가 유효하지 않습니다.' });
+  }
+
+  const studentNo = req.params.studentNo as string;
+  try {
+    const recurring = await getRecurringByStudent(studentNo);
+    const todayRow = await getMySchedule(studentNo, todayStr());
+    const history = await getUsageStatsByStudent(studentNo, 20);
+
+    return res.json({
+      success: true,
+      data: {
+        studentNo,
+        hasApplied: !!(todayRow?.executed && todayRow.result_ok),
+        reservedTime: recurring?.time ?? null,
+        history: history.map(h => ({
+          applyDate: h.apply_date,
+          scheduleTime: h.schedule_time,
+          timeCode: h.time_code,
+          success: !!h.success,
+          message: h.message,
+        })),
+      },
+    });
+  } catch (err) {
+    console.error('[공개 API]', (err as Error).message);
+    return res.status(500).json({ success: false, message: `서버 오류: ${(err as Error).message}` });
+  }
+});
+
 // SPA fallback
 if (existsSync(distPath)) {
   app.get('/{*splat}', (_req: Request, res: Response) => {
@@ -1403,10 +1337,10 @@ const SSL_CERT = process.env.SSL_CERT || '/etc/letsencrypt/live/gmc.akademiya.kr
 
 if (existsSync(SSL_KEY) && existsSync(SSL_CERT)) {
   https.createServer({ key: readFileSync(SSL_KEY), cert: readFileSync(SSL_CERT) }, app)
-    .listen(PORT, '0.0.0.0', () => console.log(`\n🚀 GMCAuto 2 (HTTPS) → https://0.0.0.0:${PORT}\n`));
+    .listen(PORT, '0.0.0.0', () => console.log(`\n🚀 GMCAuto 3 (HTTPS) → https://0.0.0.0:${PORT}\n`));
 } else {
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`\n🚀 GMCAuto 2 (HTTP) → http://0.0.0.0:${PORT}`);
+    console.log(`\n🚀 GMCAuto 3 (HTTP) → http://0.0.0.0:${PORT}`);
     console.log(`   SSL 인증서 없음 → HTTP 모드\n`);
   });
 }
