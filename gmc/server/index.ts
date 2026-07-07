@@ -15,7 +15,7 @@ import {
   registerSchedule, getScheduleAt, getMySchedule,
   markScheduleExecuted,
   recordUsage, getUsageStats, getUsageStatsByDate, getUsageStatsSummary, getUsageStatsByStudent, getAdminStats,
-  getCredentials, deleteCredentials,
+  getCredentials, deleteCredentials, deleteGmcUserById,
   getAllCredentials, deleteFailedStats,
   getUserRoleByEmail, setUserRoleByEmail,
   upsertRecurringSchedule, getRecurringByStudent, getRecurringByTime, getAllRecurring, deleteRecurringByStudent,
@@ -785,6 +785,15 @@ app.post('/api/akademiya/link', async (req: Request, res: Response) => {
     // role은 클라이언트 입력을 신뢰하지 않고 기존 DB 값을 그대로 보존한다 (없으면 0)
     const existingUser = await getByAkademiyaUserId(akademiyaUserId);
     const role = existingUser?.role ?? 0;
+
+    // [마이그레이션 병합] 이 학번으로 이미 다른 행(예: 레거시 이관 credentials, akademiya_user_id
+    // 없음)이 존재하면, INSERT ... ON DUPLICATE KEY UPDATE가 akademiya_user_id 충돌 행과
+    // student_no 충돌 행을 동시에 만족시키지 못해 "Duplicate entry" 에러가 난다. 두 행이
+    // 서로 다른 행일 때만 레거시 행을 제거해 하나로 합친다(권한은 Akademiya 쪽 행 기준 유지).
+    const legacyByStudentNo = await getCredentials(studentNo);
+    if (legacyByStudentNo && legacyByStudentNo.id !== existingUser?.id) {
+      await deleteGmcUserById(legacyByStudentNo.id);
+    }
 
     await saveAkademiyaUser({
       akademiyaUserId,

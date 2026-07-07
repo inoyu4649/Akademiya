@@ -185,6 +185,10 @@ export async function deleteCredentials(studentNo: string): Promise<void> {
   await pool.execute('DELETE FROM gmc_users WHERE student_no = ?', [studentNo]);
 }
 
+export async function deleteGmcUserById(id: number): Promise<void> {
+  await pool.execute('DELETE FROM gmc_users WHERE id = ?', [id]);
+}
+
 export async function getAllCredentials(): Promise<GmcUserRow[]> {
   const [rows] = await pool.execute<GmcUserRow[]>(
     `SELECT student_no, COALESCE(role, 0) AS role, updated_at,
