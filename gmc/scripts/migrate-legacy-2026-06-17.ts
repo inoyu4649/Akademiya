@@ -1,14 +1,18 @@
 // GMCAuto 3 최초 1회 마이그레이션 스크립트
 //
 // 대상: 기존 GMCAuto 2 DB(`gmcauto`, LEGACY_GMC_DB_* 환경변수로 접속)에서
-//       2026년 6월 17일 신청 결과가 "성공"인 사용자의 credentials + 그날의 신청 내역만
-//       새 DB(`gmcauto3`, GMC_DB_* 환경변수 — server/db.ts의 pool과 동일)로 이식한다.
+//       2026년 6월 17일 신청 결과가 "성공"인 사용자의 credentials + 그날의 신청 내역을
+//       새 DB(`gmcauto3`, GMC_DB_* 환경변수 — server/db.ts의 pool과 동일)로 이식하고,
+//       그 성공 시간대를 반복 등록(gmc_recurring_schedules)으로도 다시 심어준다
+//       (재등록 없이도 바로 예약 현황 타임라인에 표시되도록).
 //
 // 실행: tsx scripts/migrate-legacy-2026-06-17.ts
 //       (서버와 동일한 환경변수가 필요 — Docker 컨테이너 안에서 실행하거나 로컬에 동일하게 export)
 //
 // 재실행 안전성: credentials는 student_no UNIQUE 제약으로 INSERT IGNORE, usage_stats는
 // (student_no, apply_date, schedule_time) 중복 여부를 먼저 조회해 있으면 건너뛴다.
+// 반복 등록도 INSERT IGNORE라 이미 존재하는 행(재실행이든, 사용자가 이미 직접 재등록한
+// 경우든)은 절대 덮어쓰지 않는다.
 
 import mysql, { RowDataPacket } from 'mysql2/promise';
 import { initDb, pool as newPool } from '../server/db.js';
@@ -54,6 +58,7 @@ async function main(): Promise<void> {
   console.log(`[마이그레이션] ${TARGET_DATE} 신청 성공자: ${studentNos.length}명`);
 
   let migratedCred = 0, skippedCred = 0, migratedUsage = 0, skippedUsage = 0;
+  let migratedRecurring = 0, skippedRecurring = 0;
 
   for (const studentNo of studentNos) {
     const [userRows] = await legacyPool.query<LegacyUserRow[]>(
@@ -89,10 +94,25 @@ async function main(): Promise<void> {
       );
       migratedUsage++;
     }
+
+    // 반복 등록 이식: 그날 성공한 기록 중 하나(여러 건이면 마지막 것)를 골라
+    // gmc_recurring_schedules에 표준 반복 등록으로 심는다. student_no/time 둘 다 UNIQUE라
+    // 이미 등록이 있으면(재실행이든 사용자가 직접 재등록했든) INSERT IGNORE가 조용히 건너뛴다.
+    const successRow = [...usageRows].reverse().find(u => u.success === 1);
+    if (successRow) {
+      const [res] = await newPool.execute(
+        `INSERT IGNORE INTO gmc_recurring_schedules (student_no, time, time_code, teacher_id, reason)
+         VALUES (?, ?, ?, ?, '')`,
+        [successRow.student_no, successRow.schedule_time, successRow.time_code, successRow.teacher_id]
+      );
+      const affected = (res as unknown as { affectedRows: number }).affectedRows;
+      if (affected > 0) migratedRecurring++; else skippedRecurring++;
+    }
   }
 
   console.log(`[마이그레이션 완료] credentials 이식 ${migratedCred}건 (기존 존재 ${skippedCred}건 건너뜀)`);
   console.log(`[마이그레이션 완료] 신청내역 이식 ${migratedUsage}건 (기존 존재 ${skippedUsage}건 건너뜀)`);
+  console.log(`[마이그레이션 완료] 반복 등록 이식 ${migratedRecurring}건 (이미 존재/시간충돌로 ${skippedRecurring}건 건너뜀)`);
 
   await legacyPool.end();
   await newPool.end();
