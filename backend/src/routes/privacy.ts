@@ -4,7 +4,7 @@ import { requireAuth } from "../middleware/auth.js";
 
 const router: IRouter = Router();
 
-export const PRIVACY_POLICY_VERSION = 2;
+export const PRIVACY_POLICY_VERSION = 3;
 
 // GET /privacy/version
 router.get("/version", (_req, res) => {
