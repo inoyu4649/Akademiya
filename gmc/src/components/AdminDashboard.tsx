@@ -107,37 +107,6 @@ export default function AdminDashboard({ session }: AdminDashboardProps) {
     XLSX.writeFile(wb, `gmcauto_stats_${new Date().toISOString().slice(0, 10)}.xlsx`)
   }
 
-  const deleteFailures = async () => {
-    const failCount = stats.filter(r => !r.success).length
-    if (failCount === 0) return
-    const rangeText = (dateFrom || dateTo) ? `${dateFrom || '처음'} ~ ${dateTo || '끝'}` : '⚠️ 전체 기간'
-    const gradeText = grade ? ` / ${grade}학년` : ''
-    const clsText   = cls   ? ` / ${parseInt(cls, 10)}반` : ''
-    if (!confirm(`실패 기록 ${failCount}건을 삭제합니다.\n범위: ${rangeText}${gradeText}${clsText}\n\n이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?`)) return
-    try {
-      const res  = await fetch('/api/admin/stats/delete-failures', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          sessionId: session.sessionId,
-          grade:    grade    || undefined,
-          cls:      cls      || undefined,
-          dateFrom: dateFrom || undefined,
-          dateTo:   dateTo   || undefined,
-        }),
-      })
-      const data = await res.json() as { success: boolean; deleted?: number; message?: string }
-      if (data.success) {
-        alert(`실패 기록 ${data.deleted}건이 삭제되었습니다.`)
-        fetchStats()
-      } else {
-        alert(`삭제 실패: ${data.message}`)
-      }
-    } catch {
-      alert('서버 오류가 발생했습니다.')
-    }
-  }
-
   const timeCodeMap: Record<string, string> = {
     '1': t('pass.yaja1'),
     '2': t('pass.yaja2'),
@@ -243,11 +212,6 @@ export default function AdminDashboard({ session }: AdminDashboardProps) {
           {userRole >= 2 && (
             <button className="btn btn-primary" onClick={exportXlsx} disabled={stats.length === 0} style={{ fontSize: '12px', padding: '5px 12px' }}>
               {t('admin.exportXlsx')}
-            </button>
-          )}
-          {userRole >= 3 && (
-            <button className="btn btn-danger" onClick={deleteFailures} disabled={failCount === 0} style={{ fontSize: '12px', padding: '5px 12px' }}>
-              {t('admin.deleteFailures')}
             </button>
           )}
           <button className="btn btn-outline" onClick={fetchStats} disabled={loading} style={{ fontSize: '12px', padding: '5px 12px' }}>

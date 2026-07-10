@@ -142,7 +142,6 @@
     "toggleChartShow": "📊 Show Charts",
     "toggleChartHide": "📊 Hide Charts",
     "exportXlsx": "📥 Export XLSX",
-    "deleteFailures": "🗑️ Delete Failures",
     "refresh": "Refresh",
     "loading": "Loading...",
     "empty": "No data matching the filter.",

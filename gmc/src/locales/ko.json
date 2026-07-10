@@ -147,7 +147,6 @@
     "toggleChartShow": "📊 그래프 보기",
     "toggleChartHide": "📊 그래프 닫기",
     "exportXlsx": "📥 XLSX로 내보내기",
-    "deleteFailures": "🗑️ 실패 기록 삭제",
     "refresh": "새로고침",
     "loading": "불러오는 중...",
     "empty": "조건에 맞는 데이터가 없습니다.",

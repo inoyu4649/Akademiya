@@ -142,7 +142,6 @@
     "toggleChartShow": "📊 グラフを表示",
     "toggleChartHide": "📊 グラフを閉じる",
     "exportXlsx": "📥 XLSX エクスポート",
-    "deleteFailures": "🗑️ 失敗記録を削除",
     "refresh": "更新",
     "loading": "読み込み中...",
     "empty": "条件に一致するデータがありません。",

@@ -142,7 +142,6 @@
     "toggleChartShow": "📊 显示图表",
     "toggleChartHide": "📊 关闭图表",
     "exportXlsx": "📥 导出 XLSX",
-    "deleteFailures": "🗑️ 删除失败记录",
     "refresh": "刷新",
     "loading": "加载中...",
     "empty": "没有符合条件的数据。",
