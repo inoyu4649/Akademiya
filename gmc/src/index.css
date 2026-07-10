@@ -35,9 +35,15 @@
   --shadow:         0 1px 3px rgba(37,99,235,0.08), 0 1px 2px rgba(15,23,42,0.04);
   --shadow-lg:      0 14px 32px -10px rgba(37,99,235,0.22), 0 4px 10px -4px rgba(15,23,42,0.06);
 
+  /* ── Circle-Smooth: 버튼 전용 컬러 그림자 (GMCRedirectServer 테마 참고) ── */
+  --shadow-btn-primary:       0 8px 20px -6px rgba(37,99,235,0.45);
+  --shadow-btn-primary-hover: 0 12px 28px -8px rgba(37,99,235,0.55);
+  --shadow-btn-danger:        0 8px 20px -6px rgba(220,38,38,0.4);
+  --shadow-btn-danger-hover:  0 12px 28px -8px rgba(220,38,38,0.5);
+
   --radius:         14px;
-  --radius-sm:      6px;
-  --radius-lg:      22px;
+  --radius-sm:      10px;
+  --radius-lg:      24px;
 
   /* 라이트 모드에서는 버튼 텍스트 흰색 */
   --btn-primary-text: #ffffff;
@@ -73,6 +79,12 @@
 
   --shadow:         0 2px 8px rgba(0,0,0,0.35);
   --shadow-lg:      0 16px 36px -10px rgba(96,165,250,0.22), 0 6px 14px -6px rgba(0,0,0,0.45);
+
+  /* ── Circle-Smooth: 다크 모드는 어두운 배경 위 은은한 글로우로 조정 ── */
+  --shadow-btn-primary:       0 8px 20px -6px rgba(96,165,250,0.3);
+  --shadow-btn-primary-hover: 0 12px 28px -8px rgba(96,165,250,0.4);
+  --shadow-btn-danger:        0 8px 20px -6px rgba(248,113,113,0.25);
+  --shadow-btn-danger-hover:  0 12px 28px -8px rgba(248,113,113,0.35);
 
   /* 다크 모드에서는 밝은 primary(#60a5fa) 위에 어두운 텍스트 */
   --btn-primary-text: #0a1929;
@@ -159,7 +171,7 @@ input, textarea, select {
 
 input:focus, textarea:focus, select:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 3px var(--primary-light);
 }
 
 ::-webkit-scrollbar         { width: 6px; height: 6px; }

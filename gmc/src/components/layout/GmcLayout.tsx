@@ -36,7 +36,7 @@ function InstallGuide({ os }: { os: OsType }) {
       <div>
         <p style={{ margin: '0 0 12px', fontSize: '14px', color: 'var(--text)' }}>{t('install.iosTitle', { device })}</p>
         {!isSafari && (
-          <div style={{ background: 'var(--warning-light)', border: '1px solid var(--warning)', borderRadius: '6px', padding: '8px 12px', marginBottom: '12px', fontSize: '13px', color: 'var(--text)' }}
+          <div style={{ background: 'var(--warning-light)', border: '1px solid var(--warning)', borderRadius: 'var(--radius-sm)', padding: '8px 12px', marginBottom: '12px', fontSize: '13px', color: 'var(--text)' }}
             dangerouslySetInnerHTML={{ __html: t('install.iosNotSafari') }} />
         )}
         <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text)', lineHeight: 2 }}>
@@ -294,7 +294,7 @@ export default function GmcLayout({ session, onLogout, onAccountDelete, theme, t
     <div className={styles.layout}>
       {showInstallModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg, 14px)', padding: '24px', maxWidth: '400px', width: '100%' }}>
+          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '24px', maxWidth: '400px', width: '100%' }}>
             <h3 style={{ margin: '0 0 16px', color: 'var(--text)', fontSize: '16px' }}>{t('install.modalTitle')}</h3>
             <InstallGuide os={installOs} />
             <button className="btn btn-primary" onClick={() => setShowInstallModal(false)} style={{ marginTop: '20px', width: '100%' }}>

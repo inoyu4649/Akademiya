@@ -112,7 +112,7 @@
 .card {
   background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   overflow: hidden;
   animation: rise 0.35s ease-out;
@@ -185,11 +185,11 @@
   gap: 7px;
   padding: 9px 18px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .btn:disabled {
@@ -200,25 +200,35 @@
 .btn-primary {
   background: var(--primary);
   color: var(--btn-primary-text, #ffffff);
+  box-shadow: var(--shadow-btn-primary);
 }
 
 .btn-primary:hover:not(:disabled) {
   background: var(--primary-hover);
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-1px);
+  box-shadow: var(--shadow-btn-primary-hover);
+  transform: translateY(-2px);
 }
 
 .btn-primary:active:not(:disabled) {
   transform: translateY(0);
+  box-shadow: var(--shadow-btn-primary);
 }
 
 .btn-danger {
   background: var(--danger);
   color: #fff;
+  box-shadow: var(--shadow-btn-danger);
 }
 
 .btn-danger:hover:not(:disabled) {
-  opacity: 0.88;
+  filter: brightness(0.94);
+  box-shadow: var(--shadow-btn-danger-hover);
+  transform: translateY(-2px);
+}
+
+.btn-danger:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-btn-danger);
 }
 
 .btn-outline {
@@ -231,6 +241,12 @@
   background: var(--bg-hover);
   color: var(--text);
   border-color: var(--text-muted);
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.btn-outline:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .btn-block {
@@ -238,7 +254,7 @@
 }
 
 .btn-lg {
-  padding: 12px 22px;
+  padding: 14px 24px;
   font-size: 15px;
 }
 
@@ -289,10 +305,10 @@
   font-size: 14.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
+  transition: background 0.15s, box-shadow 0.2s, transform 0.2s;
 }
-.akademiya-login-btn:hover { background: #f7f7f7; box-shadow: var(--shadow); }
-.akademiya-login-btn:active { background: #eeeeee; }
+.akademiya-login-btn:hover { background: #f7f7f7; box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.akademiya-login-btn:active { background: #eeeeee; transform: translateY(0); }
 
 [data-theme="dark"] .akademiya-login-btn {
   background: #1f1f1f;
@@ -308,11 +324,11 @@
   justify-content: center;
   min-height: calc(100vh - 32px);
   padding: 20px;
-  background: radial-gradient(circle at 20% 20%, var(--primary-light) 0%, var(--bg) 45%);
+  background: radial-gradient(circle at 20% 20%, var(--primary-light) 0%, var(--bg) 45%, var(--card-bg) 100%);
 }
 
 [data-theme="dark"] .login-container {
-  background: var(--bg);
+  background: radial-gradient(circle at 20% 20%, rgba(96,165,250,0.12) 0%, var(--bg) 55%);
 }
 
 .login-card {

@@ -118,7 +118,7 @@ export default function TermsOfUseModal({ sessionId, consentedVersion, onConsent
             <span>이용약관을 읽었으며, 이에 동의합니다.</span>
           </label>
           <button
-            style={{ ...styles.btn, ...((!agreed || loading) ? styles.btnDisabled : {}) }}
+            className="btn btn-primary btn-block"
             onClick={handleConsent}
             disabled={!agreed || loading}
           >

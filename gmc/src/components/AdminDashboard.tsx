@@ -279,7 +279,7 @@ export default function AdminDashboard({ session }: AdminDashboardProps) {
                     <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} />
                     <YAxis tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} allowDecimals={false} />
                     <Tooltip
-                      contentStyle={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '4px' }}
+                      contentStyle={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                       formatter={(v) => [`${v}명`, '학생수']}
                     />
                     <Bar dataKey="value" name="학생수" fill="var(--primary)" radius={[2, 2, 0, 0]} />

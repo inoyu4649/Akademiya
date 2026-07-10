@@ -68,7 +68,7 @@ export default function PatchNotesModal({ onClose }: PatchNotesModalProps) {
         </div>
 
         <div style={styles.footer}>
-          <button style={styles.btn} onClick={onClose}>
+          <button className="btn btn-primary btn-block" onClick={onClose}>
             확인했습니다
           </button>
         </div>
@@ -91,7 +91,8 @@ const styles: Record<string, React.CSSProperties> = {
   modal: {
     background: 'var(--card-bg)',
     border: '1px solid var(--border)',
-    borderRadius: '8px',
+    borderRadius: 'var(--radius-lg)',
+    boxShadow: 'var(--shadow-lg)',
     width: '100%',
     maxWidth: '480px',
     maxHeight: '90vh',
@@ -120,7 +121,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-secondary, #9ca3af)',
     background: 'var(--bg, #1e1e1e)',
     border: '1px solid var(--border)',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-sm)',
     padding: '2px 8px',
     display: 'inline-block',
   },
@@ -143,17 +144,5 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '14px 24px 18px',
     borderTop: '1px solid var(--border)',
     flexShrink: 0,
-  },
-  btn: {
-    width: '100%',
-    padding: '10px',
-    background: 'var(--primary)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'opacity 0.15s',
   },
 }

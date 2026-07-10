@@ -72,11 +72,12 @@
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
   flex-shrink: 0;
 }
 
-.iconBtn:hover { background: var(--bg-hover); color: var(--text); }
+.iconBtn:hover { background: var(--bg-hover); color: var(--text); transform: translateY(-1px); }
+.iconBtn:active { transform: translateY(0); }
 
 .closeSidebarBtn {
   display: none;
@@ -209,10 +210,11 @@
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
 }
 
-.logoutBtn:hover { background: var(--danger-light); color: var(--danger); }
+.logoutBtn:hover { background: var(--danger-light); color: var(--danger); transform: translateY(-1px); }
+.logoutBtn:active { transform: translateY(0); }
 
 /* ── Content column (top-bar + main + footer) ── */
 .contentColumn {
