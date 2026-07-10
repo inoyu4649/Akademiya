@@ -4,7 +4,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS Auto-Application",
-    "version": "v3.0",
+    "version": "v3.0.2",
     "contact": "Contact: 022207@hafs.hs.kr",
     "madeWith": "Made with Claude Code",
     "loading": "Verifying session...",

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import type { SessionData, ScheduleInfo, LogEntry, PassRecord } from '../types'
+import type { SessionData, ScheduleInfo, LogEntry, PassRecord, TakenSlotDetail } from '../types'
 import LogViewer from './LogViewer'
 import ScheduleTimeline from './ScheduleTimeline'
 
@@ -26,6 +26,7 @@ export default function HomePage({ session, logs, addLog }: HomePageProps) {
 
   const [mySchedule, setMySchedule]         = useState<ScheduleInfo | null>(null)
   const [takenSlots, setTakenSlots]          = useState<string[]>([])
+  const [takenSlotDetails, setTakenSlotDetails] = useState<TakenSlotDetail[]>([])
   const [scheduleLoading, setScheduleLoading] = useState(true)
   const [targetDate, setTargetDate]           = useState('')
   const [weekend, setWeekend]                 = useState(false)
@@ -45,6 +46,7 @@ export default function HomePage({ session, logs, addLog }: HomePageProps) {
         success: boolean;
         mySchedule?: ScheduleInfo;
         takenSlots?: string[];
+        takenSlotDetails?: TakenSlotDetail[];
         targetDate?: string;
         isWeekend?: boolean;
         suspended?: boolean;
@@ -53,6 +55,7 @@ export default function HomePage({ session, logs, addLog }: HomePageProps) {
       if (data.success) {
         setMySchedule(data.mySchedule ?? null)
         setTakenSlots(data.takenSlots || [])
+        setTakenSlotDetails(data.takenSlotDetails || [])
         setTargetDate(data.targetDate || '')
         setWeekend(data.isWeekend || false)
         setSuspended(data.suspended || false)
@@ -257,7 +260,7 @@ export default function HomePage({ session, logs, addLog }: HomePageProps) {
               {t('home.slotsLoading')}
             </div>
           ) : (
-            <ScheduleTimeline takenSlots={takenSlots} mySlot={mySchedule?.time ?? null} />
+            <ScheduleTimeline takenSlots={takenSlots} mySlot={mySchedule?.time ?? null} slotDetails={takenSlotDetails} />
           )}
         </div>
       </div>

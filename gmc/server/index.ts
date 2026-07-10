@@ -1038,6 +1038,11 @@ app.get('/api/schedule/status', async (req: Request, res: Response) => {
   const recurring = await getRecurringByStudent(session.studentNo);
   const allRecurring = await getAllRecurring();
   const takenSlots = allRecurring.map(r => r.time);
+  const scheduleRole = await getUserRoleByEmail(session.akademiyaEmail);
+  const takenSlotDetails = allRecurring.map(r => ({
+    time: r.time,
+    studentNo: scheduleRole >= 1 ? r.student_no : undefined,
+  }));
 
   let mySchedule = null;
   if (recurring) {
@@ -1052,7 +1057,7 @@ app.get('/api/schedule/status', async (req: Request, res: Response) => {
     };
   }
 
-  return res.json({ success: true, mySchedule, takenSlots, targetDate, isWeekend: weekend, suspended, suspendEnd, resumeDate });
+  return res.json({ success: true, mySchedule, takenSlots, takenSlotDetails, targetDate, isWeekend: weekend, suspended, suspendEnd, resumeDate });
 });
 
 // ========== 관리자 API ==========

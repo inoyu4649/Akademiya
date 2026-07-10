@@ -22,6 +22,12 @@ export interface ScheduleInfo {
   result: { success: boolean; message: string | null } | null;
 }
 
+/** 예약 현황 타임라인 셀 상세 정보. studentNo는 권한 1 이상에서만 서버가 내려준다. */
+export interface TakenSlotDetail {
+  time: string;
+  studentNo?: string;
+}
+
 export interface LogEntry {
   time: string;
   message: string;
