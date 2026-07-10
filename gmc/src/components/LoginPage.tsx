@@ -66,6 +66,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
         linked?: boolean; loginFailed?: boolean;
         sessionId?: string; studentNo?: string; studentName?: string; akademiyaEmail?: string | null;
         role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
+        privacyConsentedVersion?: number; termsConsentedVersion?: number;
         userInfo?: AkUserInfo; linkTicket?: string;
       }
       if (!data.success) {
@@ -83,6 +84,8 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
           role: data.role ?? 0,
           needsPrivacyConsent: data.needsPrivacyConsent ?? false,
           needsTermsConsent: data.needsTermsConsent ?? false,
+          privacyConsentedVersion: data.privacyConsentedVersion ?? 0,
+          termsConsentedVersion: data.termsConsentedVersion ?? 0,
         })
         return
       }
@@ -135,6 +138,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
         success: boolean; message?: string;
         sessionId: string; studentNo: string; studentName?: string; akademiyaEmail?: string | null;
         role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
+        privacyConsentedVersion?: number; termsConsentedVersion?: number;
       }
       if (data.success) {
         localStorage.setItem('gmcauto_auth_method', 'akademiya')
@@ -146,6 +150,8 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
           role: data.role ?? 0,
           needsPrivacyConsent: data.needsPrivacyConsent ?? true,
           needsTermsConsent: data.needsTermsConsent ?? true,
+          privacyConsentedVersion: data.privacyConsentedVersion ?? 0,
+          termsConsentedVersion: data.termsConsentedVersion ?? 0,
         })
       } else {
         setAkError(data.message || t('auth.ak.linkFailed'))

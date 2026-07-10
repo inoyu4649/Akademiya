@@ -185,6 +185,18 @@ export async function deleteCredentials(studentNo: string): Promise<void> {
   await pool.execute('DELETE FROM gmc_users WHERE student_no = ?', [studentNo]);
 }
 
+// 회원 탈퇴 — 처리방침 v2의 보유 기간("회원 탈퇴 시까지")에 맞춰 학번에 연결된
+// 개인정보를 전부 파기한다. gmc_users 행 삭제 시 동의 기록·푸시 구독은 FK CASCADE로
+// 함께 삭제되지만, 학번만 키로 갖는 테이블(반복 등록·실행 기록·재시도·신청 이력)은
+// FK가 없어 직접 지워야 한다.
+export async function deleteUserDataByStudentNo(studentNo: string): Promise<void> {
+  await pool.execute('DELETE FROM gmc_recurring_schedules WHERE student_no = ?', [studentNo]);
+  await pool.execute('DELETE FROM schedules WHERE student_no = ?', [studentNo]);
+  await pool.execute('DELETE FROM retries WHERE student_no = ?', [studentNo]);
+  await pool.execute('DELETE FROM usage_stats WHERE student_no = ?', [studentNo]);
+  await pool.execute('DELETE FROM gmc_users WHERE student_no = ?', [studentNo]);
+}
+
 export async function deleteGmcUserById(id: number): Promise<void> {
   await pool.execute('DELETE FROM gmc_users WHERE id = ?', [id]);
 }

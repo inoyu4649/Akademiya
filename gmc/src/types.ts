@@ -8,6 +8,9 @@ export interface SessionData {
   role: number;
   needsPrivacyConsent: boolean;
   needsTermsConsent: boolean;
+  /** 마지막으로 동의한 처리방침/약관 버전 (미동의 시 0) — 재동의 모달의 변경 요약 표시에 사용 */
+  privacyConsentedVersion?: number;
+  termsConsentedVersion?: number;
 }
 
 export interface ScheduleInfo {

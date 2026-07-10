@@ -83,9 +83,17 @@ function App() {
       const data = JSON.parse(saved) as SessionData
       fetch(`/api/session/check?sessionId=${encodeURIComponent(data.sessionId)}`)
         .then(r => r.json())
-        .then((check: { valid: boolean; role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean }) => {
+        .then((check: {
+          valid: boolean; role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
+          privacyConsentedVersion?: number; termsConsentedVersion?: number;
+        }) => {
           if (check.valid) {
-            setSession({ ...data, role: check.role ?? data.role ?? 0 })
+            setSession({
+              ...data,
+              role: check.role ?? data.role ?? 0,
+              privacyConsentedVersion: check.privacyConsentedVersion ?? 0,
+              termsConsentedVersion: check.termsConsentedVersion ?? 0,
+            })
             if (check.needsPrivacyConsent) {
               setShowPrivacyModal(true)
             } else if (check.needsTermsConsent) {
@@ -171,6 +179,7 @@ function App() {
       {showPrivacyModal && session && (
         <PrivacyPolicyModal
           sessionId={session.sessionId}
+          consentedVersion={session.privacyConsentedVersion ?? 0}
           onConsented={() => {
             setShowPrivacyModal(false)
             fetch(`/api/terms/version`)
@@ -187,6 +196,7 @@ function App() {
       {!showPrivacyModal && showTermsModal && session && (
         <TermsOfUseModal
           sessionId={session.sessionId}
+          consentedVersion={session.termsConsentedVersion ?? 0}
           onConsented={() => setShowTermsModal(false)}
         />
       )}

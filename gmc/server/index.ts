@@ -15,7 +15,7 @@ import {
   registerSchedule, getScheduleAt, getMySchedule,
   markScheduleExecuted,
   recordUsage, getUsageStats, getUsageStatsByDate, getUsageStatsSummary, getUsageStatsByStudent, getAdminStats,
-  getCredentials, deleteCredentials, deleteGmcUserById,
+  getCredentials, deleteUserDataByStudentNo, deleteGmcUserById,
   getAllCredentials, deleteFailedStats,
   getUserRoleByEmail, setUserRoleByEmail,
   upsertRecurringSchedule, getRecurringByStudent, getRecurringByTime, getAllRecurring, deleteRecurringByStudent,
@@ -32,8 +32,9 @@ import {
 import { vapidPublicKey, sendPushToStudent } from './webpush.js';
 import type { Session, SubmitPassResult, ScheduleRow } from './types.js';
 
-const GMC_PRIVACY_POLICY_VERSION = 1;
-const GMC_TERMS_OF_USE_VERSION = 1;
+// 버전 상수는 gmc/src/policyContent.ts 와 반드시 일치해야 한다 (불일치 시 동의 저장이 400)
+const GMC_PRIVACY_POLICY_VERSION = 2;
+const GMC_TERMS_OF_USE_VERSION = 2;
 import { isHolidayCached, preloadHolidays, ensureMonthLoaded } from './holidays.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -682,6 +683,8 @@ app.post('/api/akademiya/oauth-callback', async (req: Request, res: Response) =>
         role: gmcUser.role,
         needsPrivacyConsent: privacyConsentedVer < GMC_PRIVACY_POLICY_VERSION,
         needsTermsConsent:   termsConsentedVer   < GMC_TERMS_OF_USE_VERSION,
+        privacyConsentedVersion: privacyConsentedVer,
+        termsConsentedVersion:   termsConsentedVer,
       });
     }
 
@@ -808,7 +811,17 @@ app.post('/api/akademiya/link', async (req: Request, res: Response) => {
     sessions.set(sessionId, { cookies, studentNo, akademiyaEmail, loginTime: new Date().toISOString() });
 
     console.log(`[Akademiya 연동 완료] ${akademiyaEmail} → ${studentNo} (role ${role})`);
-    return res.json({ success: true, sessionId, studentNo, studentName, akademiyaEmail, role, needsPrivacyConsent: true, needsTermsConsent: true });
+    // 재연동(기존 회원)일 수 있으므로 하드코딩 대신 실제 동의 기록으로 판단
+    const savedUser = await getByAkademiyaUserId(akademiyaUserId);
+    const privacyConsentedVer = savedUser ? await getPrivacyConsent(savedUser.id) : 0;
+    const termsConsentedVer   = savedUser ? await getTermsConsent(savedUser.id)   : 0;
+    return res.json({
+      success: true, sessionId, studentNo, studentName, akademiyaEmail, role,
+      needsPrivacyConsent: privacyConsentedVer < GMC_PRIVACY_POLICY_VERSION,
+      needsTermsConsent:   termsConsentedVer   < GMC_TERMS_OF_USE_VERSION,
+      privacyConsentedVersion: privacyConsentedVer,
+      termsConsentedVersion:   termsConsentedVer,
+    });
 
   } catch (err) {
     console.error('[Akademiya 연동 오류]', (err as Error).message);
@@ -1211,7 +1224,9 @@ app.get('/api/session/check', async (req: Request, res: Response) => {
     const termsVer   = dbUser ? await getTermsConsent(dbUser.id)   : 0;
     return res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role,
       needsPrivacyConsent: privacyVer < GMC_PRIVACY_POLICY_VERSION,
-      needsTermsConsent:   termsVer   < GMC_TERMS_OF_USE_VERSION });
+      needsTermsConsent:   termsVer   < GMC_TERMS_OF_USE_VERSION,
+      privacyConsentedVersion: privacyVer,
+      termsConsentedVersion:   termsVer });
   } catch (err) {
     console.warn(`[세션 확인] 네트워크 오류 (skip deep check): ${(err as Error).message}`);
     const role = await getUserRoleByEmail(session.akademiyaEmail);
@@ -1220,7 +1235,9 @@ app.get('/api/session/check', async (req: Request, res: Response) => {
     const termsVer   = dbUser ? await getTermsConsent(dbUser.id)   : 0;
     return res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role,
       needsPrivacyConsent: privacyVer < GMC_PRIVACY_POLICY_VERSION,
-      needsTermsConsent:   termsVer   < GMC_TERMS_OF_USE_VERSION });
+      needsTermsConsent:   termsVer   < GMC_TERMS_OF_USE_VERSION,
+      privacyConsentedVersion: privacyVer,
+      termsConsentedVersion:   termsVer });
   }
 });
 
@@ -1285,9 +1302,10 @@ app.post('/api/account/delete', async (req: Request, res: Response) => {
   const session = sessions.get(sessionId);
   if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
 
-  await deleteCredentials(session.studentNo);
+  // 처리방침 v2 보유 기간에 맞춰 자격증명 외에 반복 등록·실행 기록·재시도·신청 이력도 함께 파기
+  await deleteUserDataByStudentNo(session.studentNo);
   sessions.delete(sessionId);
-  console.log(`[${session.studentNo}] 계정 탈퇴 (credentials 삭제)`);
+  console.log(`[${session.studentNo}] 계정 탈퇴 (개인정보 전체 삭제)`);
   return res.json({ success: true, message: '저장된 인증 정보가 삭제되었습니다.' });
 });
 
