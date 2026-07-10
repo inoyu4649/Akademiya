@@ -494,20 +494,6 @@ export async function getAdminStats({ grade, cls, dateFrom, dateTo }: AdminStats
   return rows;
 }
 
-export async function deleteFailedStats({ grade, cls, dateFrom, dateTo }: AdminStatsFilter = {}): Promise<number> {
-  const conditions: string[] = ['success = 0'];
-  const params: string[] = [];
-  if (grade)    { conditions.push('grade = ?');       params.push(grade); }
-  if (cls)      { conditions.push('class = ?');       params.push(cls); }
-  if (dateFrom) { conditions.push('apply_date >= ?'); params.push(dateFrom); }
-  if (dateTo)   { conditions.push('apply_date <= ?'); params.push(dateTo); }
-  const [res] = await pool.execute<ResultSetHeader>(
-    `DELETE FROM usage_stats WHERE ${conditions.join(' AND ')}`,
-    params
-  );
-  return res.affectedRows;
-}
-
 // ========== 개인정보 처리방침 동의 ==========
 
 export async function getPrivacyConsent(gmcUserId: number): Promise<number> {

@@ -16,7 +16,7 @@ import {
   markScheduleExecuted,
   recordUsage, getUsageStats, getUsageStatsByDate, getUsageStatsSummary, getUsageStatsByStudent, getAdminStats,
   getCredentials, deleteUserDataByStudentNo, deleteGmcUserById,
-  getAllCredentials, deleteFailedStats,
+  getAllCredentials,
   getUserRoleByEmail, setUserRoleByEmail,
   upsertRecurringSchedule, getRecurringByStudent, getRecurringByTime, getAllRecurring, deleteRecurringByStudent,
   addRetry, getDueRetry, deleteRetry,
@@ -1066,20 +1066,6 @@ app.get('/api/admin/stats', async (req: Request, res: Response) => {
   const { grade, cls, dateFrom, dateTo } = req.query as Record<string, string | undefined>;
   const records = await getAdminStats({ grade: grade||null, cls: cls||null, dateFrom: dateFrom||null, dateTo: dateTo||null });
   return res.json({ success: true, records, role });
-});
-
-app.post('/api/admin/stats/delete-failures', async (req: Request, res: Response) => {
-  const { sessionId, grade, cls, dateFrom, dateTo } = req.body as {
-    sessionId: string; grade?: string; cls?: string; dateFrom?: string; dateTo?: string;
-  };
-  const session = sessions.get(sessionId);
-  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
-  const role = await getUserRoleByEmail(session.akademiyaEmail);
-  if (role < 3) return res.status(403).json({ success: false, message: '권한 없음 (권한 3 필요)' });
-
-  const deleted = await deleteFailedStats({ grade:grade||null, cls:cls||null, dateFrom:dateFrom||null, dateTo:dateTo||null });
-  console.log(`[관리자] ${session.studentNo} 실패 기록 ${deleted}건 삭제`);
-  return res.json({ success: true, deleted });
 });
 
 app.get('/api/admin/users', async (req: Request, res: Response) => {
