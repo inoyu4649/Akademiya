@@ -31,7 +31,7 @@ export const pool = mysql.createPool({
 
 // ========== 테이블 초기화 ==========
 export async function initDb(): Promise<void> {
-  await pool.execute(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS gmc_users (
       id                  INT AUTO_INCREMENT PRIMARY KEY,
       student_no          VARCHAR(20),
@@ -48,11 +48,11 @@ export async function initDb(): Promise<void> {
   `);
 
   // gmc_users는 이미 배포된 환경에 존재하므로 CREATE TABLE IF NOT EXISTS로는 컬럼이 추가되지 않는다.
-  await pool.execute(
+  await pool.query(
     "ALTER TABLE gmc_users ADD COLUMN IF NOT EXISTS developer_mode TINYINT(1) NOT NULL DEFAULT 0 AFTER role"
   );
 
-  await pool.execute(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS gmc_notifications (
       id          INT AUTO_INCREMENT PRIMARY KEY,
       gmc_user_id INT NOT NULL,
@@ -67,7 +67,7 @@ export async function initDb(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  await pool.execute(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS gmc_api_keys (
       id                INT AUTO_INCREMENT PRIMARY KEY,
       owner_gmc_user_id INT NOT NULL,
@@ -85,7 +85,7 @@ export async function initDb(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  await pool.execute(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS gmc_recurring_schedules (
       id          INT AUTO_INCREMENT PRIMARY KEY,
       student_no  VARCHAR(20)  NOT NULL,
@@ -100,7 +100,7 @@ export async function initDb(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  await pool.execute(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS schedules (
       time          VARCHAR(5)   NOT NULL,
       date          VARCHAR(10)  NOT NULL,
@@ -118,7 +118,7 @@ export async function initDb(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  await pool.execute(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS usage_stats (
       id            INT AUTO_INCREMENT PRIMARY KEY,
       student_no    VARCHAR(20)  NOT NULL,
@@ -135,7 +135,7 @@ export async function initDb(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  await pool.execute(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS retries (
       id          INT AUTO_INCREMENT PRIMARY KEY,
       retry_at    BIGINT       NOT NULL,
@@ -150,7 +150,7 @@ export async function initDb(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  await pool.execute(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS privacy_consents (
       id           INT AUTO_INCREMENT PRIMARY KEY,
       gmc_user_id  INT NOT NULL,
@@ -161,7 +161,7 @@ export async function initDb(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  await pool.execute(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS terms_consents (
       id           INT AUTO_INCREMENT PRIMARY KEY,
       gmc_user_id  INT NOT NULL,
@@ -172,7 +172,7 @@ export async function initDb(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  await pool.execute(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS gmc_suspend_periods (
       id         INT AUTO_INCREMENT PRIMARY KEY,
       start_date VARCHAR(10) NOT NULL,
@@ -181,7 +181,7 @@ export async function initDb(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  await pool.execute(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS push_subscriptions (
       id           INT AUTO_INCREMENT PRIMARY KEY,
       gmc_user_id  INT NOT NULL,
