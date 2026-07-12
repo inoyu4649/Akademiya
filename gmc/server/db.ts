@@ -487,7 +487,10 @@ export async function recordUsage(
 }
 
 export async function getUsageStats(limit = 100): Promise<UsageStatRow[]> {
-  const [rows] = await pool.execute<UsageStatRow[]>(
+  // LIMIT ?를 execute()(prepared statement)로 바인딩하면 mysql2가 숫자를 DOUBLE로
+  // 보내 MySQL 8.0.22+에서 "Incorrect arguments to mysqld_stmt_execute"가 발생한다.
+  // query()(텍스트 프로토콜)로 우회한다.
+  const [rows] = await pool.query<UsageStatRow[]>(
     'SELECT * FROM usage_stats ORDER BY id DESC LIMIT ?',
     [limit]
   );
@@ -503,7 +506,8 @@ export async function getUsageStatsByDate(date: string): Promise<UsageStatRow[]>
 }
 
 export async function getUsageStatsByStudent(studentNo: string, limit = 20): Promise<UsageStatRow[]> {
-  const [rows] = await pool.execute<UsageStatRow[]>(
+  // LIMIT ? execute() 바인딩 이슈 회피 (위 getUsageStats 주석 참고)
+  const [rows] = await pool.query<UsageStatRow[]>(
     'SELECT * FROM usage_stats WHERE student_no = ? ORDER BY id DESC LIMIT ?',
     [studentNo, limit]
   );
@@ -681,7 +685,8 @@ export async function createNotification(
 }
 
 export async function listNotifications(gmcUserId: number, limit = 50): Promise<NotificationRow[]> {
-  const [rows] = await pool.execute<NotificationRow[]>(
+  // LIMIT ? execute() 바인딩 이슈 회피 (getUsageStats 주석 참고)
+  const [rows] = await pool.query<NotificationRow[]>(
     'SELECT * FROM gmc_notifications WHERE gmc_user_id = ? ORDER BY id DESC LIMIT ?',
     [gmcUserId, limit]
   );
