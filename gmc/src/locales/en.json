@@ -4,7 +4,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS Auto-Application",
-    "version": "v3.0.4",
+    "version": "v3.0.5",
     "contact": "Contact: 022207@hafs.hs.kr",
     "madeWith": "Made with Claude Code",
     "loading": "Verifying session...",
@@ -24,7 +24,7 @@
       "descSub2": "Existing GMCAuto users will retain their scheduled times automatically when linking via student number.",
       "loginBtn": "Sign in with Akademiya",
       "hafsOnly": "Only accounts enrolled in the HAFS organization on Akademiya can use this.",
-      "verifying": "Verifying Akademiya authentication...",
+      "verifying": "Waiting for Going HAFS response...",
       "verifyFailed": "Code verification failed. Please try again.",
       "relink": "Automatic login failed with the saved password. Please re-enter your password.",
       "linkDesc": "Enter your going.hafs.hs.kr credentials to link. Afterward, Akademiya login will be automatic.",

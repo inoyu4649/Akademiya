@@ -358,6 +358,19 @@ async function autoLogin(studentNo: string): Promise<{ client: AxiosInstance; co
   return { client, cookies };
 }
 
+// 로그인 시점(Akademiya OAuth 콜백) 전용 — 학교 사이트가 일시적으로 로그인 실패를
+// 반환해도 곧바로 비밀번호 재입력을 띄우지 않고 최대 2회까지 재시도한 뒤에만 포기한다.
+async function autoLoginWithRetry(studentNo: string, maxRetries = 2): ReturnType<typeof autoLogin> {
+  for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+    const result = await autoLogin(studentNo);
+    if (result) return result;
+    if (attempt <= maxRetries) {
+      console.log(`[자동로그인 ${studentNo}] 실패 - 재시도 ${attempt}/${maxRetries}`);
+    }
+  }
+  return null;
+}
+
 // ========== PASS 제출 ==========
 async function submitPassWithLogin(studentNo: string, applyDate: string, timeCode: string, reason: string): Promise<SubmitPassResult> {
   const loginResult = await autoLogin(studentNo);
@@ -727,7 +740,7 @@ app.post('/api/akademiya/oauth-callback', async (req: Request, res: Response) =>
     if (gmcUser && gmcUser.student_no && gmcUser.password) {
       console.log(`[Akademiya OpenOAuth] 기존 연동 사용자: ${email} → ${gmcUser.student_no}`);
 
-      const loginResult = await autoLogin(gmcUser.student_no);
+      const loginResult = await autoLoginWithRetry(gmcUser.student_no);
       if (!loginResult) {
         return res.json({
           success: true,
