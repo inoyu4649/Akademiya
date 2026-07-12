@@ -3,7 +3,6 @@
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  flex: 1;
 }
 
 .mobileHeader { display: none; }
