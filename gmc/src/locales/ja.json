@@ -4,7 +4,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS 自動申請プログラム",
-    "version": "v3.0.5",
+    "version": "v3.0.6",
     "contact": "お問い合わせ: 022207@hafs.hs.kr",
     "madeWith": "Claude Code で制作",
     "loading": "ログイン情報を確認中...",
@@ -218,6 +218,9 @@
   "developer": {
     "keysTitle": "GMCAuto API キー",
     "keysDesc": "サーバー間連携用の API キーを管理します。",
+    "guideLink": "ガイドを見る",
+    "guideTitle": "GMCAuto API 利用ガイド",
+    "guideDesc": "他のサービスがサーバー間通信で GMC PASS の申請状況を照会する方法を案内します。",
     "createBtn": "新しいキーを発行",
     "empty": "発行されたキーはありません。",
     "nameLabel": "キー名",

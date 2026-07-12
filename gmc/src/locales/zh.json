@@ -4,7 +4,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS 自动申请程序",
-    "version": "v3.0.5",
+    "version": "v3.0.6",
     "contact": "联系方式: 022207@hafs.hs.kr",
     "madeWith": "由 Claude Code 制作",
     "loading": "正在验证登录信息...",
@@ -218,6 +218,9 @@
   "developer": {
     "keysTitle": "GMCAuto API 密钥",
     "keysDesc": "管理用于服务器间集成的 API 密钥。",
+    "guideLink": "查看指南",
+    "guideTitle": "GMCAuto API 使用指南",
+    "guideDesc": "介绍其他服务如何通过服务器间通信查询 GMC PASS 申请状态。",
     "createBtn": "发行新密钥",
     "empty": "尚未发行任何密钥。",
     "nameLabel": "密钥名称",

@@ -222,7 +222,7 @@ export default function GmcLayout({ session, onLogout, theme, toggleTheme }: Gmc
           )}
         </nav>
 
-        <div className={styles.versionText}>GMCAuto Web App version 3.0.5</div>
+        <div className={styles.versionText}>GMCAuto Web App version 3.0.6</div>
         <div className={styles.versionLinks}>
           <Link to="/privacy" onClick={closeMobile} className={styles.versionLink}>{t('nav.privacyPolicy', '개인정보 처리방침')}</Link>
           <span className={styles.versionLinkSep}>·</span>

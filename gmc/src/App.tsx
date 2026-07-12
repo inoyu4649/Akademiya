@@ -18,6 +18,7 @@ const PolicyPage = lazy(() => import('./components/PolicyPage'))
 const ApiKeysPage = lazy(() => import('./components/developer/ApiKeysPage'))
 const ApiKeyCreatePage = lazy(() => import('./components/developer/ApiKeyCreatePage'))
 const ApiKeyDetailPage = lazy(() => import('./components/developer/ApiKeyDetailPage'))
+const ApiKeyGuidePage = lazy(() => import('./components/developer/ApiKeyGuidePage'))
 
 const SESSION_KEY = 'gmcauto_session'
 const PATCH_NOTES_SEEN_KEY = 'gmcauto_patch_notes_seen_version'
@@ -310,6 +311,14 @@ function App() {
                   element={
                     session.developerMode ? (
                       <Suspense fallback={<RouteLoadingSpinner />}><ApiKeyCreatePage session={session} /></Suspense>
+                    ) : <Navigate to="/" replace />
+                  }
+                />
+                <Route
+                  path="developer/keys/guide"
+                  element={
+                    session.developerMode ? (
+                      <Suspense fallback={<RouteLoadingSpinner />}><ApiKeyGuidePage /></Suspense>
                     ) : <Navigate to="/" replace />
                   }
                 />

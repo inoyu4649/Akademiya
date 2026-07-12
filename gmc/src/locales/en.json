@@ -4,7 +4,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS Auto-Application",
-    "version": "v3.0.5",
+    "version": "v3.0.6",
     "contact": "Contact: 022207@hafs.hs.kr",
     "madeWith": "Made with Claude Code",
     "loading": "Verifying session...",
@@ -218,6 +218,9 @@
   "developer": {
     "keysTitle": "GMCAuto API Keys",
     "keysDesc": "Manage API keys for server-to-server integration.",
+    "guideLink": "View Guide",
+    "guideTitle": "GMCAuto API Guide",
+    "guideDesc": "Learn how other services can look up GMC PASS application status via server-to-server calls.",
     "createBtn": "New Key",
     "empty": "No keys issued yet.",
     "nameLabel": "Key Name",

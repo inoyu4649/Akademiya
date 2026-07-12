@@ -31,6 +31,7 @@ export default function ApiKeysPage({ session }: ApiKeysPageProps) {
           <div>
             <h2>{t('developer.keysTitle', 'GMCAuto API 키')}</h2>
             <p>{t('developer.keysDesc', '서버-서버 연동용 API 키를 관리합니다.')}</p>
+            <Link to="/developer/keys/guide" className={styles.guideLink}>{t('developer.guideLink', '가이드 보기')}</Link>
           </div>
           <Link to="/developer/keys/new" className="btn btn-primary">{t('developer.createBtn', '새 키 발급')}</Link>
         </div>

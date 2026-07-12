@@ -48,6 +48,17 @@
   border-radius: var(--radius-sm);
 }
 
+.guideLink {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--primary);
+  text-decoration: underline;
+  margin-top: 6px;
+}
+.guideLink:hover {
+  color: var(--primary-hover);
+}
+
 /* ── 스코프 체크박스 카드 (Akademiya OpenOAuth 체크박스 카드 패턴 참고, 권한 부족 시 비활성) ── */
 .scopeGroup {
   display: flex;
@@ -145,4 +156,88 @@
   border-radius: var(--radius-sm);
   padding: 14px 16px;
   margin-top: 8px;
+}
+
+/* ── API 사용 가이드 (Akademiya OpenOAuth 가이드 구조 참고) ── */
+.guideSection {
+  margin-bottom: 28px;
+}
+.guideSection:last-child {
+  margin-bottom: 0;
+}
+
+.guideSectionTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.guideParagraph {
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--text-secondary);
+  margin: 0 0 10px;
+}
+.guideParagraph:last-child {
+  margin-bottom: 0;
+}
+
+.guideList {
+  margin: 0 0 10px;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--text-secondary);
+}
+.guideList li {
+  margin-bottom: 3px;
+}
+.guideList:last-child {
+  margin-bottom: 0;
+}
+
+.codeBlock {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text);
+  overflow-x: auto;
+  white-space: pre;
+  margin: 0 0 10px;
+}
+.codeBlock:last-child {
+  margin-bottom: 0;
+}
+
+.guideTableWrap {
+  overflow-x: auto;
+  margin: 0 0 10px;
+}
+
+.guideTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.guideTable th,
+.guideTable td {
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.guideTable th {
+  background: var(--bg-input);
+  color: var(--text);
+  font-weight: 600;
+}
+.guideTable code {
+  font-size: 12px;
+  color: var(--primary);
 }
