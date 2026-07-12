@@ -43,7 +43,7 @@ docker run -d \
   -e MYSQL_USER=akademiya \
   -e MYSQL_PASSWORD=dev_password \
   -p 3306:3306 \
-  mysql:8.0
+  mysql:8.4
 
 # 컨테이너 준비 대기 (약 15초)
 docker exec akademiya-mysql-dev mysqladmin ping -u root -proot1234 --wait=30

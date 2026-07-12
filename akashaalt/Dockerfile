@@ -1,5 +1,5 @@
 # ── Stage 1: Build (frontend) ────────────────────────────────────────────────
-FROM node:24-alpine AS builder
+FROM node:24.18.0-alpine AS builder
 WORKDIR /build
 
 COPY package.json ./
@@ -9,7 +9,7 @@ COPY . .
 RUN npm run build
 
 # ── Stage 2: Production ───────────────────────────────────────────────────────
-FROM node:24-alpine AS production
+FROM node:24.18.0-alpine AS production
 WORKDIR /app
 
 # 프로덕션 의존성만 설치 (argon2는 알파인용 프리빌드 바이너리 사용 — 별도 빌드 도구 불필요)

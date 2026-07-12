@@ -1,5 +1,5 @@
 # ── Stage 1: Build ────────────────────────────────────────────────────────────
-FROM node:24.16.0-alpine AS builder
+FROM node:24.18.0-alpine AS builder
 WORKDIR /build
 
 COPY package.json ./
@@ -10,7 +10,7 @@ COPY . .
 RUN npm run build
 
 # ── Stage 2: Production ───────────────────────────────────────────────────────
-FROM node:24.16.0-alpine AS production
+FROM node:24.18.0-alpine AS production
 WORKDIR /app
 
 # Chromium 및 필수 라이브러리 설치 (Playwright reCAPTCHA용)
