@@ -48,9 +48,17 @@ export async function initDb(): Promise<void> {
   `);
 
   // gmc_users는 이미 배포된 환경에 존재하므로 CREATE TABLE IF NOT EXISTS로는 컬럼이 추가되지 않는다.
-  await pool.query(
-    "ALTER TABLE gmc_users ADD COLUMN IF NOT EXISTS developer_mode TINYINT(1) NOT NULL DEFAULT 0 AFTER role"
+  // "ADD COLUMN IF NOT EXISTS"는 MariaDB 전용 문법이라 실제 MySQL(8.4 포함)에서는 파싱조차 안 된다
+  // (ER_PARSE_ERROR) — information_schema로 존재 여부를 먼저 확인해야 한다.
+  const [devModeCol] = await pool.query<CountRow[]>(
+    `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gmc_users' AND COLUMN_NAME = 'developer_mode'`
   );
+  if (devModeCol[0].cnt === 0) {
+    await pool.query(
+      "ALTER TABLE gmc_users ADD COLUMN developer_mode TINYINT(1) NOT NULL DEFAULT 0 AFTER role"
+    );
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gmc_notifications (
