@@ -1,6 +1,6 @@
 import type React from 'react'
 
-export const GMC_PATCH_NOTES_VERSION = 4
+export const GMC_PATCH_NOTES_VERSION = 3
 
 interface PatchNoteEntry {
   version: number
@@ -12,16 +12,6 @@ interface PatchNoteEntry {
 // 새 업데이트를 배포할 때마다 맨 위에 항목을 추가하고 GMC_PATCH_NOTES_VERSION을 올리세요.
 const PATCH_NOTES: PatchNoteEntry[] = [
   {
-    version: 4,
-    date: '2026-07-10',
-    title: 'GMCAuto 3.0.2 업데이트',
-    items: [
-      '전체적으로 카드/버튼/모달의 디자인이 더 둥글고 부드러운 스타일로 통일되었고, 다크 모드에도 동일하게 적용되었습니다.',
-      '예약 현황에서 시간 블록에 마우스를 올리거나(모바일은 탭) 신청 시간을 바로 확인할 수 있습니다. 통계 열람 이상 권한은 신청자 학번도 함께 표시됩니다.',
-      '관리자 통계의 "실패 기록 삭제" 기능을 제거했습니다.',
-    ],
-  },
-  {
     version: 3,
     date: '2026-07-08',
     title: 'GMCAuto 3.0 업데이트',
@@ -30,6 +20,9 @@ const PATCH_NOTES: PatchNoteEntry[] = [
       '권한 관리 기준이 학번에서 Akademiya 계정(이메일)으로 변경되어, Akademiya 계정에서도 권한이 정상적으로 유지됩니다.',
       '자정에 예약을 복사하던 방식을 없애고, 등록해두면 신청 가능한 날마다 자동으로 신청되는 방식으로 개선했습니다.',
       '좌측 메뉴 구조로 전면 개편되었고, 예약 현황을 분 단위 타임라인으로 확인할 수 있습니다.',
+      '전체적으로 카드/버튼/모달의 디자인이 더 둥글고 부드러운 스타일로 통일되었고, 다크 모드에도 동일하게 적용되었습니다.',
+      '예약 현황에서 시간 블록에 마우스를 올리거나(모바일은 탭) 신청 시간을 바로 확인할 수 있습니다. 통계 열람 이상 권한은 신청자 학번도 함께 표시됩니다.',
+      '관리자 통계의 "실패 기록 삭제" 기능을 제거했습니다.',
     ],
   },
   {
