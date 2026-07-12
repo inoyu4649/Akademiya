@@ -17,7 +17,7 @@ import {
   recordUsage, getUsageStats, getUsageStatsByDate, getUsageStatsSummary, getUsageStatsByStudent, getAdminStats,
   getCredentials, deleteUserDataByStudentNo, deleteGmcUserById,
   getAllCredentials,
-  getUserRoleByEmail, setUserRoleByEmail,
+  getUserRoleByEmail, setUserRoleByEmail, setDeveloperMode,
   upsertRecurringSchedule, getRecurringByStudent, getRecurringByTime, getAllRecurring, deleteRecurringByStudent,
   addRetry, getDueRetry, deleteRetry,
   backupDb,
@@ -27,10 +27,14 @@ import {
   getTermsConsent, saveTermsConsent,
   getSuspendPeriods, addSuspendPeriod, deleteSuspendPeriod, getActiveSuspendPeriodForDate,
   savePushSubscription, deletePushSubscription,
+  createNotification, listNotifications, getUnreadNotificationCount,
+  markNotificationRead, markAllNotificationsRead, deleteNotification, cleanupOldNotifications,
+  createApiKey, listApiKeysByOwner, getApiKeyById, getApiKeyByKeyId,
+  renameApiKey, updateApiKeyScopes, regenerateApiKeySecret, deleteApiKey, bumpApiKeyUsage,
   serverDir,
 } from './db.js';
 import { vapidPublicKey, sendPushToStudent } from './webpush.js';
-import type { Session, SubmitPassResult, ScheduleRow } from './types.js';
+import type { Session, SubmitPassResult, ScheduleRow, GmcUserRow } from './types.js';
 
 // 버전 상수는 gmc/src/policyContent.ts 와 반드시 일치해야 한다 (불일치 시 동의 저장이 400)
 const GMC_PRIVACY_POLICY_VERSION = 2;
@@ -77,6 +81,63 @@ const AKADEMIYA_OAUTH_SCOPE = 'openid profile email';
 
 // ── GMCAuto 공개 API (서버-서버, 다른 서비스가 학교 사이트를 직접 두드리지 않도록) ──
 const GMC_PUBLIC_API_KEY = process.env.GMC_PUBLIC_API_KEY || '';
+
+// ── GMCAuto API 키 (개발자 모드) ────────────────────────────────────────
+// 신청 여부(bool)는 항상 포함되는 필수 스코프. 예약 시간(schedule_time)은 발급자 role 1
+// 이상, 신청 내역 전체(full_history)는 role 2 이상에서만 체크박스로 켤 수 있다. 발급 이후
+// 발급자 role이 강등돼도 공개 API 응답 시점에 다시 캡하므로(getApiKeyByKeyId의 owner_role
+// 참조) 오래된 키가 과도한 권한을 유지하는 일은 없다.
+type ApiKeyScope = 'schedule_time' | 'full_history';
+const OPTIONAL_API_KEY_SCOPES: readonly ApiKeyScope[] = ['schedule_time', 'full_history'];
+
+function maxScopesForRole(role: number): ApiKeyScope[] {
+  if (role >= 2) return ['schedule_time', 'full_history'];
+  if (role >= 1) return ['schedule_time'];
+  return [];
+}
+
+function parseApiKeyScopes(raw: unknown): ApiKeyScope[] {
+  const tokens = typeof raw === 'string' ? raw.split(/\s+/).filter(Boolean) : [];
+  return OPTIONAL_API_KEY_SCOPES.filter(s => tokens.includes(s));
+}
+
+function serializeApiKeyScopes(requested: unknown, ownerRole: number): string {
+  const allowed = new Set(maxScopesForRole(ownerRole));
+  const chosen = Array.isArray(requested)
+    ? requested.filter((s): s is ApiKeyScope => OPTIONAL_API_KEY_SCOPES.includes(s) && allowed.has(s))
+    : [];
+  return chosen.join(' ');
+}
+
+function genApiKeyId(): string {
+  return crypto.randomBytes(16).toString('hex');
+}
+function genApiKeySecret(): string {
+  return crypto.randomBytes(32).toString('base64url');
+}
+function hashApiKeySecret(secret: string): string {
+  return crypto.createHash('sha256').update(secret).digest('hex');
+}
+function safeCompareHex(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, 'hex');
+  const bufB = Buffer.from(b, 'hex');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+function safeCompareStr(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, 'utf8');
+  const bufB = Buffer.from(b, 'utf8');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+// developer_mode는 세션에 캐싱하지 않고 매 요청마다 최신 DB 값을 확인한다
+// (Akademiya OpenOAuth의 requireDeveloper와 동일한 설계 — 꺼면 즉시 반영되어야 함).
+async function requireDeveloper(session: Session): Promise<GmcUserRow | null> {
+  const user = await getCredentials(session.studentNo);
+  if (!user || !user.developer_mode) return null;
+  return user;
+}
 
 const chromePath = findChromePath();
 console.log(chromePath ? `Chrome 발견: ${chromePath}` : 'Chrome 미발견');
@@ -160,6 +221,19 @@ function findNextRetryAt(prevAtMs: number, date: string, _ourStudentNo: string):
 function formatTimeMs(ms: number): string {
   const d = new Date(ms);
   return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+}
+
+// ========== 알림 (알림 센터 저장 + 푸시 발송) ==========
+// 기존 sendPushToStudent 호출부를 그대로 대체 — 웹 푸시는 즉시성 알림, 알림 센터는
+// 나중에 목록으로 확인할 수 있는 이력. 학번으로 gmc_user_id를 조회해 두 곳에 함께 남긴다.
+type NotificationType =
+  | 'schedule_registered' | 'apply_success' | 'apply_failed_final'
+  | 'suspend_start' | 'holiday_start';
+
+async function notifyStudent(studentNo: string, type: NotificationType, body: string): Promise<void> {
+  const user = await getCredentials(studentNo);
+  if (user) await createNotification(user.id, type, 'GMCAuto', body);
+  await sendPushToStudent(studentNo, 'GMCAuto', body);
 }
 
 function createClient(): AxiosInstance {
@@ -416,7 +490,7 @@ async function processSchedule(entry: ScheduleRow, key: string, today: string): 
     await recordUsage(entry.student_no, 'gmcauto', entry.time_code, key, today, result.ok, result.msg);
     // 트리거 #2: 신청 성공 푸시
     if (result.ok) {
-      await sendPushToStudent(entry.student_no, 'GMCAuto', `[${entry.student_no}] ${key} 신청되었습니다.`);
+      await notifyStudent(entry.student_no, 'apply_success', `[${entry.student_no}] ${key} 신청되었습니다.`);
     }
     console.log(`[스케줄 ${key}] ${entry.student_no}: ${result.msg}`);
   } catch (err) {
@@ -442,7 +516,7 @@ async function processRetry(retry: Awaited<ReturnType<typeof getDueRetry>> & obj
         await markScheduleExecuted(retry.origin_time, retry.apply_date, false, result.msg + note);
         await recordUsage(retry.student_no, 'gmcauto', retry.time_code, retry.origin_time, retry.apply_date, false, result.msg + note);
         // 트리거 #3: 5회 모두 실패 푸시
-        await sendPushToStudent(retry.student_no, 'GMCAuto',
+        await notifyStudent(retry.student_no, 'apply_failed_final',
           `[${retry.student_no}] ${retry.origin_time} 신청 실패하였습니다. 비밀번호를 확인한 후 수동으로 신청 바랍니다.`
         );
         return;
@@ -465,7 +539,7 @@ async function processRetry(retry: Awaited<ReturnType<typeof getDueRetry>> & obj
     await recordUsage(retry.student_no, 'gmcauto', retry.time_code, retry.origin_time, retry.apply_date, result.ok, result.msg);
     // 트리거 #2: 재시도 성공 푸시
     if (result.ok) {
-      await sendPushToStudent(retry.student_no, 'GMCAuto', `[${retry.student_no}] ${retry.origin_time} 신청되었습니다.`);
+      await notifyStudent(retry.student_no, 'apply_success', `[${retry.student_no}] ${retry.origin_time} 신청되었습니다.`);
     }
     console.log(`${label} ${retry.student_no}: ${result.msg}`);
   } catch (err) {
@@ -520,11 +594,11 @@ setInterval(async () => {
     const recurringUsers = await getAllRecurring();
     for (const r of recurringUsers) {
       if (isSuspendStart && suspendPeriod) {
-        await sendPushToStudent(r.student_no, 'GMCAuto',
+        await notifyStudent(r.student_no, 'suspend_start',
           `[${r.student_no}] ${suspendPeriod.start_date}부터 중단 기간입니다. 재개일(${targetStr})부터 자동으로 다시 신청됩니다.`
         );
       } else {
-        await sendPushToStudent(r.student_no, 'GMCAuto',
+        await notifyStudent(r.student_no, 'holiday_start',
           `[${r.student_no}] ${today}부터 금요일/휴일입니다. 다음 신청 가능일(${targetStr})에 자동으로 신청됩니다.`
         );
       }
@@ -533,6 +607,8 @@ setInterval(async () => {
 
   const cleaned = await cleanupOldSchedules();
   if (cleaned > 0) console.log(`[정리] 7일 지난 스케줄 ${cleaned}개 삭제`);
+  const cleanedNotifs = await cleanupOldNotifications();
+  if (cleanedNotifs > 0) console.log(`[정리] 60일 지난 알림 ${cleanedNotifs}개 삭제`);
 }, 15000);
 
 // ========== 매일 08:00 DB 백업 ==========
@@ -681,6 +757,7 @@ app.post('/api/akademiya/oauth-callback', async (req: Request, res: Response) =>
         studentName: displayName || '',
         akademiyaEmail: email ?? null,
         role: gmcUser.role,
+        developerMode: !!gmcUser.developer_mode,
         needsPrivacyConsent: privacyConsentedVer < GMC_PRIVACY_POLICY_VERSION,
         needsTermsConsent:   termsConsentedVer   < GMC_TERMS_OF_USE_VERSION,
         privacyConsentedVersion: privacyConsentedVer,
@@ -817,6 +894,7 @@ app.post('/api/akademiya/link', async (req: Request, res: Response) => {
     const termsConsentedVer   = savedUser ? await getTermsConsent(savedUser.id)   : 0;
     return res.json({
       success: true, sessionId, studentNo, studentName, akademiyaEmail, role,
+      developerMode: !!savedUser?.developer_mode,
       needsPrivacyConsent: privacyConsentedVer < GMC_PRIVACY_POLICY_VERSION,
       needsTermsConsent:   termsConsentedVer   < GMC_TERMS_OF_USE_VERSION,
       privacyConsentedVersion: privacyConsentedVer,
@@ -1010,7 +1088,7 @@ app.post('/api/schedule/register', async (req: Request, res: Response) => {
   await upsertRecurringSchedule(session.studentNo, time, timeCode, 'gmcauto', reason || '');
   console.log(`[반복등록] ${session.studentNo} → ${time} 등록`);
   // 트리거 #1: 신청 예약 푸시
-  await sendPushToStudent(session.studentNo, 'GMCAuto', `[${session.studentNo}] ${time} 자동 신청이 등록되었습니다.`);
+  await notifyStudent(session.studentNo, 'schedule_registered', `[${session.studentNo}] ${time} 자동 신청이 등록되었습니다.`);
   return res.json({
     success: true,
     message: `${time}에 자동 신청이 등록되었습니다. 앞으로 매 신청 가능일(평일/중단기간 제외)에 자동으로 신청됩니다.`,
@@ -1214,6 +1292,7 @@ app.get('/api/session/check', async (req: Request, res: Response) => {
     const privacyVer = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
     const termsVer   = dbUser ? await getTermsConsent(dbUser.id)   : 0;
     return res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role,
+      developerMode: !!dbUser?.developer_mode,
       needsPrivacyConsent: privacyVer < GMC_PRIVACY_POLICY_VERSION,
       needsTermsConsent:   termsVer   < GMC_TERMS_OF_USE_VERSION,
       privacyConsentedVersion: privacyVer,
@@ -1225,6 +1304,7 @@ app.get('/api/session/check', async (req: Request, res: Response) => {
     const privacyVer = dbUser ? await getPrivacyConsent(dbUser.id) : 0;
     const termsVer   = dbUser ? await getTermsConsent(dbUser.id)   : 0;
     return res.json({ valid: true, studentNo: session.studentNo, loginTime: session.loginTime, role,
+      developerMode: !!dbUser?.developer_mode,
       needsPrivacyConsent: privacyVer < GMC_PRIVACY_POLICY_VERSION,
       needsTermsConsent:   termsVer   < GMC_TERMS_OF_USE_VERSION,
       privacyConsentedVersion: privacyVer,
@@ -1300,36 +1380,317 @@ app.post('/api/account/delete', async (req: Request, res: Response) => {
   return res.json({ success: true, message: '저장된 인증 정보가 삭제되었습니다.' });
 });
 
+// ── Going HAFS 학번/비밀번호 수정 (사용자 메뉴 > 계정 설정) ──
+// /api/akademiya/link과 동일한 reCAPTCHA+쿠키 로그인 검증을 거치지만, 이미 연동된 계정의
+// 학번을 변경하는 것이므로 충돌 시 /link처럼 레거시 행을 병합하지 않고 명시적으로 거부한다.
+app.post('/api/account/credentials', async (req: Request, res: Response) => {
+  const { sessionId, studentNo, password } = req.body as {
+    sessionId: string; studentNo?: string; password?: string;
+  };
+  const session = sessions.get(sessionId);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+
+  if (!studentNo || !password) {
+    return res.status(400).json({ success: false, message: '필수 파라미터 누락' });
+  }
+  if (/^0\d{5}$/.test(studentNo)) {
+    return res.json({ success: false, message: '고유번호가 아닌 학번을 입력해주세요!' });
+  }
+
+  try {
+    const currentUser = await getCredentials(session.studentNo);
+    if (!currentUser || !currentUser.akademiya_user_id) {
+      return res.status(404).json({ success: false, message: '계정 정보를 찾을 수 없습니다.' });
+    }
+
+    const collision = await getCredentials(studentNo);
+    if (collision && collision.id !== currentUser.id) {
+      return res.json({ success: false, message: '이미 다른 계정에서 사용 중인 학번입니다.' });
+    }
+
+    const client = createClient();
+    const cookies: Record<string, string> = {};
+
+    let recaptchaToken: string;
+    try {
+      recaptchaToken = await generateRecaptchaToken(chromePath);
+    } catch (err) {
+      return res.json({ success: false, message: `reCAPTCHA 토큰 생성 실패: ${(err as Error).message}` });
+    }
+
+    const pageRes = await client.get('/mobile/login/login.html');
+    extractCookies(pageRes).forEach(c => { cookies[c.name] = c.value; });
+
+    const loginData = buildEucKrBody({
+      student_no: studentNo,
+      student_pw: password,
+      login_type: 'S',
+      'g-recaptcha': recaptchaToken,
+      auto_id: '',
+    });
+
+    const loginRes = await client.post('/mobile/login/login_process.php', loginData, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Cookie': cookieStr(cookies),
+        'Referer': `${BASE_URL}/mobile/login/login.html`,
+        'Origin': BASE_URL,
+      },
+    });
+    extractCookies(loginRes).forEach(c => { cookies[c.name] = c.value; });
+    const loginBody = decodeResponse(loginRes);
+
+    const loginAlert = extractAlert(loginBody);
+    if (loginAlert && !loginAlert.includes('성공')) {
+      return res.json({ success: false, message: loginAlert });
+    }
+
+    const gmcRes = await client.get('/mobile/gmc/gmc_list.html', {
+      headers: { 'Cookie': cookieStr(cookies) },
+    });
+    extractCookies(gmcRes).forEach(c => { cookies[c.name] = c.value; });
+    if (isLoginRedirect(decodeResponse(gmcRes))) {
+      return res.json({ success: false, message: '학번 또는 비밀번호가 올바르지 않습니다.' });
+    }
+
+    await linkGoingHafsCredentials(currentUser.akademiya_user_id, studentNo, password, currentUser.role);
+
+    // 재로그인 없이 이어서 쓸 수 있도록 메모리 세션도 갱신
+    session.studentNo = studentNo;
+    session.cookies = cookies;
+
+    console.log(`[계정 설정] ${session.akademiyaEmail} → 학번/비밀번호 갱신 (${studentNo})`);
+    return res.json({ success: true, message: '학번/비밀번호가 갱신되었습니다.', studentNo });
+  } catch (err) {
+    console.error('[account/credentials]', (err as Error).message);
+    return res.status(500).json({ success: false, message: `서버 오류: ${(err as Error).message}` });
+  }
+});
+
+app.post('/api/account/developer-mode', async (req: Request, res: Response) => {
+  const { sessionId, enabled } = req.body as { sessionId: string; enabled?: boolean };
+  const session = sessions.get(sessionId);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+
+  const user = await getCredentials(session.studentNo);
+  if (!user) return res.status(404).json({ success: false, message: '사용자 없음' });
+
+  await setDeveloperMode(user.id, !!enabled);
+  return res.json({ success: true, developerMode: !!enabled });
+});
+
+// ========== 알림 센터 ==========
+
+app.get('/api/notifications', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const user = await getCredentials(session.studentNo);
+  if (!user) return res.status(404).json({ success: false, message: '사용자 없음' });
+
+  const notifications = await listNotifications(user.id);
+  const unreadCount = await getUnreadNotificationCount(user.id);
+  return res.json({ success: true, notifications, unreadCount });
+});
+
+app.post('/api/notifications/:id/read', async (req: Request, res: Response) => {
+  const { sessionId } = req.body as { sessionId: string };
+  const session = sessions.get(sessionId);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const user = await getCredentials(session.studentNo);
+  if (!user) return res.status(404).json({ success: false, message: '사용자 없음' });
+
+  await markNotificationRead(user.id, parseInt(req.params.id as string, 10));
+  return res.json({ success: true });
+});
+
+app.post('/api/notifications/read-all', async (req: Request, res: Response) => {
+  const { sessionId } = req.body as { sessionId: string };
+  const session = sessions.get(sessionId);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const user = await getCredentials(session.studentNo);
+  if (!user) return res.status(404).json({ success: false, message: '사용자 없음' });
+
+  await markAllNotificationsRead(user.id);
+  return res.json({ success: true });
+});
+
+app.delete('/api/notifications/:id', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const user = await getCredentials(session.studentNo);
+  if (!user) return res.status(404).json({ success: false, message: '사용자 없음' });
+
+  await deleteNotification(user.id, parseInt(req.params.id as string, 10));
+  return res.json({ success: true });
+});
+
+// ========== 개발자 모드: GMCAuto API 키 ==========
+// 발급된 키의 유효 스코프는 항상 발급자(owner)의 "현재" role로 다시 캡된다(생성/수정 시점뿐
+// 아니라 공개 API 응답 시점에도) — 발급 후 role이 강등돼도 과도한 권한이 남지 않는다.
+
+app.get('/api/developer/keys', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const user = await requireDeveloper(session);
+  if (!user) return res.status(403).json({ success: false, message: 'DEVELOPER_MODE_REQUIRED' });
+
+  const keys = await listApiKeysByOwner(user.id);
+  return res.json({
+    success: true,
+    keys: keys.map(k => ({
+      id: k.id, keyId: k.key_id, name: k.name, enabledScopes: k.enabled_scopes,
+      requestCount: k.request_count, lastUsedAt: k.last_used_at, createdAt: k.created_at,
+    })),
+  });
+});
+
+app.post('/api/developer/keys', async (req: Request, res: Response) => {
+  const { sessionId, name, scopes } = req.body as { sessionId: string; name?: string; scopes?: string[] };
+  const session = sessions.get(sessionId);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const user = await requireDeveloper(session);
+  if (!user) return res.status(403).json({ success: false, message: 'DEVELOPER_MODE_REQUIRED' });
+
+  const keyName = (name || '').trim();
+  if (!keyName) return res.json({ success: false, message: '이름을 입력하세요.' });
+
+  const keyId = genApiKeyId();
+  const secret = genApiKeySecret();
+  const enabledScopes = serializeApiKeyScopes(scopes, user.role);
+
+  const id = await createApiKey(user.id, keyId, hashApiKeySecret(secret), keyName, enabledScopes);
+  console.log(`[개발자] ${session.akademiyaEmail} API 키 생성: ${keyId}`);
+  return res.status(201).json({ success: true, id, keyId, keySecret: `${keyId}.${secret}`, name: keyName, enabledScopes });
+});
+
+app.get('/api/developer/keys/:id', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const user = await requireDeveloper(session);
+  if (!user) return res.status(403).json({ success: false, message: 'DEVELOPER_MODE_REQUIRED' });
+
+  const key = await getApiKeyById(parseInt(req.params.id as string, 10), user.id);
+  if (!key) return res.status(404).json({ success: false, message: '키를 찾을 수 없습니다.' });
+  return res.json({
+    success: true,
+    key: {
+      id: key.id, keyId: key.key_id, name: key.name, enabledScopes: key.enabled_scopes,
+      requestCount: key.request_count, lastUsedAt: key.last_used_at, createdAt: key.created_at,
+    },
+  });
+});
+
+app.post('/api/developer/keys/:id/rename', async (req: Request, res: Response) => {
+  const { sessionId, name } = req.body as { sessionId: string; name?: string };
+  const session = sessions.get(sessionId);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const user = await requireDeveloper(session);
+  if (!user) return res.status(403).json({ success: false, message: 'DEVELOPER_MODE_REQUIRED' });
+
+  const keyName = (name || '').trim();
+  if (!keyName) return res.json({ success: false, message: '이름을 입력하세요.' });
+  const id = parseInt(req.params.id as string, 10);
+  const key = await getApiKeyById(id, user.id);
+  if (!key) return res.status(404).json({ success: false, message: '키를 찾을 수 없습니다.' });
+
+  await renameApiKey(id, user.id, keyName);
+  return res.json({ success: true });
+});
+
+app.post('/api/developer/keys/:id/scopes', async (req: Request, res: Response) => {
+  const { sessionId, scopes } = req.body as { sessionId: string; scopes?: string[] };
+  const session = sessions.get(sessionId);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const user = await requireDeveloper(session);
+  if (!user) return res.status(403).json({ success: false, message: 'DEVELOPER_MODE_REQUIRED' });
+
+  const id = parseInt(req.params.id as string, 10);
+  const key = await getApiKeyById(id, user.id);
+  if (!key) return res.status(404).json({ success: false, message: '키를 찾을 수 없습니다.' });
+
+  const enabledScopes = serializeApiKeyScopes(scopes, user.role);
+  await updateApiKeyScopes(id, user.id, enabledScopes);
+  return res.json({ success: true, enabledScopes });
+});
+
+app.post('/api/developer/keys/:id/regenerate', async (req: Request, res: Response) => {
+  const { sessionId } = req.body as { sessionId: string };
+  const session = sessions.get(sessionId);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const user = await requireDeveloper(session);
+  if (!user) return res.status(403).json({ success: false, message: 'DEVELOPER_MODE_REQUIRED' });
+
+  const id = parseInt(req.params.id as string, 10);
+  const key = await getApiKeyById(id, user.id);
+  if (!key) return res.status(404).json({ success: false, message: '키를 찾을 수 없습니다.' });
+
+  const secret = genApiKeySecret();
+  await regenerateApiKeySecret(id, user.id, hashApiKeySecret(secret));
+  return res.json({ success: true, keyId: key.key_id, keySecret: `${key.key_id}.${secret}` });
+});
+
+app.delete('/api/developer/keys/:id', async (req: Request, res: Response) => {
+  const session = sessions.get(req.query.sessionId as string);
+  if (!session) return res.status(401).json({ success: false, message: '세션 만료' });
+  const user = await requireDeveloper(session);
+  if (!user) return res.status(403).json({ success: false, message: 'DEVELOPER_MODE_REQUIRED' });
+
+  await deleteApiKey(parseInt(req.params.id as string, 10), user.id);
+  return res.json({ success: true });
+});
+
 // ========== GMCAuto 공개 API v1 ==========
 // 다른 서비스(Akademiya 등)가 학교 홈페이지를 직접 조회해 동시접속 차단을 유발하지 않도록,
 // 서버-서버 전용으로 신청 여부/예약 시간/신청 내역을 제공한다. 세션이 아닌 API Key로 인증.
 app.get('/api/public/v1/status/:studentNo', async (req: Request, res: Response) => {
-  const apiKey = req.header('X-Api-Key');
-  if (!GMC_PUBLIC_API_KEY || apiKey !== GMC_PUBLIC_API_KEY) {
-    return res.status(401).json({ success: false, message: 'API Key가 유효하지 않습니다.' });
+  const apiKey = req.header('X-Api-Key') || '';
+  const studentNo = req.params.studentNo as string;
+
+  // 정적 슈퍼유저 키(레거시/Akademiya 하위호환) — 항상 전체 스코프
+  let scopes: ApiKeyScope[] = [];
+  if (GMC_PUBLIC_API_KEY && safeCompareStr(apiKey, GMC_PUBLIC_API_KEY)) {
+    scopes = ['schedule_time', 'full_history'];
+  } else {
+    // 개발자 발급 키: "<keyId>.<secret>" 형식
+    const dotIdx = apiKey.indexOf('.');
+    if (dotIdx < 1) {
+      return res.status(401).json({ success: false, message: 'API Key가 유효하지 않습니다.' });
+    }
+    const keyId = apiKey.slice(0, dotIdx);
+    const secret = apiKey.slice(dotIdx + 1);
+    const record = await getApiKeyByKeyId(keyId);
+    if (!record || !safeCompareHex(hashApiKeySecret(secret), record.key_secret_hash)) {
+      return res.status(401).json({ success: false, message: 'API Key가 유효하지 않습니다.' });
+    }
+    // 발급자 role이 발급 이후 강등됐을 수 있으므로 응답 시점에 다시 캡한다
+    const allowed = new Set(maxScopesForRole(record.owner_role));
+    scopes = parseApiKeyScopes(record.enabled_scopes).filter(s => allowed.has(s));
+    await bumpApiKeyUsage(record.id);
   }
 
-  const studentNo = req.params.studentNo as string;
   try {
-    const recurring = await getRecurringByStudent(studentNo);
     const todayRow = await getMySchedule(studentNo, todayStr());
-    const history = await getUsageStatsByStudent(studentNo, 20);
+    const hasApplied = !!(todayRow?.executed && todayRow.result_ok);
 
-    return res.json({
-      success: true,
-      data: {
-        studentNo,
-        hasApplied: !!(todayRow?.executed && todayRow.result_ok),
-        reservedTime: recurring?.time ?? null,
-        history: history.map(h => ({
-          applyDate: h.apply_date,
-          scheduleTime: h.schedule_time,
-          timeCode: h.time_code,
-          success: !!h.success,
-          message: h.message,
-        })),
-      },
-    });
+    let reservedTime: string | null = null;
+    if (scopes.includes('schedule_time')) {
+      const recurring = await getRecurringByStudent(studentNo);
+      reservedTime = recurring?.time ?? null;
+    }
+
+    let history: { applyDate: string; scheduleTime: string; timeCode: string; success: boolean; message: string | null }[] = [];
+    if (scopes.includes('full_history')) {
+      const rows = await getUsageStatsByStudent(studentNo, 20);
+      history = rows.map(h => ({
+        applyDate: h.apply_date,
+        scheduleTime: h.schedule_time,
+        timeCode: h.time_code,
+        success: !!h.success,
+        message: h.message,
+      }));
+    }
+
+    return res.json({ success: true, data: { studentNo, hasApplied, reservedTime, history } });
   } catch (err) {
     console.error('[공개 API]', (err as Error).message);
     return res.status(500).json({ success: false, message: `서버 오류: ${(err as Error).message}` });
@@ -1362,6 +1723,3 @@ if (existsSync(SSL_KEY) && existsSync(SSL_CERT)) {
     console.log(`   SSL 인증서 없음 → HTTP 모드\n`);
   });
 }
-
-// linkGoingHafsCredentials is imported but only used in future API; keep the import to avoid tree-shaking
-void linkGoingHafsCredentials;

@@ -1,0 +1,148 @@
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  display: block;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+.card:hover { border-color: var(--primary); background: var(--bg-hover); text-decoration: none; }
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.cardMeta {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.empty {
+  text-align: center;
+  padding: 32px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+/* ── 스코프 체크박스 카드 (Akademiya OpenOAuth 체크박스 카드 패턴 참고, 권한 부족 시 비활성) ── */
+.scopeGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0 18px;
+}
+
+.scopeOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.scopeOption:hover { background: var(--bg-hover); }
+.scopeOptionActive { border-color: var(--primary); background: var(--primary-light); }
+.scopeOptionDisabled { opacity: 0.55; cursor: not-allowed; }
+.scopeOptionDisabled:hover { background: none; }
+
+.scopeLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+}
+
+.scopeDesc {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 2px;
+}
+
+.statRow {
+  display: flex;
+  gap: 12px;
+  margin: 4px 0 18px;
+  flex-wrap: wrap;
+}
+
+.statCard {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  min-width: 140px;
+  flex: 1;
+}
+
+.statNumber {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.statLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.secretField { margin-bottom: 14px; }
+
+.secretLabel {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+
+.secretRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.secretValue {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.dangerZone {
+  background: var(--danger-light);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-top: 8px;
+}

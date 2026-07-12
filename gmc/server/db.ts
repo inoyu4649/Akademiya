@@ -1,15 +1,11 @@
 import mysql, { ResultSetHeader } from 'mysql2/promise';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { mkdirSync } from 'fs';
 import type {
   GmcUserRow, ScheduleRow, RetryRow, UsageStatRow,
   ConsentRow, RoleRow, ParsedStudentNo, SuspendPeriodRow, PushSubscriptionRow,
-  RecurringScheduleRow,
+  RecurringScheduleRow, NotificationRow, ApiKeyRow, CountRow,
 } from './types.js';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-void __dirname; // used for backup path in backupDb
 
 // ========== 커넥션 풀 ==========
 export const pool = mysql.createPool({
@@ -48,6 +44,44 @@ export async function initDb(): Promise<void> {
       UNIQUE KEY uq_student_no (student_no),
       UNIQUE KEY uq_akademiya_user (akademiya_user_id),
       UNIQUE KEY uq_akademiya_email (akademiya_email)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  // gmc_users는 이미 배포된 환경에 존재하므로 CREATE TABLE IF NOT EXISTS로는 컬럼이 추가되지 않는다.
+  await pool.execute(
+    "ALTER TABLE gmc_users ADD COLUMN IF NOT EXISTS developer_mode TINYINT(1) NOT NULL DEFAULT 0 AFTER role"
+  );
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS gmc_notifications (
+      id          INT AUTO_INCREMENT PRIMARY KEY,
+      gmc_user_id INT NOT NULL,
+      type        VARCHAR(32) NOT NULL,
+      title       VARCHAR(120) NOT NULL,
+      body        TEXT,
+      link        VARCHAR(255) DEFAULT NULL,
+      is_read     TINYINT(1) NOT NULL DEFAULT 0,
+      created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_gmc_user_created (gmc_user_id, created_at),
+      FOREIGN KEY (gmc_user_id) REFERENCES gmc_users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS gmc_api_keys (
+      id                INT AUTO_INCREMENT PRIMARY KEY,
+      owner_gmc_user_id INT NOT NULL,
+      key_id            VARCHAR(32) NOT NULL,
+      key_secret_hash   VARCHAR(64) NOT NULL,
+      name              VARCHAR(120) NOT NULL,
+      enabled_scopes    VARCHAR(255) NOT NULL DEFAULT '',
+      request_count     INT NOT NULL DEFAULT 0,
+      last_used_at      DATETIME DEFAULT NULL,
+      created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_key_id (key_id),
+      INDEX idx_owner (owner_gmc_user_id),
+      FOREIGN KEY (owner_gmc_user_id) REFERENCES gmc_users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
@@ -175,7 +209,7 @@ export async function initDb(): Promise<void> {
 
 export async function getCredentials(studentNo: string): Promise<GmcUserRow | null> {
   const [rows] = await pool.execute<GmcUserRow[]>(
-    'SELECT id, student_no, password, role, akademiya_user_id, akademiya_email FROM gmc_users WHERE student_no = ?',
+    'SELECT id, student_no, password, role, developer_mode, akademiya_user_id, akademiya_email FROM gmc_users WHERE student_no = ?',
     [studentNo]
   );
   return rows[0] ?? null;
@@ -272,6 +306,13 @@ export async function setUserRoleByEmail(email: string, role: number): Promise<v
      VALUES (?, ?, NOW())
      ON DUPLICATE KEY UPDATE role = VALUES(role), updated_at = NOW()`,
     [email, role]
+  );
+}
+
+export async function setDeveloperMode(gmcUserId: number, enabled: boolean): Promise<void> {
+  await pool.execute(
+    'UPDATE gmc_users SET developer_mode = ?, updated_at = NOW() WHERE id = ?',
+    [enabled ? 1 : 0, gmcUserId]
   );
 }
 
@@ -619,6 +660,137 @@ export async function getPushSubscriptionByStudentNo(studentNo: string): Promise
   return rows[0] ?? null;
 }
 
+// ========== 알림 센터 ==========
+
+export async function createNotification(
+  gmcUserId: number, type: string, title: string, body: string, link: string | null = null
+): Promise<void> {
+  await pool.execute(
+    `INSERT INTO gmc_notifications (gmc_user_id, type, title, body, link)
+     VALUES (?, ?, ?, ?, ?)`,
+    [gmcUserId, type, title, body, link]
+  );
+}
+
+export async function listNotifications(gmcUserId: number, limit = 50): Promise<NotificationRow[]> {
+  const [rows] = await pool.execute<NotificationRow[]>(
+    'SELECT * FROM gmc_notifications WHERE gmc_user_id = ? ORDER BY id DESC LIMIT ?',
+    [gmcUserId, limit]
+  );
+  return rows;
+}
+
+export async function getUnreadNotificationCount(gmcUserId: number): Promise<number> {
+  const [rows] = await pool.execute<CountRow[]>(
+    'SELECT COUNT(*) AS cnt FROM gmc_notifications WHERE gmc_user_id = ? AND is_read = 0',
+    [gmcUserId]
+  );
+  return rows[0]?.cnt ?? 0;
+}
+
+export async function markNotificationRead(gmcUserId: number, id: number): Promise<void> {
+  await pool.execute(
+    'UPDATE gmc_notifications SET is_read = 1 WHERE id = ? AND gmc_user_id = ?',
+    [id, gmcUserId]
+  );
+}
+
+export async function markAllNotificationsRead(gmcUserId: number): Promise<void> {
+  await pool.execute(
+    'UPDATE gmc_notifications SET is_read = 1 WHERE gmc_user_id = ? AND is_read = 0',
+    [gmcUserId]
+  );
+}
+
+export async function deleteNotification(gmcUserId: number, id: number): Promise<void> {
+  await pool.execute(
+    'DELETE FROM gmc_notifications WHERE id = ? AND gmc_user_id = ?',
+    [id, gmcUserId]
+  );
+}
+
+export async function cleanupOldNotifications(): Promise<number> {
+  const [res] = await pool.execute<ResultSetHeader>(
+    "DELETE FROM gmc_notifications WHERE created_at < DATE_SUB(NOW(), INTERVAL 60 DAY)"
+  );
+  return res.affectedRows;
+}
+
+// ========== GMCAuto API 키 (개발자 모드) ==========
+
+export async function createApiKey(
+  ownerId: number, keyId: string, secretHash: string, name: string, enabledScopes: string
+): Promise<number> {
+  const [res] = await pool.execute<ResultSetHeader>(
+    `INSERT INTO gmc_api_keys (owner_gmc_user_id, key_id, key_secret_hash, name, enabled_scopes)
+     VALUES (?, ?, ?, ?, ?)`,
+    [ownerId, keyId, secretHash, name, enabledScopes]
+  );
+  return res.insertId;
+}
+
+export async function listApiKeysByOwner(ownerId: number): Promise<ApiKeyRow[]> {
+  const [rows] = await pool.execute<ApiKeyRow[]>(
+    'SELECT * FROM gmc_api_keys WHERE owner_gmc_user_id = ? ORDER BY id DESC',
+    [ownerId]
+  );
+  return rows;
+}
+
+export async function getApiKeyById(id: number, ownerId: number): Promise<ApiKeyRow | null> {
+  const [rows] = await pool.execute<ApiKeyRow[]>(
+    'SELECT * FROM gmc_api_keys WHERE id = ? AND owner_gmc_user_id = ?',
+    [id, ownerId]
+  );
+  return rows[0] ?? null;
+}
+
+// 공개 API 인증용 — 소유자의 "현재" role을 함께 반환해 발급 이후 권한이 강등된 경우도 반영한다.
+export async function getApiKeyByKeyId(keyId: string): Promise<(ApiKeyRow & { owner_role: number }) | null> {
+  const [rows] = await pool.execute<(ApiKeyRow & { owner_role: number })[]>(
+    `SELECT k.*, COALESCE(u.role, 0) AS owner_role
+     FROM gmc_api_keys k
+     JOIN gmc_users u ON u.id = k.owner_gmc_user_id
+     WHERE k.key_id = ?`,
+    [keyId]
+  );
+  return rows[0] ?? null;
+}
+
+export async function renameApiKey(id: number, ownerId: number, name: string): Promise<void> {
+  await pool.execute(
+    'UPDATE gmc_api_keys SET name = ?, updated_at = NOW() WHERE id = ? AND owner_gmc_user_id = ?',
+    [name, id, ownerId]
+  );
+}
+
+export async function updateApiKeyScopes(id: number, ownerId: number, enabledScopes: string): Promise<void> {
+  await pool.execute(
+    'UPDATE gmc_api_keys SET enabled_scopes = ?, updated_at = NOW() WHERE id = ? AND owner_gmc_user_id = ?',
+    [enabledScopes, id, ownerId]
+  );
+}
+
+export async function regenerateApiKeySecret(id: number, ownerId: number, newSecretHash: string): Promise<void> {
+  await pool.execute(
+    'UPDATE gmc_api_keys SET key_secret_hash = ?, updated_at = NOW() WHERE id = ? AND owner_gmc_user_id = ?',
+    [newSecretHash, id, ownerId]
+  );
+}
+
+export async function deleteApiKey(id: number, ownerId: number): Promise<void> {
+  await pool.execute(
+    'DELETE FROM gmc_api_keys WHERE id = ? AND owner_gmc_user_id = ?',
+    [id, ownerId]
+  );
+}
+
+export async function bumpApiKeyUsage(id: number): Promise<void> {
+  await pool.execute(
+    'UPDATE gmc_api_keys SET request_count = request_count + 1, last_used_at = NOW() WHERE id = ?',
+    [id]
+  );
+}
+
 // __dirname 불필요하지만 backup 경로를 위해 export
 export const serverDir = dirname(fileURLToPath(import.meta.url));
-void mkdirSync; // suppress unused import warning

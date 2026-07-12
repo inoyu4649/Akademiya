@@ -13,6 +13,11 @@ import { startAkademiyaLogin } from './utils/akademiyaOAuth'
 import type { SessionData, LogEntry } from './types'
 
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'))
+const AccountPage = lazy(() => import('./components/AccountPage'))
+const PolicyPage = lazy(() => import('./components/PolicyPage'))
+const ApiKeysPage = lazy(() => import('./components/developer/ApiKeysPage'))
+const ApiKeyCreatePage = lazy(() => import('./components/developer/ApiKeyCreatePage'))
+const ApiKeyDetailPage = lazy(() => import('./components/developer/ApiKeyDetailPage'))
 
 const SESSION_KEY = 'gmcauto_session'
 const PATCH_NOTES_SEEN_KEY = 'gmcauto_patch_notes_seen_version'
@@ -23,6 +28,14 @@ function applyTheme(theme: string) {
 
 function getSystemTheme(): 'dark' | 'light' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+function RouteLoadingSpinner() {
+  return (
+    <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-secondary)' }}>
+      <div className="spinner" style={{ margin: '0 auto 12px', width: '26px', height: '26px', borderColor: 'var(--border)', borderTopColor: 'var(--primary)' }} />
+    </div>
+  )
 }
 
 function App() {
@@ -84,13 +97,15 @@ function App() {
       fetch(`/api/session/check?sessionId=${encodeURIComponent(data.sessionId)}`)
         .then(r => r.json())
         .then((check: {
-          valid: boolean; role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
+          valid: boolean; role?: number; developerMode?: boolean;
+          needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
           privacyConsentedVersion?: number; termsConsentedVersion?: number;
         }) => {
           if (check.valid) {
             setSession({
               ...data,
               role: check.role ?? data.role ?? 0,
+              developerMode: check.developerMode ?? data.developerMode ?? false,
               privacyConsentedVersion: check.privacyConsentedVersion ?? 0,
               termsConsentedVersion: check.termsConsentedVersion ?? 0,
             })
@@ -152,20 +167,21 @@ function App() {
     setSession(null)
   }, [session])
 
-  const handleAccountDelete = useCallback(async () => {
-    if (!confirm(t('admin.withdrawConfirm', '탈퇴하면 저장된 비밀번호가 삭제되어 자동 신청이 불가합니다.\n정말 탈퇴하시겠습니까?'))) return
-    if (session?.sessionId) {
-      try {
-        await fetch('/api/account/delete', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ sessionId: session.sessionId }),
-        })
-      } catch { /* ignore */ }
-    }
+  // 탈퇴 확인/삭제 API 호출은 AccountPage가 직접 수행하고, 성공 후 이 콜백으로 세션만 정리한다.
+  const handleAccountDeleted = useCallback(() => {
     localStorage.removeItem(SESSION_KEY)
     setSession(null)
-  }, [session, t])
+  }, [])
+
+  // 학번/비밀번호 수정, 개발자 모드 토글 등 AccountPage에서 세션 일부를 갱신할 때 사용
+  const handleSessionUpdate = useCallback((patch: Partial<SessionData>) => {
+    setSession(prev => {
+      if (!prev) return prev
+      const next = { ...prev, ...patch }
+      localStorage.setItem(SESSION_KEY, JSON.stringify(next))
+      return next
+    })
+  }, [])
 
   // 개인정보/약관 동의가 끝난 로그인 사용자에게 업데이트 후 최초 접속 시 패치노트 안내
   // (개인정보 처리방침 모달의 버전 비교·표시 패턴을 재사용 — 서버 동의 기록 없이 localStorage로 판단)
@@ -243,7 +259,6 @@ function App() {
                   <GmcLayout
                     session={session}
                     onLogout={handleLogout}
-                    onAccountDelete={handleAccountDelete}
                     theme={theme}
                     toggleTheme={toggleTheme}
                   />
@@ -256,13 +271,53 @@ function App() {
                   path="admin"
                   element={
                     (session.role ?? 0) >= 1 ? (
-                      <Suspense fallback={
-                        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-secondary)' }}>
-                          <div className="spinner" style={{ margin: '0 auto 12px', width: '26px', height: '26px', borderColor: 'var(--border)', borderTopColor: 'var(--primary)' }} />
-                        </div>
-                      }>
+                      <Suspense fallback={<RouteLoadingSpinner />}>
                         <AdminDashboard session={session} />
                       </Suspense>
+                    ) : <Navigate to="/" replace />
+                  }
+                />
+                <Route
+                  path="account"
+                  element={
+                    <Suspense fallback={<RouteLoadingSpinner />}>
+                      <AccountPage
+                        session={session}
+                        onSessionUpdate={handleSessionUpdate}
+                        onAccountDeleted={handleAccountDeleted}
+                      />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="privacy"
+                  element={<Suspense fallback={<RouteLoadingSpinner />}><PolicyPage kind="privacy" /></Suspense>}
+                />
+                <Route
+                  path="terms"
+                  element={<Suspense fallback={<RouteLoadingSpinner />}><PolicyPage kind="terms" /></Suspense>}
+                />
+                <Route
+                  path="developer/keys"
+                  element={
+                    session.developerMode ? (
+                      <Suspense fallback={<RouteLoadingSpinner />}><ApiKeysPage session={session} /></Suspense>
+                    ) : <Navigate to="/" replace />
+                  }
+                />
+                <Route
+                  path="developer/keys/new"
+                  element={
+                    session.developerMode ? (
+                      <Suspense fallback={<RouteLoadingSpinner />}><ApiKeyCreatePage session={session} /></Suspense>
+                    ) : <Navigate to="/" replace />
+                  }
+                />
+                <Route
+                  path="developer/keys/:id"
+                  element={
+                    session.developerMode ? (
+                      <Suspense fallback={<RouteLoadingSpinner />}><ApiKeyDetailPage session={session} /></Suspense>
                     ) : <Navigate to="/" replace />
                   }
                 />

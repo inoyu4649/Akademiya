@@ -1,10 +1,10 @@
 {
-  "common": { "cancel": "キャンセル" },
+  "common": { "cancel": "キャンセル", "back": "← 戻る", "error": "エラーが発生しました。", "saved": "保存されました。" },
   "theme": { "light": "ライトモードに切り替え", "dark": "ダークモードに切り替え" },
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS 自動申請プログラム",
-    "version": "v3.0.2",
+    "version": "v3.0.3",
     "contact": "お問い合わせ: 022207@hafs.hs.kr",
     "madeWith": "Claude Code で制作",
     "loading": "ログイン情報を確認中...",
@@ -40,6 +40,10 @@
     "history": "申請履歴",
     "dashboard": "ダッシュボード",
     "adminGroup": "管理者ツール",
+    "developerTools": "開発者ツール",
+    "gmcApi": "GMCAuto API",
+    "privacyPolicy": "個人情報処理方針",
+    "termsOfUse": "利用規約",
     "logout": "ログアウト",
     "withdraw": "退会"
   },
@@ -178,5 +182,70 @@
       "deleteBtn": "削除",
       "invalidRange": "終了日は開始日より前にできません。"
     }
+  },
+  "notification": {
+    "title": "通知",
+    "empty": "通知はありません。",
+    "markAllRead": "すべて既読",
+    "pushOn": "プッシュ ON",
+    "pushOff": "プッシュ OFF",
+    "justNow": "たった今",
+    "minutesAgo": "{{n}}分前",
+    "hoursAgo": "{{n}}時間前",
+    "daysAgo": "{{n}}日前",
+    "type": {
+      "schedule_registered": "予約",
+      "apply_success": "成功",
+      "apply_failed_final": "失敗",
+      "suspend_start": "中断",
+      "holiday_start": "休日"
+    }
+  },
+  "account": {
+    "title": "アカウント設定",
+    "credentialsTitle": "Going HAFS 学籍番号/パスワードの変更",
+    "credentialsDesc": "学籍番号が変わった、またはパスワードを変更した場合はここで再連携してください。",
+    "credentialsSaved": "学籍番号/パスワードが更新されました。",
+    "saveBtn": "保存",
+    "saving": "確認中...",
+    "developerTitle": "開発者モード",
+    "developerDesc": "GMCAuto API キーを発行するには開発者モードをオンにしてください。",
+    "developerEnable": "開発者モードを使用",
+    "dangerTitle": "退会",
+    "dangerBtn": "退会する",
+    "dangerConfirmBtn": "本当に退会します"
+  },
+  "developer": {
+    "keysTitle": "GMCAuto API キー",
+    "keysDesc": "サーバー間連携用の API キーを管理します。",
+    "createBtn": "新しいキーを発行",
+    "empty": "発行されたキーはありません。",
+    "nameLabel": "キー名",
+    "namePlaceholder": "例: 学校ダッシュボード連携",
+    "scopesLabel": "許可範囲",
+    "scopeStatus": "申請有無（常に含む）",
+    "scope": {
+      "schedule_time": "予約時間を含む",
+      "schedule_timeHint": "権限1以上が必要",
+      "full_history": "申請履歴全体を含む",
+      "full_historyHint": "権限2以上が必要"
+    },
+    "createSubmit": "発行",
+    "notFound": "キーが見つかりません。",
+    "requestCountLabel": "累計呼び出し数",
+    "lastUsedLabel": "最終使用",
+    "never": "なし",
+    "regenerateBtn": "シークレットの再発行",
+    "regenerateWarning": "再発行すると既存のシークレットは即時無効化されます。",
+    "deleteBtn": "削除",
+    "deleteConfirmDesc": "削除すると、このキーで API を呼び出せなくなります。",
+    "deleteConfirmBtn": "本当に削除します",
+    "secretModalTitle": "API キーが発行されました",
+    "secretModalWarning": "このシークレットは今だけ表示されます。安全な場所に保存してください。",
+    "keyIdLabel": "Key ID",
+    "keySecretLabel": "API Key（X-Api-Key ヘッダーにそのまま使用）",
+    "copyBtn": "コピー",
+    "copied": "コピーしました",
+    "closeBtn": "閉じる"
   }
 }

@@ -1,0 +1,174 @@
+.container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.iconBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+  flex-shrink: 0;
+}
+
+.iconBtn:hover { background: var(--bg-hover); color: var(--text); transform: translateY(-1px); }
+.iconBtn:active { transform: translateY(0); }
+
+.badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 8px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+}
+
+/* position:fixed로 사이드바의 overflow:hidden을 우회한다 (top/left/width는 JS로 계산해 인라인 지정) */
+.dropdown {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-height: 420px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 500;
+}
+
+.dropdownHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.dropdownTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.markAllBtn {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+}
+.markAllBtn:hover { background: var(--bg-hover); color: var(--text); }
+
+.pushToggle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+.pushToggle:disabled { opacity: 0.6; cursor: default; }
+.pushToggleOn { color: var(--primary); border-color: var(--primary); background: var(--primary-light); }
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.empty {
+  padding: 28px 16px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.item {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.item:last-child { border-bottom: none; }
+.item:hover { background: var(--bg-hover); }
+.itemUnread { background: var(--primary-light); }
+
+.itemTop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.typeBadge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.badgeScheduled { background: var(--primary-light); color: var(--primary); }
+.badgeSuccess   { background: var(--success-light); color: var(--success); }
+.badgeFailed    { background: var(--danger-light);  color: var(--danger); }
+.badgeSuspend   { background: var(--warning-light); color: var(--warning); }
+.badgeHoliday   { background: var(--warning-light); color: var(--warning); }
+
+.itemTime {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.deleteBtn {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+.item:hover .deleteBtn { opacity: 1; }
+.deleteBtn:hover { background: var(--danger-light); color: var(--danger); }
+
+.itemBody {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

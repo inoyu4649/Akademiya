@@ -7,8 +7,33 @@ export interface GmcUserRow extends RowDataPacket {
   student_no: string | null;
   password: string | null;
   role: number;
+  developer_mode: number;
   akademiya_user_id: number | null;
   akademiya_email: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface NotificationRow extends RowDataPacket {
+  id: number;
+  gmc_user_id: number;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  is_read: number;
+  created_at?: string;
+}
+
+export interface ApiKeyRow extends RowDataPacket {
+  id: number;
+  owner_gmc_user_id: number;
+  key_id: string;
+  key_secret_hash: string;
+  name: string;
+  enabled_scopes: string;
+  request_count: number;
+  last_used_at: string | null;
   created_at?: string;
   updated_at?: string;
 }

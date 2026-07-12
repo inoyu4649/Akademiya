@@ -1,6 +1,9 @@
 {
   "common": {
-    "cancel": "취소"
+    "cancel": "취소",
+    "back": "← 뒤로",
+    "error": "오류가 발생했습니다.",
+    "saved": "저장되었습니다."
   },
   "theme": {
     "light": "라이트 모드로 전환",
@@ -9,7 +12,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS 자동신청 프로그램",
-    "version": "v3.0.2",
+    "version": "v3.0.3",
     "contact": "문의: 022207@hafs.hs.kr",
     "madeWith": "Claude Code로 제작됨",
     "loading": "로그인 정보 확인 중...",
@@ -45,6 +48,10 @@
     "history": "신청 내역",
     "dashboard": "대시보드",
     "adminGroup": "관리자 도구",
+    "developerTools": "개발자 도구",
+    "gmcApi": "GMCAuto API",
+    "privacyPolicy": "개인정보 처리방침",
+    "termsOfUse": "이용약관",
     "logout": "로그아웃",
     "withdraw": "탈퇴"
   },
@@ -183,5 +190,70 @@
       "deleteBtn": "삭제",
       "invalidRange": "종료일이 시작일보다 빠를 수 없습니다."
     }
+  },
+  "notification": {
+    "title": "알림",
+    "empty": "알림이 없습니다.",
+    "markAllRead": "모두 읽음",
+    "pushOn": "푸시 ON",
+    "pushOff": "푸시 OFF",
+    "justNow": "방금 전",
+    "minutesAgo": "{{n}}분 전",
+    "hoursAgo": "{{n}}시간 전",
+    "daysAgo": "{{n}}일 전",
+    "type": {
+      "schedule_registered": "예약",
+      "apply_success": "성공",
+      "apply_failed_final": "실패",
+      "suspend_start": "중단",
+      "holiday_start": "휴일"
+    }
+  },
+  "account": {
+    "title": "계정 설정",
+    "credentialsTitle": "Going HAFS 학번/비밀번호 수정",
+    "credentialsDesc": "학번이 바뀌었거나 비밀번호를 변경했다면 다시 연동해주세요.",
+    "credentialsSaved": "학번/비밀번호가 갱신되었습니다.",
+    "saveBtn": "저장",
+    "saving": "확인 중...",
+    "developerTitle": "개발자 모드",
+    "developerDesc": "GMCAuto API 키를 발급하려면 개발자 모드를 켜세요.",
+    "developerEnable": "개발자 모드 사용",
+    "dangerTitle": "회원 탈퇴",
+    "dangerBtn": "탈퇴하기",
+    "dangerConfirmBtn": "정말 탈퇴합니다"
+  },
+  "developer": {
+    "keysTitle": "GMCAuto API 키",
+    "keysDesc": "서버-서버 연동용 API 키를 관리합니다.",
+    "createBtn": "새 키 발급",
+    "empty": "발급된 키가 없습니다.",
+    "nameLabel": "키 이름",
+    "namePlaceholder": "예: 학교 대시보드 연동",
+    "scopesLabel": "허용 범위",
+    "scopeStatus": "신청 여부 (항상 포함)",
+    "scope": {
+      "schedule_time": "예약 시간 포함",
+      "schedule_timeHint": "권한 1 이상 필요",
+      "full_history": "신청 내역 전체 포함",
+      "full_historyHint": "권한 2 이상 필요"
+    },
+    "createSubmit": "발급",
+    "notFound": "키를 찾을 수 없습니다.",
+    "requestCountLabel": "누적 호출 수",
+    "lastUsedLabel": "마지막 사용",
+    "never": "없음",
+    "regenerateBtn": "시크릿 재발급",
+    "regenerateWarning": "재발급하면 기존 시크릿은 즉시 무효화됩니다.",
+    "deleteBtn": "삭제",
+    "deleteConfirmDesc": "삭제하면 이 키로 더 이상 API를 호출할 수 없습니다.",
+    "deleteConfirmBtn": "정말 삭제합니다",
+    "secretModalTitle": "API 키가 발급되었습니다",
+    "secretModalWarning": "이 시크릿은 지금만 표시됩니다. 안전한 곳에 복사해 두세요.",
+    "keyIdLabel": "Key ID",
+    "keySecretLabel": "API Key (X-Api-Key 헤더에 그대로 사용)",
+    "copyBtn": "복사",
+    "copied": "복사됨",
+    "closeBtn": "닫기"
   }
 }

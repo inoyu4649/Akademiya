@@ -65,7 +65,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
         success: boolean; message?: string;
         linked?: boolean; loginFailed?: boolean;
         sessionId?: string; studentNo?: string; studentName?: string; akademiyaEmail?: string | null;
-        role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
+        role?: number; developerMode?: boolean; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
         privacyConsentedVersion?: number; termsConsentedVersion?: number;
         userInfo?: AkUserInfo; linkTicket?: string;
       }
@@ -82,6 +82,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
           studentName: data.studentName || '',
           akademiyaEmail: data.akademiyaEmail ?? null,
           role: data.role ?? 0,
+          developerMode: data.developerMode ?? false,
           needsPrivacyConsent: data.needsPrivacyConsent ?? false,
           needsTermsConsent: data.needsTermsConsent ?? false,
           privacyConsentedVersion: data.privacyConsentedVersion ?? 0,
@@ -137,7 +138,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
       const data = await res.json() as {
         success: boolean; message?: string;
         sessionId: string; studentNo: string; studentName?: string; akademiyaEmail?: string | null;
-        role?: number; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
+        role?: number; developerMode?: boolean; needsPrivacyConsent?: boolean; needsTermsConsent?: boolean;
         privacyConsentedVersion?: number; termsConsentedVersion?: number;
       }
       if (data.success) {
@@ -148,6 +149,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
           studentName: data.studentName || '',
           akademiyaEmail: data.akademiyaEmail ?? null,
           role: data.role ?? 0,
+          developerMode: data.developerMode ?? false,
           needsPrivacyConsent: data.needsPrivacyConsent ?? true,
           needsTermsConsent: data.needsTermsConsent ?? true,
           privacyConsentedVersion: data.privacyConsentedVersion ?? 0,

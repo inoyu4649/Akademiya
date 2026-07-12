@@ -32,7 +32,6 @@ RUN npm install --omit=dev --legacy-peer-deps
 # 빌드 결과 + 서버 코드 복사
 COPY --from=builder /build/dist ./dist
 COPY server ./server
-COPY scripts ./scripts
 
 # 백업 디렉토리 생성
 RUN mkdir -p backup

@@ -1,10 +1,10 @@
 {
-  "common": { "cancel": "Cancel" },
+  "common": { "cancel": "Cancel", "back": "← Back", "error": "An error occurred.", "saved": "Saved." },
   "theme": { "light": "Switch to Light Mode", "dark": "Switch to Dark Mode" },
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS Auto-Application",
-    "version": "v3.0.2",
+    "version": "v3.0.3",
     "contact": "Contact: 022207@hafs.hs.kr",
     "madeWith": "Made with Claude Code",
     "loading": "Verifying session...",
@@ -40,6 +40,10 @@
     "history": "History",
     "dashboard": "Dashboard",
     "adminGroup": "Admin Tools",
+    "developerTools": "Developer Tools",
+    "gmcApi": "GMCAuto API",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfUse": "Terms of Use",
     "logout": "Sign Out",
     "withdraw": "Delete Account"
   },
@@ -178,5 +182,70 @@
       "deleteBtn": "Delete",
       "invalidRange": "End date cannot be earlier than start date."
     }
+  },
+  "notification": {
+    "title": "Notifications",
+    "empty": "No notifications.",
+    "markAllRead": "Mark all read",
+    "pushOn": "Push ON",
+    "pushOff": "Push OFF",
+    "justNow": "Just now",
+    "minutesAgo": "{{n}}m ago",
+    "hoursAgo": "{{n}}h ago",
+    "daysAgo": "{{n}}d ago",
+    "type": {
+      "schedule_registered": "Scheduled",
+      "apply_success": "Success",
+      "apply_failed_final": "Failed",
+      "suspend_start": "Suspended",
+      "holiday_start": "Holiday"
+    }
+  },
+  "account": {
+    "title": "Account Settings",
+    "credentialsTitle": "Update Going HAFS Student No. / Password",
+    "credentialsDesc": "If your student number changed or you updated your password, re-link it here.",
+    "credentialsSaved": "Student number/password updated.",
+    "saveBtn": "Save",
+    "saving": "Verifying...",
+    "developerTitle": "Developer Mode",
+    "developerDesc": "Turn on developer mode to issue GMCAuto API keys.",
+    "developerEnable": "Enable developer mode",
+    "dangerTitle": "Delete Account",
+    "dangerBtn": "Delete Account",
+    "dangerConfirmBtn": "Yes, delete my account"
+  },
+  "developer": {
+    "keysTitle": "GMCAuto API Keys",
+    "keysDesc": "Manage API keys for server-to-server integration.",
+    "createBtn": "New Key",
+    "empty": "No keys issued yet.",
+    "nameLabel": "Key Name",
+    "namePlaceholder": "e.g. School dashboard integration",
+    "scopesLabel": "Allowed Scope",
+    "scopeStatus": "Application status (always included)",
+    "scope": {
+      "schedule_time": "Include reserved time",
+      "schedule_timeHint": "Requires role 1 or higher",
+      "full_history": "Include full application history",
+      "full_historyHint": "Requires role 2 or higher"
+    },
+    "createSubmit": "Issue",
+    "notFound": "Key not found.",
+    "requestCountLabel": "Total requests",
+    "lastUsedLabel": "Last used",
+    "never": "Never",
+    "regenerateBtn": "Regenerate secret",
+    "regenerateWarning": "Regenerating will immediately invalidate the old secret.",
+    "deleteBtn": "Delete",
+    "deleteConfirmDesc": "Once deleted, this key can no longer call the API.",
+    "deleteConfirmBtn": "Yes, delete this key",
+    "secretModalTitle": "API key issued",
+    "secretModalWarning": "This secret is shown only once. Please copy it somewhere safe.",
+    "keyIdLabel": "Key ID",
+    "keySecretLabel": "API Key (use as-is in the X-Api-Key header)",
+    "copyBtn": "Copy",
+    "copied": "Copied",
+    "closeBtn": "Close"
   }
 }

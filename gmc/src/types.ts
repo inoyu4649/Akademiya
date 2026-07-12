@@ -6,11 +6,34 @@ export interface SessionData {
   studentName: string;
   akademiyaEmail?: string | null;
   role: number;
+  developerMode?: boolean;
   needsPrivacyConsent: boolean;
   needsTermsConsent: boolean;
   /** 마지막으로 동의한 처리방침/약관 버전 (미동의 시 0) — 재동의 모달의 변경 요약 표시에 사용 */
   privacyConsentedVersion?: number;
   termsConsentedVersion?: number;
+}
+
+/** 알림 센터 항목 (서버 gmc_notifications 행과 1:1 대응) */
+export interface NotificationItem {
+  id: number;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  is_read: number;
+  created_at?: string;
+}
+
+/** GMCAuto API 키 (개발자 모드) — 시크릿/해시는 목록·상세 응답에 절대 포함되지 않는다 */
+export interface ApiKeyItem {
+  id: number;
+  keyId: string;
+  name: string;
+  enabledScopes: string;
+  requestCount: number;
+  lastUsedAt: string | null;
+  createdAt?: string;
 }
 
 export interface ScheduleInfo {

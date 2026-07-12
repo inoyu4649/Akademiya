@@ -1,91 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { NavLink, Link, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { SessionData } from '../../types'
+import NotificationBell from '../NotificationBell'
 import styles from './GmcLayout.module.css'
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const raw = window.atob(base64)
-  const arr = new Uint8Array(raw.length)
-  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i)
-  return arr
-}
-
-type OsType = 'ios' | 'ipados' | 'android' | 'windows' | 'mac' | 'linux' | 'unknown'
-
-function detectOs(): OsType {
-  const ua = navigator.userAgent
-  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'ipados'
-  if (/iPhone/.test(ua)) return 'ios'
-  if (/Android/.test(ua)) return 'android'
-  if (/Windows/.test(ua)) return 'windows'
-  if (/Macintosh|Mac OS X/.test(ua)) return 'mac'
-  if (/Linux/.test(ua)) return 'linux'
-  return 'unknown'
-}
-
-function InstallGuide({ os }: { os: OsType }) {
-  const { t } = useTranslation()
-  const isSafari = /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS|Chrome/.test(navigator.userAgent)
-
-  if (os === 'ios' || os === 'ipados') {
-    const device = os === 'ipados' ? 'iPad' : 'iPhone'
-    return (
-      <div>
-        <p style={{ margin: '0 0 12px', fontSize: '14px', color: 'var(--text)' }}>{t('install.iosTitle', { device })}</p>
-        {!isSafari && (
-          <div style={{ background: 'var(--warning-light)', border: '1px solid var(--warning)', borderRadius: 'var(--radius-sm)', padding: '8px 12px', marginBottom: '12px', fontSize: '13px', color: 'var(--text)' }}
-            dangerouslySetInnerHTML={{ __html: t('install.iosNotSafari') }} />
-        )}
-        <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text)', lineHeight: 2 }}>
-          <li dangerouslySetInnerHTML={{ __html: t('install.step1') }} />
-          {os === 'ipados' ? (
-            <>
-              <li dangerouslySetInnerHTML={{ __html: t('install.iosIpadStep2') }} />
-              <li dangerouslySetInnerHTML={{ __html: t('install.iosIpadStep3') }} />
-            </>
-          ) : (
-            <>
-              <li dangerouslySetInnerHTML={{ __html: t('install.iosStep2') }} />
-              <li dangerouslySetInnerHTML={{ __html: t('install.iosStep3') }} />
-              <li dangerouslySetInnerHTML={{ __html: t('install.iosStep4') }} />
-            </>
-          )}
-          <li dangerouslySetInnerHTML={{ __html: t('install.iosStep5') }} />
-          <li dangerouslySetInnerHTML={{ __html: t('install.iosStep6') }} />
-        </ol>
-      </div>
-    )
-  }
-
-  if (os === 'android') {
-    return (
-      <div>
-        <p style={{ margin: '0 0 12px', fontSize: '14px', color: 'var(--text)' }}>{t('install.androidTitle')}</p>
-        <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text)', lineHeight: 2 }}>
-          <li dangerouslySetInnerHTML={{ __html: t('install.androidStep1') }} />
-          <li dangerouslySetInnerHTML={{ __html: t('install.androidStep2') }} />
-          <li dangerouslySetInnerHTML={{ __html: t('install.androidStep3') }} />
-          <li dangerouslySetInnerHTML={{ __html: t('install.androidStep4') }} />
-        </ol>
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      <p style={{ margin: '0 0 12px', fontSize: '14px', color: 'var(--text)' }}>{t('install.pcTitle')}</p>
-      <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text)', lineHeight: 2 }}>
-        <li dangerouslySetInnerHTML={{ __html: t('install.pcStep1') }} />
-        <li dangerouslySetInnerHTML={{ __html: t('install.pcStep2') }} />
-        <li dangerouslySetInnerHTML={{ __html: t('install.pcStep3') }} />
-        <li dangerouslySetInnerHTML={{ __html: t('install.pcStep4') }} />
-      </ol>
-    </div>
-  )
-}
 
 const LANG_OPTIONS = [
   { code: 'ko', label: '한국어' },
@@ -121,14 +39,6 @@ function IconGlobe() {
     </svg>
   )
 }
-function IconBell() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-    </svg>
-  )
-}
 function IconHome() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -158,6 +68,21 @@ function IconShield() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  )
+}
+function IconCode() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
+    </svg>
+  )
+}
+function IconUser() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
     </svg>
   )
 }
@@ -222,88 +147,18 @@ function LanguageSelector() {
 interface GmcLayoutProps {
   session: SessionData
   onLogout: () => void
-  onAccountDelete: () => void
   theme: string
   toggleTheme: () => void
 }
 
-export default function GmcLayout({ session, onLogout, onAccountDelete, theme, toggleTheme }: GmcLayoutProps) {
+export default function GmcLayout({ session, onLogout, theme, toggleTheme }: GmcLayoutProps) {
   const { t } = useTranslation()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [notifEnabled, setNotifEnabled] = useState(false)
-  const [notifLoading, setNotifLoading] = useState(false)
-  const [isPwa, setIsPwa] = useState(false)
-  const [showInstallModal, setShowInstallModal] = useState(false)
-  const [installOs, setInstallOs] = useState<OsType>('unknown')
-
-  useEffect(() => {
-    const pwa =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (navigator as Navigator & { standalone?: boolean }).standalone === true
-    queueMicrotask(() => setIsPwa(pwa))
-    if (pwa && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.ready
-        .then(reg => reg.pushManager.getSubscription())
-        .then(sub => setNotifEnabled(!!sub))
-        .catch(() => {})
-    }
-  }, [])
-
-  const handleNotifToggle = useCallback(async () => {
-    if (!isPwa) {
-      setInstallOs(detectOs())
-      setShowInstallModal(true)
-      return
-    }
-    if (notifLoading) return
-    setNotifLoading(true)
-    try {
-      const reg = await navigator.serviceWorker.ready
-      if (notifEnabled) {
-        const sub = await reg.pushManager.getSubscription()
-        if (sub) await sub.unsubscribe()
-        await fetch('/api/push/unsubscribe', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: session.sessionId }),
-        })
-        setNotifEnabled(false)
-      } else {
-        if (!('Notification' in window) || Notification.permission === 'denied') return
-        const vapidRes = await fetch('/api/push/vapid-public-key')
-        const { publicKey } = await vapidRes.json() as { publicKey: string }
-        const permission = await Notification.requestPermission()
-        if (permission !== 'granted') return
-        const sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
-        })
-        const subJSON = JSON.parse(JSON.stringify(sub)) as { endpoint: string; keys?: { p256dh?: string; auth?: string } }
-        await fetch('/api/push/subscribe', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: session.sessionId, endpoint: subJSON.endpoint, p256dh: subJSON.keys?.p256dh ?? '', auth: subJSON.keys?.auth ?? '' }),
-        })
-        setNotifEnabled(true)
-      }
-    } catch { /* 무시 */ }
-    finally { setNotifLoading(false) }
-  }, [isPwa, notifEnabled, notifLoading, session.sessionId])
 
   const closeMobile = () => setMobileOpen(false)
 
   return (
     <div className={styles.layout}>
-      {showInstallModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '24px', maxWidth: '400px', width: '100%' }}>
-            <h3 style={{ margin: '0 0 16px', color: 'var(--text)', fontSize: '16px' }}>{t('install.modalTitle')}</h3>
-            <InstallGuide os={installOs} />
-            <button className="btn btn-primary" onClick={() => setShowInstallModal(false)} style={{ marginTop: '20px', width: '100%' }}>
-              {t('install.modalClose')}
-            </button>
-          </div>
-        </div>
-      )}
-
       <header className={styles.mobileHeader}>
         <button className={styles.hamburger} onClick={() => setMobileOpen(true)} aria-label="메뉴 열기"><IconMenu /></button>
         <img src="/logo_gmc.png" className={styles.logoImg} alt="GMCAuto" />
@@ -312,10 +167,7 @@ export default function GmcLayout({ session, onLogout, onAccountDelete, theme, t
           <button className={styles.iconBtn} onClick={toggleTheme} title={theme === 'dark' ? t('theme.light') : t('theme.dark')}>
             {theme === 'dark' ? <IconSun /> : <IconMoon />}
           </button>
-          <button className={styles.iconBtn} onClick={handleNotifToggle} title={notifEnabled ? t('home.notifOn') : t('home.notifOff')}
-            style={notifEnabled ? { color: 'var(--primary)' } : undefined}>
-            <IconBell />
-          </button>
+          <NotificationBell sessionId={session.sessionId} />
         </div>
       </header>
 
@@ -334,12 +186,7 @@ export default function GmcLayout({ session, onLogout, onAccountDelete, theme, t
                 {theme === 'dark' ? <IconSun /> : <IconMoon />}
               </button>
             </span>
-            <span className={styles.desktopOnly}>
-              <button className={styles.iconBtn} onClick={handleNotifToggle} title={notifEnabled ? t('home.notifOn') : t('home.notifOff')}
-                style={notifEnabled ? { color: 'var(--primary)' } : undefined}>
-                <IconBell />
-              </button>
-            </span>
+            <span className={styles.desktopOnly}><NotificationBell sessionId={session.sessionId} /></span>
             <button className={styles.closeSidebarBtn} onClick={closeMobile} aria-label="메뉴 닫기"><IconX /></button>
           </div>
         </div>
@@ -364,16 +211,32 @@ export default function GmcLayout({ session, onLogout, onAccountDelete, theme, t
               </NavLink>
             </>
           )}
+
+          {session.developerMode && (
+            <>
+              <div className={styles.navSectionLabel}>{t('nav.developerTools', '개발자 도구')}</div>
+              <NavLink to="/developer/keys" onClick={closeMobile} className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}>
+                <IconCode /><span>{t('nav.gmcApi', 'GMCAuto API')}</span>
+              </NavLink>
+            </>
+          )}
         </nav>
 
+        <div className={styles.versionText}>GMCAuto Web App version 3.0.3</div>
+        <div className={styles.versionLinks}>
+          <Link to="/privacy" onClick={closeMobile} className={styles.versionLink}>{t('nav.privacyPolicy', '개인정보 처리방침')}</Link>
+          <span className={styles.versionLinkSep}>·</span>
+          <Link to="/terms" onClick={closeMobile} className={styles.versionLink}>{t('nav.termsOfUse', '이용약관')}</Link>
+        </div>
+
         <div className={styles.sidebarBottom}>
-          <div className={styles.userInfo}>
-            <span className={styles.userName}>{session.studentName || session.studentNo}</span>
-            <span className={styles.userSub}>{session.studentNo}</span>
-          </div>
-          <button className={styles.iconBtn} onClick={onAccountDelete} title={t('nav.withdraw')} style={{ color: 'var(--danger)' }}>
-            {t('nav.withdraw')}
-          </button>
+          <NavLink to="/account" onClick={closeMobile} className={({ isActive }) => `${styles.bottomItem} ${isActive ? styles.navActive : ''}`}>
+            <IconUser />
+            <div className={styles.userInfo}>
+              <span className={styles.userName}>{session.studentName || session.studentNo}</span>
+              <span className={styles.userSub}>{session.studentNo}</span>
+            </div>
+          </NavLink>
           <button className={styles.logoutBtn} onClick={onLogout} title={t('nav.logout')}><IconLogout /></button>
         </div>
       </aside>
