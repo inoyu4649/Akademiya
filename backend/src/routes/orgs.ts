@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { pool } from "../db/pool.js";
 import { requireAuth } from "../middleware/auth.js";
 import { sendPushToUser } from "../lib/push.js";
+import { autoJoinIfGoogleVerified } from "../utils/orgAutoJoin.js";
 
 const router: IRouter = Router();
 
@@ -24,6 +25,13 @@ async function getOrgPermission(userId: number, orgId: number): Promise<number |
 // GET /api/orgs/my — 내 조직 목록 + 가입 신청 현황
 router.get("/my", requireAuth, async (req, res) => {
   const userId = req.user!.id;
+
+  // 목록을 읽기 전에 Google 도메인 자동 가입을 한 번 확인한다.
+  // 로그인 시점(passport.ts)에도 확인하지만, 사용자가 이미 로그인해 있는 동안
+  // 조직이 새로 만들어지거나 도메인이 설정되는 경우가 있어 여기서도 따라잡는다.
+  // (멱등이라 중복 가입되지 않고, 실패해도 목록 조회는 정상 진행)
+  await autoJoinIfGoogleVerified(userId, req.user!.email)
+    .catch((e) => console.error("[orgs/my] 도메인 자동가입 실패", e));
 
   const [orgs] = await pool.execute(
     `SELECT o.id, o.name, o.code, o.status, o.timezone, om.permission
@@ -77,6 +85,23 @@ router.post("/join", requireAuth, async (req, res) => {
     return;
   }
 
+  // 과거에 이 조직에서 나간 기록 확인
+  const [optoutRows] = await pool.execute(
+    "SELECT reason FROM org_auto_join_optouts WHERE org_id = ? AND user_id = ?",
+    [org.id, userId]
+  ) as any[];
+  const wasKicked = (optoutRows as any[])[0]?.reason === "kicked";
+
+  // 본인이 나간 경우(left)라면 코드 재입력 = 철회 의사 → 기록을 지워 자동 가입 대상으로 복귀.
+  // 강퇴(kicked)라면 기록을 남겨둔 채 아래 도메인 자동 승인을 건너뛰고
+  // 관리자 승인 절차를 거치게 한다 (도메인 일치로 강퇴가 무력화되면 안 되므로).
+  if (!wasKicked) {
+    await pool.execute(
+      "DELETE FROM org_auto_join_optouts WHERE org_id = ? AND user_id = ?",
+      [org.id, userId]
+    );
+  }
+
   // ── Google 학교 이메일 도메인 자동 가입 ─────────────────────────
   // 조직에 google_domain이 설정되어 있고 사용자 이메일 도메인과 일치하면
   // join_request 없이 org_members에 즉시 추가 (승인 불필요).
@@ -89,7 +114,7 @@ router.post("/join", requireAuth, async (req, res) => {
     [userId]
   ) as any[];
   const isGoogleVerified = !!(verifiedRows as any[])[0]?.google_id;
-  if (orgDomain && userDomain === orgDomain && isGoogleVerified) {
+  if (orgDomain && userDomain === orgDomain && isGoogleVerified && !wasKicked) {
     await pool.execute(
       "INSERT IGNORE INTO org_members (org_id, user_id, permission) VALUES (?, ?, 0)",
       [org.id, userId]
@@ -299,6 +324,13 @@ router.delete("/:id/leave", requireAuth, async (req, res) => {
     "DELETE FROM org_members WHERE org_id = ? AND user_id = ?",
     [orgId, userId]
   );
+  // 탈퇴 의사를 기록해 Google 도메인 자동 가입이 곧바로 다시 집어넣지 않게 한다.
+  // (기록이 없으면 다음 /orgs/my 요청에서 바로 재가입된다 — 003 마이그레이션 참조)
+  await pool.execute(
+    "INSERT INTO org_auto_join_optouts (org_id, user_id, reason) VALUES (?, ?, 'left') " +
+      "ON DUPLICATE KEY UPDATE reason = 'left', created_at = NOW()",
+    [orgId, userId]
+  );
   res.json({ ok: true });
 });
 
@@ -345,6 +377,13 @@ router.delete("/:id/members/:targetId", requireAuth, async (req, res) => {
   try {
     await conn.beginTransaction();
     await conn.execute("DELETE FROM org_members WHERE org_id = ? AND user_id = ?", [orgId, targetId]);
+    // 강퇴도 opt-out으로 기록한다. 없으면 강퇴당한 사용자의 Google 도메인이 일치할 때
+    // 다음 요청에서 자동 가입으로 되돌아와 강퇴가 무효가 된다.
+    await conn.execute(
+      "INSERT INTO org_auto_join_optouts (org_id, user_id, reason) VALUES (?, ?, 'kicked') " +
+        "ON DUPLICATE KEY UPDATE reason = 'kicked', created_at = NOW()",
+      [orgId, targetId]
+    );
     const kickTitle = `조직 [${org.name}]에서 강퇴되었습니다.`;
     const kickBody  = reason?.trim() || "관리자에 의해 강퇴되었습니다.";
     await conn.execute(

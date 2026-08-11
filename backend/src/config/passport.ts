@@ -1,6 +1,7 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { pool } from "../db/pool.js";
+import { autoJoinOrgsByGoogleDomain } from "../utils/orgAutoJoin.js";
 
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(
@@ -30,7 +31,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           );
           const googleUsers = byGoogle as Record<string, unknown>[];
           if (googleUsers.length > 0) {
-            return done(null, googleUsers[0] as unknown as Express.User);
+            const user = googleUsers[0];
+            // 재로그인할 때마다 도메인 자동 가입을 다시 확인한다.
+            // (가입 이후에 조직이 새로 만들어지거나 google_domain이 나중에 설정된 경우를 따라잡기 위함)
+            await autoJoinOrgsByGoogleDomain(user.id as number, user.email as string)
+              .catch((e) => console.error("[passport] 도메인 자동가입 실패", e));
+            return done(null, user as unknown as Express.User);
           }
 
           // 이후 단계(이메일 매칭/신규 생성/도메인 자동가입)는
@@ -51,6 +57,9 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
               await pool.query("UPDATE users SET google_id = ? WHERE id = ?", [profile.id, user.id]);
               user.google_id = profile.id;
             }
+            // 이제 Google 검증 계정이 되었으므로 도메인 자동 가입 대상
+            await autoJoinOrgsByGoogleDomain(user.id as number, email)
+              .catch((e) => console.error("[passport] 도메인 자동가입 실패", e));
             return done(null, user as unknown as Express.User);
           }
 
@@ -63,19 +72,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           const newUserId = (result as { insertId: number }).insertId;
 
           // ── 학교 이메일 도메인 자동 조직 가입 ──────────────────────
-          const emailDomain = email.toLowerCase().split("@")[1];
-          if (emailDomain) {
-            const [matchingOrgs] = await pool.query(
-              "SELECT id FROM organizations WHERE google_domain = ? AND status = 'approved'",
-              [emailDomain]
-            );
-            for (const org of (matchingOrgs as { id: number }[])) {
-              await pool.query(
-                "INSERT IGNORE INTO org_members (org_id, user_id, permission) VALUES (?, ?, 0)",
-                [org.id, newUserId]
-              );
-            }
-          }
+          await autoJoinOrgsByGoogleDomain(newUserId, email)
+            .catch((e) => console.error("[passport] 도메인 자동가입 실패", e));
 
           const newUser = {
             id: newUserId,

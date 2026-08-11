@@ -191,7 +191,7 @@
     },
     "org": {
       "title": "Organizations",
-      "hint": "Joining an organization (such as your school) unlocks services built for it, like GMCAuto 3. If you signed in with a school Google account, the code alone is enough to join.",
+      "hint": "Joining an organization (such as your school) unlocks services built for it, like GMCAuto 3. If you signed in with a school Google account you are added automatically — no code needed. Otherwise, enter an organization code below to request access.",
       "empty": "You are not in any organization.",
       "codePlaceholder": "Org code",
       "joinBtn": "Join",
