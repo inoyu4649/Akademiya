@@ -3,6 +3,12 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { orgApi } from "../../api/org.api";
 import { useAuthStore } from "../../store/auth.store";
+// 서비스 로고는 public/이 아니라 Vite 임포트로 가져온다 —
+// 빌드 시 파일명에 콘텐츠 해시가 붙어, 이미지를 교체하면 URL도 바뀌므로
+// 브라우저·CDN 캐시에 옛 이미지가 남는 일이 없다.
+import gmcLogo from "../../assets/logo_gmc.png";
+import imsiQuizLogo from "../../assets/imsiquiz_logo.png";
+import hyProjectLogo from "../../assets/hyproj_logo.png";
 import styles from "./DashboardPage.module.css";
 
 // ── 아이콘 ───────────────────────────────────────────────────────────────────
@@ -122,7 +128,7 @@ export default function DashboardPage() {
         {isHafsOrgMember && (
           <ServiceCard
             href="https://gmc.akademiya.kr"
-            icon={<img src="/logo_gmc.png" alt="" className={styles.iconImg} />}
+            icon={<img src={gmcLogo} alt="" className={styles.iconImg} />}
             title={t("dashboard.gmcAuto.title")}
             desc={t("dashboard.gmcAuto.desc")}
             badge={<span className={styles.badgeBlue}>{t("dashboard.gmcAuto.badge")}</span>}
@@ -132,7 +138,7 @@ export default function DashboardPage() {
         {/* 준비 중 — iq.akademiya.kr 오픈 시 href 연결 */}
         <ServiceCard
           disabled
-          icon={<img src="/imsiquiz_logo.png" alt="" className={styles.iconImg} />}
+          icon={<img src={imsiQuizLogo} alt="" className={styles.iconImg} />}
           title={t("dashboard.imsiQuiz.title")}
           desc={t("dashboard.imsiQuiz.desc")}
           badge={<span className={styles.badgeSoon}>{t("dashboard.comingSoon")}</span>}
@@ -141,7 +147,7 @@ export default function DashboardPage() {
         {/* 준비 중 — hyproj.com 오픈 시 href 연결 */}
         <ServiceCard
           disabled
-          icon={<img src="/hyproj_logo.png" alt="" className={styles.iconImg} />}
+          icon={<img src={hyProjectLogo} alt="" className={styles.iconImg} />}
           title={t("dashboard.hyProject.title")}
           desc={t("dashboard.hyProject.desc")}
           badge={<span className={styles.badgeSoon}>{t("dashboard.comingSoon")}</span>}
