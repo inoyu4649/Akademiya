@@ -45,6 +45,9 @@ function userPayload(u: DbUser) {
     language: u.language as string | null,
     role: u.role as string,
     developerMode: !!u.developer_mode,
+    // Google 전용 계정(비밀번호 없음)은 계정 센터에서 비밀번호 확인 단계를 건너뛴다.
+    // 해시 자체는 절대 내보내지 않고 존재 여부만 불리언으로 알린다.
+    hasPassword: !!u.password_hash,
   };
 }
 
@@ -132,7 +135,7 @@ router.post("/register", async (req, res) => {
     setRefreshCookie(res, refreshToken);
     res.status(201).json({
       accessToken,
-      user: { id: userId, email: email.toLowerCase(), displayName, avatarUrl: null, country, phone, language: language || null, role: "user", developerMode: false },
+      user: { id: userId, email: email.toLowerCase(), displayName, avatarUrl: null, country, phone, language: language || null, role: "user", developerMode: false, hasPassword: true },
     });
   } catch (err) {
     console.error("[register]", err);
@@ -203,7 +206,7 @@ router.post("/refresh", async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      `SELECT rt.user_id, u.email, u.role, u.display_name, u.avatar_url, u.country, u.phone, u.language, u.is_banned, u.developer_mode
+      `SELECT rt.user_id, u.id, u.email, u.role, u.display_name, u.avatar_url, u.country, u.phone, u.language, u.is_banned, u.developer_mode, (u.password_hash IS NOT NULL) AS password_hash
        FROM refresh_tokens rt
        JOIN users u ON u.id = rt.user_id
        WHERE rt.token_hash = ? AND rt.expires_at > NOW()`,
@@ -336,7 +339,7 @@ router.post("/reset-password", async (req, res) => {
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, display_name, avatar_url, country, phone, language, role, developer_mode FROM users WHERE id = ?",
+      "SELECT id, email, display_name, avatar_url, country, phone, language, role, developer_mode, (password_hash IS NOT NULL) AS password_hash FROM users WHERE id = ?",
       [req.user!.id]
     );
     const users = rows as DbUser[];
@@ -406,7 +409,7 @@ router.patch("/profile", requireAuth, async (req, res) => {
     await pool.query(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
 
     const [updated] = await pool.query(
-      "SELECT id, email, display_name, avatar_url, country, phone, language, role, developer_mode FROM users WHERE id = ?",
+      "SELECT id, email, display_name, avatar_url, country, phone, language, role, developer_mode, (password_hash IS NOT NULL) AS password_hash FROM users WHERE id = ?",
       [req.user!.id]
     );
     res.json(userPayload((updated as DbUser[])[0]));
@@ -448,10 +451,7 @@ router.delete("/account", requireAuth, async (req, res) => {
 
     await conn.beginTransaction();
     // FK RESTRICT 컬럼을 먼저 NULL로 교체 (삭제 전 제약 해소)
-    await conn.execute("UPDATE organizations       SET owner_id    = NULL WHERE owner_id    = ?", [userId]);
-    await conn.execute("UPDATE classes             SET owner_id    = NULL WHERE owner_id    = ?", [userId]);
-    await conn.execute("UPDATE assignments         SET creator_id  = NULL WHERE creator_id  = ?", [userId]);
-    await conn.execute("UPDATE report_escalations  SET escalated_by = NULL WHERE escalated_by = ?", [userId]);
+    await conn.execute("UPDATE organizations SET owner_id = NULL WHERE owner_id = ?", [userId]);
     // 사용자 삭제 — FK ON DELETE CASCADE 항목은 자동 삭제
     await conn.execute("DELETE FROM users WHERE id = ?", [userId]);
     await conn.commit();
@@ -510,7 +510,7 @@ router.post("/oauth-exchange", async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, display_name, avatar_url, country, phone, language, role, developer_mode FROM users WHERE id = ?",
+      "SELECT id, email, display_name, avatar_url, country, phone, language, role, developer_mode, (password_hash IS NOT NULL) AS password_hash FROM users WHERE id = ?",
       [userId]
     );
     const users = rows as DbUser[];

@@ -1,9 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   calendarApi,
-  type CalendarEvent,
   type CalendarCustomEvent,
   type CalendarScope,
 } from "../../api/calendar.api";
@@ -17,6 +15,8 @@ const LOCALE_MAP: Record<string, string> = {
   zh: "zh-CN",
 };
 
+const PALETTE = ["#4f7cff", "#13e56a", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316"];
+
 function isSameDay(a: Date, b: Date) {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -25,43 +25,60 @@ function isSameDay(a: Date, b: Date) {
   );
 }
 
-// ── Add Event Modal ───────────────────────────────────────────────────────────
-function AddEventModal({
+// ── 일정 추가/수정 모달 ───────────────────────────────────────────────────────
+function EventModal({
   defaultDate,
   scopes,
+  editing,
   onClose,
-  onCreated,
+  onSaved,
 }: {
   defaultDate: string;
   scopes: CalendarScope[];
+  /** 있으면 수정 모드 */
+  editing: CalendarCustomEvent | null;
   onClose: () => void;
-  onCreated: () => void;
+  onSaved: () => void;
 }) {
   const { t } = useTranslation();
-  const [title, setTitle]       = useState("");
-  const [date, setDate]         = useState(defaultDate);
-  const [desc, setDesc]         = useState("");
-  const [color, setColor]       = useState("#4f7cff");
+  const [title, setTitle]       = useState(editing?.title ?? "");
+  const [date, setDate]         = useState(editing ? String(editing.event_date).slice(0, 10) : defaultDate);
+  const [desc, setDesc]         = useState(editing?.description ?? "");
+  const [color, setColor]       = useState(editing?.color ?? PALETTE[0]);
   const [scopeIdx, setScopeIdx] = useState(0);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
 
-  async function handleCreate(e: React.FormEvent) {
+  const scopeLabel = (s: CalendarScope) =>
+    s.scope_type === "personal" ? t("calendar.event.scopePersonal") : `[${t("calendar.event.scopeOrg")}] ${s.name}`;
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) { setError(t("calendar.event.titleRequired")); return; }
     if (!date)         { setError(t("calendar.event.dateRequired")); return; }
-    const scope = scopes[scopeIdx];
     setLoading(true);
+    setError("");
     try {
-      await calendarApi.createEvent({
-        scope_type: scope.scope_type,
-        scope_id: scope.id,
-        title: title.trim(),
-        event_date: date,
-        description: desc.trim() || undefined,
-        color,
-      });
-      onCreated();
+      if (editing) {
+        await calendarApi.updateEvent(editing.id, {
+          title: title.trim(),
+          event_date: date,
+          description: desc.trim() || null,
+          color,
+        });
+      } else {
+        const scope = scopes[scopeIdx];
+        await calendarApi.createEvent({
+          scope_type: scope.scope_type,
+          // 개인 일정의 scope_id는 서버가 본인 id로 강제하므로 조직일 때만 의미가 있다
+          scope_id: scope.scope_type === "org" ? scope.id : undefined,
+          title: title.trim(),
+          event_date: date,
+          description: desc.trim() || undefined,
+          color,
+        });
+      }
+      onSaved();
     } catch {
       setError(t("common.error"));
     } finally {
@@ -72,21 +89,25 @@ function AddEventModal({
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <h3 className={styles.modalTitle}>{t("calendar.event.addTitle")}</h3>
-        <form onSubmit={handleCreate}>
-          {/* 대상 */}
-          <label className={styles.label}>{t("calendar.event.scopeLabel")}</label>
-          <select
-            className={styles.input}
-            value={scopeIdx}
-            onChange={(e) => setScopeIdx(Number(e.target.value))}
-          >
-            {scopes.map((s, i) => (
-              <option key={i} value={i}>
-                [{s.scope_type === "class" ? t("calendar.event.scopeClass") : t("calendar.event.scopeOrg")}] {s.name}
-              </option>
-            ))}
-          </select>
+        <h3 className={styles.modalTitle}>
+          {editing ? t("calendar.event.editTitle") : t("calendar.event.addTitle")}
+        </h3>
+        <form onSubmit={handleSubmit}>
+          {/* 대상 — 수정 시에는 바꿀 수 없다 */}
+          {!editing && (
+            <>
+              <label className={styles.label}>{t("calendar.event.scopeLabel")}</label>
+              <select
+                className={styles.input}
+                value={scopeIdx}
+                onChange={(e) => setScopeIdx(Number(e.target.value))}
+              >
+                {scopes.map((s, i) => (
+                  <option key={i} value={i}>{scopeLabel(s)}</option>
+                ))}
+              </select>
+            </>
+          )}
 
           {/* 제목 */}
           <label className={styles.label}>{t("calendar.event.titleLabel")}</label>
@@ -121,7 +142,7 @@ function AddEventModal({
           {/* 색상 */}
           <label className={styles.label}>{t("calendar.event.colorLabel")}</label>
           <div className={styles.colorRow}>
-            {["#4f7cff", "#13e56a", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316"].map((c) => (
+            {PALETTE.map((c) => (
               <button
                 key={c}
                 type="button"
@@ -151,34 +172,37 @@ function AddEventModal({
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function CalendarPage() {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
   const locale = LOCALE_MAP[i18n.language] ?? i18n.language;
 
   const today = new Date();
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
-  const [events,    setEvents]    = useState<CalendarEvent[]>([]);
   const [holidays,  setHolidays]  = useState<string[]>([]);
   const [customEvs, setCustomEvs] = useState<CalendarCustomEvent[]>([]);
   const [scopes,    setScopes]    = useState<CalendarScope[]>([]);
   const [loading,   setLoading]   = useState(false);
   const [selected,  setSelected]  = useState<Date | null>(null);
-  const [addOpen,   setAddOpen]   = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing,   setEditing]   = useState<CalendarCustomEvent | null>(null);
 
   const addDefaultDate = selected
     ? `${selected.getFullYear()}-${String(selected.getMonth() + 1).padStart(2, "0")}-${String(selected.getDate()).padStart(2, "0")}`
     : `${year}-${String(month).padStart(2, "0")}-01`;
 
+  function reloadEvents() {
+    calendarApi.customEvents(year, month)
+      .then((d) => setCustomEvs(d.events))
+      .catch(() => { /* 무시 */ });
+  }
+
   useEffect(() => {
     setLoading(true);
-    // Promise.allSettled: 공휴일 API 등 일부 실패해도 나머지 데이터는 정상 표시
+    // Promise.allSettled: 공휴일 API가 실패해도 일정은 정상 표시
     Promise.allSettled([
-      calendarApi.events(year, month),
       calendarApi.holidays(year, month),
       calendarApi.customEvents(year, month),
     ])
-      .then(([evResult, holResult, cevResult]) => {
-        if (evResult.status  === "fulfilled") setEvents(evResult.value.events);
+      .then(([holResult, cevResult]) => {
         if (holResult.status === "fulfilled") setHolidays(holResult.value.holidays);
         if (cevResult.status === "fulfilled") setCustomEvs(cevResult.value.events);
       })
@@ -186,11 +210,11 @@ export default function CalendarPage() {
     setSelected(null);
   }, [year, month]);
 
-  // 이벤트 추가 가능 반/조직 목록
+  // 일정을 추가할 수 있는 대상 (개인 + 관리자인 조직)
   useEffect(() => {
     calendarApi.myScopes()
       .then((d) => setScopes(d.scopes))
-      .catch(() => {});
+      .catch(() => { /* 무시 */ });
   }, []);
 
   function prevMonth() {
@@ -215,10 +239,6 @@ export default function CalendarPage() {
   const dateStr = (day: number) =>
     `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-  function assignmentsForDay(day: number) {
-    const d = new Date(year, month - 1, day);
-    return events.filter((e) => isSameDay(new Date(e.due_at), d));
-  }
   function customEventsForDay(day: number) {
     const ds = dateStr(day);
     // slice(0, 10): mysql2가 DATE를 Date객체로 직렬화한 경우("2026-06-07T00:00:00.000Z")에도 안전하게 비교
@@ -232,9 +252,8 @@ export default function CalendarPage() {
     return new Date(year, month - 1, day).getDay();
   }
 
-  const selectedAssignments = selected ? assignmentsForDay(selected.getDate()) : [];
-  const selectedCustom      = selected ? customEventsForDay(selected.getDate()) : [];
-  const selectedIsHoliday   = selected ? isHoliday(selected.getDate()) : false;
+  const selectedCustom    = selected ? customEventsForDay(selected.getDate()) : [];
+  const selectedIsHoliday = selected ? isHoliday(selected.getDate()) : false;
 
   // 요일 이름: 언어에 따라 동적 생성 (2024-01-07 = 일요일 기준)
   const WEEKDAYS = useMemo(
@@ -259,29 +278,35 @@ export default function CalendarPage() {
     }
   }
 
+  function openAdd() {
+    setEditing(null);
+    setModalOpen(true);
+  }
+  function openEdit(ev: CalendarCustomEvent) {
+    setEditing(ev);
+    setModalOpen(true);
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>{t("calendar.title")}</h1>
         {scopes.length > 0 && (
-          <button className={styles.addEventBtn} onClick={() => setAddOpen(true)}>
+          <button className={styles.addEventBtn} onClick={openAdd}>
             + {t("calendar.event.addBtn")}
           </button>
         )}
       </div>
 
-      {/* Add event modal */}
-      {addOpen && (
-        <AddEventModal
+      {modalOpen && (
+        <EventModal
           defaultDate={addDefaultDate}
           scopes={scopes}
-          onClose={() => setAddOpen(false)}
-          onCreated={() => {
-            setAddOpen(false);
-            // 새로고침
-            calendarApi.customEvents(year, month)
-              .then((d) => setCustomEvs(d.events))
-              .catch(() => {});
+          editing={editing}
+          onClose={() => setModalOpen(false)}
+          onSaved={() => {
+            setModalOpen(false);
+            reloadEvents();
           }}
         />
       )}
@@ -312,10 +337,9 @@ export default function CalendarPage() {
             <div className={styles.grid}>
               {grid.map((day, idx) => {
                 if (day === null) return <div key={idx} className={styles.emptyCell} />;
-                const dayAssignments = assignmentsForDay(day);
-                const dayCustom      = customEventsForDay(day);
-                const holiday        = isHoliday(day);
-                const dow            = getDow(day);
+                const dayCustom = customEventsForDay(day);
+                const holiday   = isHoliday(day);
+                const dow       = getDow(day);
                 const isToday    = isSameDay(new Date(year, month - 1, day), today);
                 const isSelected = selected ? isSameDay(selected, new Date(year, month - 1, day)) : false;
                 const isSun = dow === 0;
@@ -327,7 +351,7 @@ export default function CalendarPage() {
                     className={`${styles.dayCell}
                       ${isToday    ? styles.today    : ""}
                       ${isSelected ? styles.selected : ""}
-                      ${(dayAssignments.length + dayCustom.length) > 0 ? styles.hasEvents : ""}`}
+                      ${dayCustom.length > 0 ? styles.hasEvents : ""}`}
                     onClick={() => setSelected(new Date(year, month - 1, day))}
                   >
                     <span
@@ -340,22 +364,17 @@ export default function CalendarPage() {
                     {/* 공휴일 표시 */}
                     {holiday && <span className={styles.holidayDot} title={t("calendar.holiday")} />}
                     {/* 이벤트 점 */}
-                    {(dayAssignments.length + dayCustom.length) > 0 && (
+                    {dayCustom.length > 0 && (
                       <div className={styles.dots}>
-                        {dayAssignments.slice(0, 2).map((_, i) => (
-                          <span key={`a${i}`} className={styles.dot} />
-                        ))}
-                        {dayCustom.slice(0, 2).map((ev, i) => (
+                        {dayCustom.slice(0, 4).map((ev, i) => (
                           <span
                             key={`c${i}`}
                             className={styles.dot}
                             style={{ background: ev.color }}
                           />
                         ))}
-                        {dayAssignments.length + dayCustom.length > 4 && (
-                          <span className={styles.moreCount}>
-                            +{dayAssignments.length + dayCustom.length - 4}
-                          </span>
+                        {dayCustom.length > 4 && (
+                          <span className={styles.moreCount}>+{dayCustom.length - 4}</span>
                         )}
                       </div>
                     )}
@@ -377,22 +396,29 @@ export default function CalendarPage() {
                 )}
               </h2>
 
-              {/* 조직/반 이벤트 */}
-              {selectedCustom.length > 0 && (
+              {selectedCustom.length > 0 ? (
                 <div className={styles.evSection}>
-                  <div className={styles.evSectionLabel}>{t("calendar.customEvents")}</div>
                   <ul className={styles.eventList}>
                     {selectedCustom.map((ev) => (
-                      <li key={ev.id} className={styles.eventItem} style={{ borderLeftColor: ev.color }}>
+                      <li
+                        key={ev.id}
+                        className={`${styles.eventItem} ${styles.eventItemClickable}`}
+                        style={{ borderLeftColor: ev.color }}
+                        onClick={() => openEdit(ev)}
+                      >
                         <div className={styles.eventTitle}>{ev.title}</div>
-                        <div className={styles.eventClass}>{ev.scope_name}</div>
+                        <div className={styles.eventClass}>
+                          {ev.scope_type === "personal"
+                            ? t("calendar.event.scopePersonal")
+                            : ev.scope_name}
+                        </div>
                         {ev.description && (
                           <div className={styles.eventDesc}>{ev.description}</div>
                         )}
                         <button
                           className={styles.evDeleteBtn}
                           onClick={(e) => { e.stopPropagation(); handleDeleteEvent(ev.id); }}
-                          title={t("common.cancel")}
+                          title={t("calendar.event.deleteBtn")}
                         >
                           ×
                         </button>
@@ -400,33 +426,9 @@ export default function CalendarPage() {
                     ))}
                   </ul>
                 </div>
+              ) : (
+                !selectedIsHoliday && <p className={styles.sideEmpty}>{t("calendar.noEvents")}</p>
               )}
-
-              {/* 과제 마감일 */}
-              {selectedAssignments.length > 0 ? (
-                <div className={styles.evSection}>
-                  <div className={styles.evSectionLabel}>{t("calendar.assignments")}</div>
-                  <ul className={styles.eventList}>
-                    {selectedAssignments.map((ev) => (
-                      <li
-                        key={ev.id}
-                        className={`${styles.eventItem} ${styles.assignmentItem}`}
-                        onClick={() => navigate(`/assignments/${ev.id}`)}
-                      >
-                        <div className={styles.eventTitle}>{ev.title}</div>
-                        <div className={styles.eventClass}>{ev.class_name}</div>
-                        <div className={styles.eventTime}>
-                          {new Date(ev.due_at).toLocaleTimeString(locale, {
-                            hour: "2-digit", minute: "2-digit",
-                          })}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : selectedCustom.length === 0 && !selectedIsHoliday ? (
-                <p className={styles.sideEmpty}>{t("calendar.noEvents")}</p>
-              ) : null}
             </>
           ) : (
             <p className={styles.sideHint}>{t("calendar.selectHint")}</p>

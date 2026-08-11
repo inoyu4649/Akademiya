@@ -124,15 +124,11 @@ export default function OAuthAuthorizePage() {
     </div>
   );
 
-  // ── 로그인 범위 제한(조직/반/구글 도메인) 및 로그인 수단 제한 안내 ──
+  // ── 로그인 범위 제한(조직/구글 도메인) 및 로그인 수단 제한 안내 ──
   const scopeNotices: string[] = [];
   if (info.scopeRange === "org" && info.scopeOrg) {
     scopeNotices.push(
       t("oauth.authorize.scopeOrgNotice", { orgName: info.scopeOrg.name, orgCode: info.scopeOrg.code })
-    );
-  } else if (info.scopeRange === "class" && info.scopeClass) {
-    scopeNotices.push(
-      t("oauth.authorize.scopeClassNotice", { className: info.scopeClass.name, classCode: info.scopeClass.code })
     );
   } else if (info.scopeRange === "google_workspace" && info.scopeGoogleDomain) {
     scopeNotices.push(t("oauth.authorize.scopeGoogleWorkspaceNotice", { domain: info.scopeGoogleDomain }));
@@ -232,7 +228,6 @@ export default function OAuthAuthorizePage() {
         <li>{t("oauth.authorize.shareEmail")}</li>
         {info.enabledScopes.includes("picture") && <li>{t("oauth.authorize.sharePicture")}</li>}
         {info.enabledScopes.includes("org_membership") && <li>{t("oauth.authorize.shareOrgMembership")}</li>}
-        {info.enabledScopes.includes("class_membership") && <li>{t("oauth.authorize.shareClassMembership")}</li>}
       </ul>
       <button className={s.btn} onClick={handleAllow} disabled={authorizing}>
         {authorizing ? t("common.loading") : t("oauth.authorize.allowBtn")}

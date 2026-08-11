@@ -10,7 +10,6 @@ import {
   type OAuthStats, type OAuthBan, type OAuthUserSearchResult, type OptionalScope,
 } from "../../api/openoauth.api";
 import { orgApi, type Org } from "../../api/org.api";
-import { classApi, type ClassItem } from "../../api/class.api";
 import { OPTIONAL_SCOPES, forcedScopesFor } from "../../utils/oauthScopes";
 import SecretRevealModal from "../../components/developer/SecretRevealModal";
 import styles from "./Developer.module.css";
@@ -30,7 +29,6 @@ export default function OAuthAppDetailPage() {
   const [origins, setOrigins] = useState<OAuthAppOrigin[]>([]);
   const [loading, setLoading] = useState(true);
   const [orgs, setOrgs] = useState<Org[]>([]);
-  const [classes, setClasses] = useState<ClassItem[]>([]);
 
   // ── settings form ──
   const [displayName, setDisplayName] = useState("");
@@ -38,7 +36,6 @@ export default function OAuthAppDetailPage() {
   const [loginMeans, setLoginMeans] = useState<LoginMeans>("both");
   const [scopeRange, setScopeRange] = useState<ScopeRange>("all");
   const [scopeOrgId, setScopeOrgId] = useState<number | "">("");
-  const [scopeClassId, setScopeClassId] = useState<number | "">("");
   const [scopeGoogleDomain, setScopeGoogleDomain] = useState("");
   const [enabledScopes, setEnabledScopes] = useState<OptionalScope[]>([]);
   const [saveError, setSaveError] = useState("");
@@ -74,7 +71,6 @@ export default function OAuthAppDetailPage() {
       setLoginMeans(res.data.app.loginMeans);
       setScopeRange(res.data.app.scopeRange);
       setScopeOrgId(res.data.app.scopeOrgId ?? "");
-      setScopeClassId(res.data.app.scopeClassId ?? "");
       setScopeGoogleDomain(res.data.app.scopeGoogleDomain ?? "");
       setEnabledScopes(res.data.app.enabledScopes);
     });
@@ -82,7 +78,7 @@ export default function OAuthAppDetailPage() {
 
   useEffect(() => {
     if (!user?.developerMode) { navigate("/"); return; }
-    Promise.all([loadApp(), orgApi.my().then((r) => setOrgs(r.data.orgs)), classApi.my().then((r) => setClasses(r.data.classes))])
+    Promise.all([loadApp(), orgApi.my().then((r) => setOrgs(r.data.orgs))])
       .catch(() => navigate("/developer/oauth"))
       .finally(() => setLoading(false));
   }, [appId, user]);
@@ -91,7 +87,7 @@ export default function OAuthAppDetailPage() {
     if (loginMeans !== "google" && scopeRange === "google_workspace") setScopeRange("all");
   }, [loginMeans]);
 
-  // 조직/반 단위 로그인 범위는 해당 소속 정보 scope가 강제로 켜진다
+  // 조직 단위 로그인 범위는 조직 소속 정보 scope가 강제로 켜진다
   const forcedScopes = forcedScopesFor(scopeRange);
   useEffect(() => {
     setEnabledScopes((prev) => [...new Set([...prev, ...forcedScopes])]);
@@ -123,7 +119,6 @@ export default function OAuthAppDetailPage() {
     if (!displayName.trim()) { setSaveError(t("developer.create.displayNameRequired")); return; }
     if (!/^https?:\/\//.test(mainSiteUrl)) { setSaveError(t("developer.create.mainSiteUrlInvalid")); return; }
     if (scopeRange === "org" && !scopeOrgId) { setSaveError(t("developer.create.scopeOrgRequired")); return; }
-    if (scopeRange === "class" && !scopeClassId) { setSaveError(t("developer.create.scopeClassRequired")); return; }
     if (scopeRange === "google_workspace" && !scopeGoogleDomain.trim()) { setSaveError(t("developer.create.scopeDomainRequired")); return; }
 
     setSaving(true);
@@ -134,7 +129,6 @@ export default function OAuthAppDetailPage() {
         loginMeans,
         scopeRange,
         scopeOrgId: scopeRange === "org" ? Number(scopeOrgId) : null,
-        scopeClassId: scopeRange === "class" ? Number(scopeClassId) : null,
         scopeGoogleDomain: scopeRange === "google_workspace" ? scopeGoogleDomain.trim() : null,
         enabledScopes,
       });
@@ -289,7 +283,7 @@ export default function OAuthAppDetailPage() {
             <div className={styles.field}>
               <label className={styles.label}>{t("developer.create.scopeRangeLabel")}</label>
               <div className={styles.radioGroup}>
-                {(["all", "org", "class", "google_workspace"] as ScopeRange[]).map((v) => {
+                {(["all", "org", "google_workspace"] as ScopeRange[]).map((v) => {
                   const disabled = v === "google_workspace" && loginMeans !== "google";
                   return (
                     <label
@@ -311,12 +305,6 @@ export default function OAuthAppDetailPage() {
                 <select className={styles.select} style={{ marginTop: 10 }} value={scopeOrgId} onChange={(e) => setScopeOrgId(Number(e.target.value))}>
                   <option value="">{t("developer.create.scopeOrgPlaceholder")}</option>
                   {orgs.map((o) => <option key={o.id} value={o.id}>{o.name} ({o.code})</option>)}
-                </select>
-              )}
-              {scopeRange === "class" && (
-                <select className={styles.select} style={{ marginTop: 10 }} value={scopeClassId} onChange={(e) => setScopeClassId(Number(e.target.value))}>
-                  <option value="">{t("developer.create.scopeClassPlaceholder")}</option>
-                  {classes.map((c) => <option key={c.id} value={c.id}>{c.org_name} — {c.name}</option>)}
                 </select>
               )}
               {scopeRange === "google_workspace" && (

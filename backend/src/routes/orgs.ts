@@ -14,60 +14,14 @@ async function getOrgPermission(userId: number, orgId: number): Promise<number |
   return (rows as any[])[0].permission as number;
 }
 
-// POST /api/orgs/apply — 조직 생성 신청
-router.post("/apply", requireAuth, async (req, res) => {
-  const { name, code, google_domain, timezone } = req.body as Record<string, string>;
-  const userId = req.user!.id;
+// ── 조직(Organization)에 대하여 ─────────────────────────────────────────────
+// v2.0부터 조직은 일반 사용자에게 노출되는 기능이 아니다. GMCAuto 3처럼
+// "특정 학교 재학생만 로그인 가능"한 OAuth 클라이언트를 위한 소속 판별 수단으로만
+// 존재하며, 조직의 생성·수정·삭제는 Akademiya 운영자(/api/admin/orgs)만 수행한다.
+// 사용자가 할 수 있는 일은 계정 센터에서의 가입(코드 또는 Google 도메인 자동인식)과
+// 탈퇴, 그리고 자신의 소속 조회뿐이다.
 
-  if (!name?.trim()) {
-    res.status(400).json({ error: "org.apply.nameRequired" });
-    return;
-  }
-
-  const cleanCode = code?.trim().toUpperCase();
-  if (!/^[A-Z]{4}$/.test(cleanCode ?? "")) {
-    res.status(400).json({ error: "org.apply.codeInvalid" });
-    return;
-  }
-
-  // Approved 또는 타인의 pending 코드는 사용 불가
-  const [conflict] = await pool.execute(
-    "SELECT id, status FROM organizations WHERE code = ? AND (status = 'approved' OR (status = 'pending' AND owner_id != ?))",
-    [cleanCode, userId]
-  ) as any[];
-  if ((conflict as any[]).length > 0) {
-    res.status(409).json({ error: "org.apply.codeDuplicate" });
-    return;
-  }
-
-  // 본인의 기존 신청 확인
-  const [own] = await pool.execute(
-    "SELECT id, status FROM organizations WHERE code = ? AND owner_id = ?",
-    [cleanCode, userId]
-  ) as any[];
-  const ownOrg = (own as any[])[0];
-
-  if (ownOrg) {
-    if (ownOrg.status === "pending") {
-      res.status(409).json({ error: "org.apply.alreadyPending" });
-      return;
-    }
-    // rejected → 재신청 허용 (UPDATE)
-    await pool.execute(
-      "UPDATE organizations SET name = ?, google_domain = ?, timezone = ?, status = 'pending' WHERE id = ?",
-      [name.trim(), google_domain?.trim() || null, timezone?.trim() || "Asia/Seoul", ownOrg.id]
-    );
-  } else {
-    await pool.execute(
-      "INSERT INTO organizations (name, code, owner_id, google_domain, timezone) VALUES (?, ?, ?, ?, ?)",
-      [name.trim(), cleanCode, userId, google_domain?.trim() || null, timezone?.trim() || "Asia/Seoul"]
-    );
-  }
-
-  res.status(201).json({ message: "org.apply.success" });
-});
-
-// GET /api/orgs/my — 내 조직 목록
+// GET /api/orgs/my — 내 조직 목록 + 가입 신청 현황
 router.get("/my", requireAuth, async (req, res) => {
   const userId = req.user!.id;
 
@@ -80,12 +34,17 @@ router.get("/my", requireAuth, async (req, res) => {
     [userId]
   ) as any[];
 
-  const [applications] = await pool.execute(
-    "SELECT id, name, code, status, timezone FROM organizations WHERE owner_id = ? AND status IN ('pending','rejected') ORDER BY created_at DESC",
+  // 승인 대기 중인 내 가입 신청 (계정 센터에서 "승인 대기" 배지로 표시)
+  const [pendingJoins] = await pool.execute(
+    `SELECT ojr.id, ojr.status, ojr.created_at, o.id AS org_id, o.name, o.code
+     FROM org_join_requests ojr
+     INNER JOIN organizations o ON o.id = ojr.org_id
+     WHERE ojr.user_id = ? AND ojr.status = 'pending'
+     ORDER BY ojr.created_at DESC`,
     [userId]
   ) as any[];
 
-  res.json({ orgs, applications });
+  res.json({ orgs, pendingJoins });
 });
 
 // POST /api/orgs/join — 코드로 가입 신청
@@ -343,29 +302,8 @@ router.delete("/:id/leave", requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// ── DELETE /api/orgs/:id — 조직 삭제 (permission 3+) ──────────────────────────
-router.delete("/:id", requireAuth, async (req, res) => {
-  const orgId  = Number(req.params.id);
-  const userId = req.user!.id;
-
-  const perm = await getOrgPermission(userId, orgId);
-  if (perm === null || perm < 3) {
-    res.status(403).json({ error: "forbidden" });
-    return;
-  }
-
-  const [orgs] = await pool.execute(
-    "SELECT id, name FROM organizations WHERE id = ? AND status = 'approved'",
-    [orgId]
-  ) as any[];
-  if (!(orgs as any[]).length) {
-    res.status(404).json({ error: "notFound" });
-    return;
-  }
-
-  await pool.execute("DELETE FROM organizations WHERE id = ?", [orgId]);
-  res.json({ ok: true });
-});
+// 조직 삭제는 Akademiya 운영자 전용(DELETE /api/admin/orgs/:id)이다.
+// 조직 관리자(permission 3)는 구성원 관리만 할 수 있고 조직 자체는 지울 수 없다.
 
 // ── DELETE /api/orgs/:id/members/:targetId — 강퇴 (permission 3+) ─────────────
 router.delete("/:id/members/:targetId", requireAuth, async (req, res) => {
@@ -418,120 +356,6 @@ router.delete("/:id/members/:targetId", requireAuth, async (req, res) => {
     // 푸시 알림 (fire & forget)
     sendPushToUser(targetId, { title: kickTitle, body: kickBody }).catch(() => { /* ignore */ });
     res.json({ ok: true });
-  } catch (e) {
-    try { await conn.rollback(); } catch { /* ignore */ }
-    throw e;
-  } finally {
-    try { conn.release(); } catch { /* ignore */ }
-  }
-});
-
-// ── GET /api/orgs/:id/class-requests ─────────────────────────────────────────
-// 조직 관리자(permission 3+): 반 생성 신청 목록
-router.get("/:id/class-requests", requireAuth, async (req, res) => {
-  const orgId  = Number(req.params.id);
-  const userId = req.user!.id;
-
-  const perm = await getOrgPermission(userId, orgId);
-  if (perm === null || perm < 3) {
-    res.status(403).json({ error: "forbidden" });
-    return;
-  }
-
-  const [rows] = await pool.execute(
-    `SELECT c.id, c.name, c.code, c.created_at,
-            u.display_name AS owner_name, u.email AS owner_email
-     FROM classes c
-     INNER JOIN users u ON u.id = c.owner_id
-     WHERE c.org_id = ? AND c.status = 'pending'
-     ORDER BY c.created_at`,
-    [orgId]
-  ) as any[];
-
-  res.json({ requests: rows });
-});
-
-// ── POST /api/orgs/:id/class-requests/:classId/approve ────────────────────────
-router.post("/:id/class-requests/:classId/approve", requireAuth, async (req, res) => {
-  const orgId   = Number(req.params.id);
-  const classId = Number(req.params.classId);
-  const userId  = req.user!.id;
-
-  const perm = await getOrgPermission(userId, orgId);
-  if (perm === null || perm < 3) {
-    res.status(403).json({ error: "forbidden" });
-    return;
-  }
-
-  // 반 소유자를 반장으로 자동 추가
-  const [classes] = await pool.execute(
-    "SELECT id, owner_id FROM classes WHERE id = ? AND org_id = ? AND status = 'pending'",
-    [classId, orgId]
-  ) as any[];
-  if (!(classes as any[]).length) {
-    res.status(404).json({ error: "notFound" });
-    return;
-  }
-  const cls = (classes as any[])[0];
-
-  const conn = await pool.getConnection();
-  try {
-    await conn.beginTransaction();
-    await conn.execute("UPDATE classes SET status = 'approved' WHERE id = ?", [classId]);
-    await conn.execute(
-      "INSERT IGNORE INTO class_members (class_id, user_id, permission) VALUES (?, ?, 1)",
-      [classId, cls.owner_id]
-    );
-    await conn.commit();
-    res.json({ message: "approved" });
-  } catch (e) {
-    try { await conn.rollback(); } catch { /* ignore */ }
-    throw e;
-  } finally {
-    try { conn.release(); } catch { /* ignore */ }
-  }
-});
-
-// ── POST /api/orgs/:id/class-requests/:classId/reject ─────────────────────────
-router.post("/:id/class-requests/:classId/reject", requireAuth, async (req, res) => {
-  const orgId   = Number(req.params.id);
-  const classId = Number(req.params.classId);
-  const userId  = req.user!.id;
-
-  const perm = await getOrgPermission(userId, orgId);
-  if (perm === null || perm < 3) {
-    res.status(403).json({ error: "forbidden" });
-    return;
-  }
-
-  // 삭제 전 신청자 정보 조회
-  const [classes] = await pool.execute(
-    "SELECT id, name, owner_id FROM classes WHERE id = ? AND org_id = ? AND status = 'pending'",
-    [classId, orgId]
-  ) as any[];
-  if (!(classes as any[]).length) {
-    res.status(404).json({ error: "notFound" });
-    return;
-  }
-  const cls = (classes as any[])[0];
-
-  const conn = await pool.getConnection();
-  try {
-    await conn.beginTransaction();
-    // 행 삭제 (rejected 상태로 남기지 않음)
-    await conn.execute("DELETE FROM classes WHERE id = ?", [classId]);
-    // 신청자에게 알림
-    await conn.execute(
-      `INSERT INTO notifications (user_id, type, title, body)
-       VALUES (?, 'class_rejected', ?, ?)`,
-      [
-        cls.owner_id,
-        `반 개설 신청이 거절되었습니다: ${cls.name}`,
-        "조직 관리자가 반 개설 신청을 거절했습니다. 내용을 수정하여 다시 신청할 수 있습니다.",
-      ]
-    );
-    await conn.commit();
-    res.json({ message: "rejected" });
   } catch (e) {
     try { await conn.rollback(); } catch { /* ignore */ }
     throw e;

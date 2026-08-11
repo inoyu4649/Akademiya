@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { surveyApi, type QType } from "../../api/survey.api";
-import { classApi } from "../../api/class.api";
 import { orgApi } from "../../api/org.api";
 import styles from "./SurveyPage.module.css";
 
@@ -71,7 +70,7 @@ export default function SurveyCreatePage() {
 
   const [title, setTitle]             = useState("");
   const [description, setDescription] = useState("");
-  const [scopeType, setScopeType]     = useState<"class" | "org" | "public">("class");
+  const [scopeType, setScopeType]     = useState<"org" | "public">("public");
   const [scopeId, setScopeId]         = useState<number | null>(null);
   const [allowAnon,     setAllowAnon]     = useState(false);
   const [allowEdit,     setAllowEdit]     = useState(false);
@@ -83,14 +82,9 @@ export default function SurveyCreatePage() {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
 
-  const [classes, setClasses] = useState<Array<{ id: number; name: string; permission: number }>>([]);
   const [orgs,    setOrgs]    = useState<Array<{ id: number; name: string; permission: number }>>([]);
 
   useEffect(() => {
-    classApi.my().then((r) => {
-      const leaders = r.data.classes.filter((c) => (c.permission ?? 0) >= 1);
-      setClasses(leaders.map((c) => ({ id: c.id, name: c.name, permission: c.permission ?? 0 })));
-    }).catch(() => {});
     orgApi.my().then((r) => {
       const admins = r.data.orgs.filter((o: any) => (o.permission ?? 0) >= 3);
       setOrgs(admins.map((o: any) => ({ id: o.id, name: o.name, permission: o.permission })));
@@ -98,10 +92,9 @@ export default function SurveyCreatePage() {
   }, []);
 
   useEffect(() => {
-    if (scopeType === "class" && classes.length)    setScopeId(classes[0].id);
-    else if (scopeType === "org" && orgs.length)    setScopeId(orgs[0].id);
-    else if (scopeType === "public")                setScopeId(null);
-  }, [scopeType, classes, orgs]);
+    if (scopeType === "org" && orgs.length) setScopeId(orgs[0].id);
+    else if (scopeType === "public")        setScopeId(null);
+  }, [scopeType, orgs]);
 
   // ── 최상위 문항 조작 ─────────────────────────────────────────────────────
 
@@ -241,7 +234,7 @@ export default function SurveyCreatePage() {
         }
       }
     }
-    if ((scopeType === "class" || scopeType === "org") && !scopeId) {
+    if (scopeType === "org" && !scopeId) {
       setError(t("survey.scopeRequired")); return;
     }
     if (scopeType === "public" && allowPublicNamed && !publicIdentityQuestion.trim()) {
@@ -293,7 +286,7 @@ export default function SurveyCreatePage() {
     }
   }
 
-  const scopeOptions = scopeType === "class" ? classes : scopeType === "org" ? orgs : [];
+  const scopeOptions = scopeType === "org" ? orgs : [];
 
   return (
     <div className={styles.page}>
@@ -326,7 +319,7 @@ export default function SurveyCreatePage() {
 
           <label className={styles.label}>{t("survey.scopeLabel")}</label>
           <div className={styles.scopeRow}>
-            {(["class", "org", "public"] as const).map((st) => (
+            {(["org", "public"] as const).map((st) => (
               <label key={st} className={styles.radioLabel}>
                 <input
                   type="radio"
@@ -342,11 +335,11 @@ export default function SurveyCreatePage() {
           {scopeType !== "public" && (
             <>
               <label className={styles.label}>
-                {scopeType === "class" ? t("survey.selectClass") : t("survey.selectOrg")}
+                {t("survey.selectOrg")}
               </label>
               {scopeOptions.length === 0 ? (
                 <p className={styles.infoText}>
-                  {scopeType === "class" ? t("survey.noLeaderClass") : t("survey.noAdminOrg")}
+                  {t("survey.noAdminOrg")}
                 </p>
               ) : (
                 <select

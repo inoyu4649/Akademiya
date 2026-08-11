@@ -46,8 +46,7 @@ Authorization: Bearer {ACCESS_TOKEN}
 
   // 아래 필드는 OAuth App 설정에서 해당 선택 scope를 켠 경우에만 추가된다
   // "picture": "https://akademiya.kr/api/avatars/....png",
-  // "org_memberships": [{ "org_id": 1, "org_name": "...", "org_code": "HAFS", "permission": 3 }],
-  // "class_memberships": [{ "class_id": 1, "class_name": "...", "class_code": "HAFS0103", "org_id": 1, "org_name": "...", "permission": 1 }]
+  // "org_memberships": [{ "org_id": 1, "org_name": "...", "org_code": "HAFS", "permission": 3 }]
 }`;
 
 const REFRESH_EXAMPLE = `POST https://akademiya.kr/api/openoauth/token

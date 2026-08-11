@@ -1,10 +1,10 @@
 import client from "./client";
 
 export type LoginMeans = "akademiya" | "google" | "both";
-export type ScopeRange = "all" | "org" | "class" | "google_workspace";
+export type ScopeRange = "all" | "org" | "google_workspace";
 // 필수 scope(이름·이메일)는 항상 부여되며 설정 대상이 아니다.
 // 선택 scope만 개발자 화면 체크박스로 켜고 끌 수 있다.
-export type OptionalScope = "picture" | "org_membership" | "class_membership";
+export type OptionalScope = "picture" | "org_membership";
 
 export interface OAuthApp {
   id: number;
@@ -14,7 +14,6 @@ export interface OAuthApp {
   loginMeans: LoginMeans;
   scopeRange: ScopeRange;
   scopeOrgId: number | null;
-  scopeClassId: number | null;
   scopeGoogleDomain: string | null;
   enabledScopes: OptionalScope[];
   clientId: string;
@@ -40,7 +39,6 @@ export interface OAuthAppCreate {
   loginMeans: LoginMeans;
   scopeRange: ScopeRange;
   scopeOrgId?: number;
-  scopeClassId?: number;
   scopeGoogleDomain?: string;
   enabledScopes?: OptionalScope[];
 }
@@ -51,7 +49,6 @@ export interface OAuthAppUpdate {
   loginMeans?: LoginMeans;
   scopeRange?: ScopeRange;
   scopeOrgId?: number | null;
-  scopeClassId?: number | null;
   scopeGoogleDomain?: string | null;
   enabledScopes?: OptionalScope[];
 }
@@ -94,12 +91,30 @@ export interface AuthorizeInfo {
   loginMeans: LoginMeans;
   scopeRange: ScopeRange;
   scopeOrg: { name: string; code: string } | null;
-  scopeClass: { name: string; code: string } | null;
   scopeGoogleDomain: string | null;
   enabledScopes: OptionalScope[];
 }
 
+/** 계정 센터: 내가 "Akademiya로 로그인"한 서드파티 서비스 */
+export interface OAuthConnection {
+  appId: number;
+  codeName: string;
+  displayName: string;
+  mainSiteUrl: string;
+  /** 실제로 부여된 scope (필수 profile·email + 앱이 켠 선택 scope) */
+  scopes: string[];
+  firstAuthorizedAt: string;
+  lastAuthorizedAt: string;
+}
+
 export const openoauthApi = {
+  // ── 연결된 서비스 (계정 센터) ────────────────────────────────────────
+  listConnections: () =>
+    client.get<{ connections: OAuthConnection[] }>("/openoauth/connections"),
+
+  revokeConnection: (appId: number) =>
+    client.delete<{ ok: boolean; revoked: number }>(`/openoauth/connections/${appId}`),
+
   // ── 앱 관리 ──────────────────────────────────────────────────────────
   listApps: () => client.get<{ apps: OAuthApp[] }>("/openoauth/apps"),
 

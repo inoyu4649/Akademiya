@@ -3,7 +3,6 @@ import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/auth.store";
 import { authApi } from "../../api/auth.api";
-import { orgApi } from "../../api/org.api";
 import NotificationBell from "../common/NotificationBell";
 import { useTheme } from "../../hooks/useTheme";
 import PrivacyPolicyModal from "../privacy/PrivacyPolicyModal";
@@ -36,26 +35,6 @@ function IconUser() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
-
-function IconClass() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
-function IconFlag() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-      <line x1="4" y1="22" x2="4" y2="15" />
     </svg>
   );
 }
@@ -236,15 +215,6 @@ function IconCode() {
   );
 }
 
-function IconGmc() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
-    </svg>
-  );
-}
-
 // ── Layout component ──────────────────────────────────────────────────────────
 
 export default function AppLayout() {
@@ -252,7 +222,6 @@ export default function AppLayout() {
   const { user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen]           = useState(false);
-  const [isHafsOrgMember, setIsHafsOrgMember] = useState(false);
   const { theme, toggle: toggleTheme }        = useTheme();
   const [privacyNeedsConsent, setPrivacyNeedsConsent] = useState(false);
   const [termsNeedsConsent, setTermsNeedsConsent] = useState(false);
@@ -275,19 +244,6 @@ export default function AppLayout() {
     }).catch(() => { /* 무시 */ });
   }, [user]);
 
-  // HAFS 조직 가입 여부 확인 (사이드바 GMCAuto 메뉴 노출 조건)
-  useEffect(() => {
-    if (!user) return;
-    orgApi.my()
-      .then((res) => {
-        const hafs = res.data.orgs.some(
-          (org) => org.code.toUpperCase() === "HAFS"
-        );
-        setIsHafsOrgMember(hafs);
-      })
-      .catch(() => { /* 무시 */ });
-  }, [user]);
-
   async function handleLogout() {
     try {
       await authApi.logout();
@@ -300,11 +256,6 @@ export default function AppLayout() {
 
   function closeMobile() {
     setMobileOpen(false);
-  }
-
-  function handleGmcAutoClick() {
-    closeMobile();
-    window.open("https://gmc.akademiya.kr", "_blank", "noopener");
   }
 
 
@@ -401,21 +352,21 @@ export default function AppLayout() {
           </NavLink>
 
           <NavLink
-            to="/classes"
+            to="/surveys"
             onClick={closeMobile}
             className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ""}`}
           >
-            <IconClass />
-            <span>{t("nav.classes")}</span>
+            <IconSurvey />
+            <span>{t("nav.surveys")}</span>
           </NavLink>
 
           <NavLink
-            to="/reports"
+            to="/account"
             onClick={closeMobile}
             className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ""}`}
           >
-            <IconFlag />
-            <span>{t("nav.reports")}</span>
+            <IconUser />
+            <span>{t("nav.accountCenter")}</span>
           </NavLink>
 
           <NavLink
@@ -428,15 +379,6 @@ export default function AppLayout() {
           </NavLink>
 
           <NavLink
-            to="/surveys"
-            onClick={closeMobile}
-            className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ""}`}
-          >
-            <IconSurvey />
-            <span>{t("nav.surveys")}</span>
-          </NavLink>
-
-          <NavLink
             to="/bug-report"
             onClick={closeMobile}
             className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ""}`}
@@ -444,19 +386,6 @@ export default function AppLayout() {
             <IconBug />
             <span>{t("nav.bugReport")}</span>
           </NavLink>
-
-          {/* GMCAuto — HAFS 조직 가입자에게만 표시 */}
-          {isHafsOrgMember && (
-            <button
-              className={styles.navItem}
-              onClick={handleGmcAutoClick}
-              style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left" }}
-            >
-              <IconGmc />
-              <span>{t("nav.gmcAuto")}</span>
-              <span className={styles.externalBadge}>↗</span>
-            </button>
-          )}
 
           {user?.role === "admin" && (
             <NavLink
@@ -487,7 +416,7 @@ export default function AppLayout() {
 
         {/* ── Version badge ── */}
         <div className={styles.versionBadge}>
-          Akademiya Web App version 1.1.4
+          Akademiya Web App version 2.0.0
         </div>
         <div className={styles.versionLinks}>
           <Link to="/privacy" className={styles.versionLink}>{t("nav.privacyPolicy", "개인정보 처리방침")}</Link>
@@ -497,7 +426,7 @@ export default function AppLayout() {
 
         <div className={styles.sidebarBottom}>
           <NavLink
-            to="/profile"
+            to="/account"
             onClick={closeMobile}
             className={({ isActive }) => `${styles.bottomItem} ${isActive ? styles.navActive : ""}`}
           >

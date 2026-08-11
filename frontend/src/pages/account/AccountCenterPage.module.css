@@ -1,0 +1,416 @@
+.page {
+  padding: 40px 24px 56px;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pageHeader {
+  margin-bottom: 2px;
+}
+
+.pageTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.pageSubtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ── 카드 ─────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 26px 28px;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.cardHint {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.sectionDivider {
+  border-top: 1px solid var(--border);
+  margin: 24px 0 16px;
+  padding-top: 16px;
+}
+
+.sectionLabel {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+/* ── 프로필 사진 ──────────────────────────────────────────────────────── */
+.avatarRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.avatarImg {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  flex-shrink: 0;
+}
+
+.avatarActions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.avatarBtnRow {
+  display: flex;
+  gap: 8px;
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.errorText {
+  font-size: 11px;
+  color: var(--danger);
+}
+
+/* ── 버튼 ─────────────────────────────────────────────────────────────── */
+.btnGhost {
+  padding: 6px 14px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btnGhost:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.btnGhost:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btnQuiet {
+  padding: 6px 14px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.btnQuiet:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ── 조직 목록 ────────────────────────────────────────────────────────── */
+.orgList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.orgItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.orgCode {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(19, 229, 106, 0.1);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.orgName {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.orgBadge {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.emptyText {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  padding: 14px 0;
+}
+
+.joinRow {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.joinInput {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.joinInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.btnPrimary {
+  padding: 8px 18px;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btnPrimary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.msgSuccess {
+  font-size: 12.5px;
+  color: var(--success);
+  margin-top: 10px;
+}
+
+.msgError {
+  font-size: 12.5px;
+  color: var(--danger);
+  margin-top: 10px;
+}
+
+/* ── 연결된 서비스 ────────────────────────────────────────────────────── */
+.connList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.connItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.connBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.connName {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.connUrl {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connScopes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.scopeChip {
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.btnRevoke {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid rgba(244, 67, 54, 0.4);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btnRevoke:hover:not(:disabled) {
+  background: rgba(244, 67, 54, 0.08);
+  border-color: rgba(244, 67, 54, 0.7);
+}
+
+.btnRevoke:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ── 위험 구역 (회원 탈퇴) ────────────────────────────────────────────── */
+.dangerBtn {
+  width: 100%;
+  padding: 9px 16px;
+  background: transparent;
+  border: 1px solid rgba(244, 67, 54, 0.4);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.dangerBtn:hover {
+  background: rgba(244, 67, 54, 0.07);
+  border-color: rgba(244, 67, 54, 0.7);
+}
+
+.dangerBox {
+  background: rgba(244, 67, 54, 0.06);
+  border: 1px solid rgba(244, 67, 54, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+
+.dangerTitle {
+  color: var(--danger);
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.dangerText {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.dangerActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btnCancelWide {
+  flex: 1;
+  padding: 9px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btnDangerWide {
+  flex: 1;
+  padding: 9px;
+  background: rgba(244, 67, 54, 0.85);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btnDangerWide:disabled {
+  background: rgba(244, 67, 54, 0.4);
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 20px 14px 40px;
+  }
+
+  .card {
+    padding: 20px 18px;
+  }
+}

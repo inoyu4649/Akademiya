@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/auth.store";
 import { openoauthApi, type LoginMeans, type ScopeRange, type OAuthAppQuota, type OptionalScope } from "../../api/openoauth.api";
 import { orgApi, type Org } from "../../api/org.api";
-import { classApi, type ClassItem } from "../../api/class.api";
 import { OPTIONAL_SCOPES, forcedScopesFor } from "../../utils/oauthScopes";
 import SecretRevealModal from "../../components/developer/SecretRevealModal";
 import styles from "./Developer.module.css";
@@ -85,7 +84,6 @@ export default function OAuthAppCreatePage() {
   const user = useAuthStore((s) => s.user);
 
   const [orgs, setOrgs] = useState<Org[]>([]);
-  const [classes, setClasses] = useState<ClassItem[]>([]);
 
   const [codeName, setCodeName] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -93,7 +91,6 @@ export default function OAuthAppCreatePage() {
   const [loginMeans, setLoginMeans] = useState<LoginMeans>("both");
   const [scopeRange, setScopeRange] = useState<ScopeRange>("all");
   const [scopeOrgId, setScopeOrgId] = useState<number | "">("");
-  const [scopeClassId, setScopeClassId] = useState<number | "">("");
   const [scopeGoogleDomain, setScopeGoogleDomain] = useState("");
   const [enabledScopes, setEnabledScopes] = useState<OptionalScope[]>([]);
 
@@ -112,7 +109,6 @@ export default function OAuthAppCreatePage() {
   useEffect(() => {
     if (!user?.developerMode) { navigate("/"); return; }
     orgApi.my().then((r) => setOrgs(r.data.orgs)).catch(() => {});
-    classApi.my().then((r) => setClasses(r.data.classes)).catch(() => {});
     openoauthApi.getQuota().then((r) => setQuota(r.data)).catch(() => {});
   }, [user]);
 
@@ -124,7 +120,7 @@ export default function OAuthAppCreatePage() {
     if (loginMeans !== "google" && scopeRange === "google_workspace") setScopeRange("all");
   }, [loginMeans]);
 
-  // 조직/반 단위 로그인 범위는 해당 소속 정보 scope가 강제로 켜진다
+  // 조직 단위 로그인 범위는 조직 소속 정보 scope가 강제로 켜진다
   const forcedScopes = forcedScopesFor(scopeRange);
   useEffect(() => {
     setEnabledScopes((prev) => [...new Set([...prev, ...forcedScopes])]);
@@ -142,7 +138,6 @@ export default function OAuthAppCreatePage() {
     if (!displayName.trim()) { setError(t("developer.create.displayNameRequired")); return; }
     if (!/^https?:\/\//.test(mainSiteUrl)) { setError(t("developer.create.mainSiteUrlInvalid")); return; }
     if (scopeRange === "org" && !scopeOrgId) { setError(t("developer.create.scopeOrgRequired")); return; }
-    if (scopeRange === "class" && !scopeClassId) { setError(t("developer.create.scopeClassRequired")); return; }
     if (scopeRange === "google_workspace" && !scopeGoogleDomain.trim()) { setError(t("developer.create.scopeDomainRequired")); return; }
     if (quotaExceeded) { setError(t("developer.create.quotaExceeded", { max: quota!.max })); return; }
 
@@ -155,7 +150,6 @@ export default function OAuthAppCreatePage() {
         loginMeans,
         scopeRange,
         scopeOrgId: scopeRange === "org" ? Number(scopeOrgId) : undefined,
-        scopeClassId: scopeRange === "class" ? Number(scopeClassId) : undefined,
         scopeGoogleDomain: scopeRange === "google_workspace" ? scopeGoogleDomain.trim() : undefined,
         enabledScopes,
       });
@@ -242,7 +236,7 @@ export default function OAuthAppCreatePage() {
         <div className={styles.field}>
           <label className={styles.label}>{t("developer.create.scopeRangeLabel")}</label>
           <div className={styles.radioGroup}>
-            {(["all", "org", "class", "google_workspace"] as ScopeRange[]).map((v) => {
+            {(["all", "org", "google_workspace"] as ScopeRange[]).map((v) => {
               const disabled = v === "google_workspace" && loginMeans !== "google";
               return (
                 <label
@@ -269,12 +263,6 @@ export default function OAuthAppCreatePage() {
             <select className={styles.select} style={{ marginTop: 10 }} value={scopeOrgId} onChange={(e) => setScopeOrgId(Number(e.target.value))}>
               <option value="">{t("developer.create.scopeOrgPlaceholder")}</option>
               {orgs.map((o) => <option key={o.id} value={o.id}>{o.name} ({o.code})</option>)}
-            </select>
-          )}
-          {scopeRange === "class" && (
-            <select className={styles.select} style={{ marginTop: 10 }} value={scopeClassId} onChange={(e) => setScopeClassId(Number(e.target.value))}>
-              <option value="">{t("developer.create.scopeClassPlaceholder")}</option>
-              {classes.map((c) => <option key={c.id} value={c.id}>{c.org_name} — {c.name}</option>)}
             </select>
           )}
           {scopeRange === "google_workspace" && (

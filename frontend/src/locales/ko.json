@@ -133,344 +133,77 @@
     "privacyPolicy": "개인정보 처리방침",
     "termsOfUse": "이용약관",
     "home": "홈",
-    "classes": "반",
-    "reports": "신고",
     "calendar": "달력",
     "surveys": "설문",
     "bugReport": "버그 리포트",
-    "gmcAuto": "GMCAuto",
     "admin": "관리자 패널",
     "profile": "프로필",
     "logout": "로그아웃",
     "developerTools": "개발자 도구",
-    "akademiyaOauth": "Akademiya OAuth"
+    "akademiyaOauth": "Akademiya OAuth",
+    "accountCenter": "계정 센터"
   },
-  "org": {
-    "list": {
-      "title": "내 조직",
-      "noOrgs": "소속된 조직이 없습니다.",
-      "applyBtn": "조직 만들기",
-      "joinBtn": "코드로 가입",
+  "dashboard": {
+    "greeting": "{{name}}님, 반가워요",
+    "subtitle": "Akademiya 계정으로 이용할 수 있는 서비스입니다.",
+    "comingSoon": "준비 중",
+    "surveys": {
+      "title": "Akademiya Surveys",
+      "desc": "스마트한 설문지 제작: 설문 수집부터 통계 분석까지!"
+    },
+    "account": {
+      "title": "Akademiya 계정 센터",
+      "desc": "Akademiya와 연결된 서비스들을 한눈에 관리하기"
+    },
+    "gmcAuto": {
+      "title": "GMCAuto 3",
+      "badge": "HAFS 계정 전용",
+      "desc": "HAFS인들의 영원한 숙제, GMC PASS 매일 자동으로 신청하기"
+    },
+    "imsiQuiz": {
+      "title": "ImsiQuiz",
+      "desc": "시험 기간 벼락치기와 개념 정리에 최적, 급할 때는 ImsiQuiz"
+    },
+    "hyProject": {
+      "title": "HY Project",
+      "desc": "우리들의 방학과 잉여 위크에 플레이. 시험 기간에는 주의하시오."
+    }
+  },
+  "account": {
+    "title": "계정 센터",
+    "subtitle": "회원 정보와 Akademiya 계정에 연결된 서비스를 관리합니다.",
+    "profile": {
+      "title": "회원 정보",
+      "hint": "이름·연락처·프로필 사진을 변경할 수 있습니다."
+    },
+    "connections": {
+      "title": "연결된 서비스",
+      "hint": "'Akademiya로 로그인'으로 접속한 서비스 목록입니다. 인증을 해제하면 해당 서비스의 접근 권한이 즉시 사라지고, 다음 로그인 때 동의 화면을 다시 거칩니다.",
+      "empty": "연결된 서비스가 없습니다.",
+      "revokeBtn": "인증 해제",
+      "revokeConfirm": "{{name}}의 인증을 해제하시겠습니까? 해당 서비스에서 로그아웃됩니다.",
+      "scope": {
+        "profile": "이름",
+        "email": "이메일",
+        "picture": "프로필 사진",
+        "org_membership": "조직 가입 현황"
+      }
+    },
+    "org": {
+      "title": "조직",
+      "hint": "학교 등 조직에 소속되면 해당 조직 전용 서비스(GMCAuto 3 등)를 이용할 수 있습니다. 학교 Google 계정으로 로그인했다면 코드 입력만으로 바로 가입됩니다.",
+      "empty": "소속된 조직이 없습니다.",
+      "codePlaceholder": "조직 코드",
+      "joinBtn": "가입",
+      "leaveBtn": "탈퇴",
       "pendingBadge": "승인 대기",
-      "rejectedBadge": "거절됨",
-      "myApplications": "신청 현황"
-    },
-    "apply": {
-      "title": "조직 만들기",
-      "nameLabel": "조직 이름",
-      "namePlaceholder": "조직 이름을 입력하세요",
-      "codeLabel": "조직 코드 (4자리 영문)",
-      "codePlaceholder": "예: HAFS",
-      "codeHint": "영문 대문자 4자 (자동으로 대문자 변환됩니다)",
-      "domainLabel": "Google 학교 도메인 (선택)",
-      "domainPlaceholder": "예: school.edu",
-      "domainHint": "입력 시 해당 도메인 계정으로 자동 가입됩니다",
-      "timezoneLabel": "시간대",
-      "submitBtn": "신청하기",
-      "success": "조직 생성이 신청되었습니다. 관리자 승인 후 이용 가능합니다.",
-      "nameRequired": "조직 이름을 입력해주세요.",
-      "codeInvalid": "조직 코드는 4자리 영문이어야 합니다.",
-      "codeDuplicate": "이미 사용 중인 조직 코드입니다.",
-      "alreadyPending": "동일한 코드로 이미 신청 중입니다.",
-      "serverError": "서버 오류가 발생했습니다."
-    },
-    "join": {
-      "title": "조직 가입",
-      "description": "조직 코드 4자리 영문을 입력하세요.",
-      "submitBtn": "가입 신청",
-      "success": "가입 신청이 완료되었습니다. 관리자 승인 후 이용 가능합니다.",
-      "autoApproved": "학교 이메일이 확인되어 즉시 가입되었습니다!",
-      "notFound": "존재하지 않는 조직 코드입니다.",
-      "alreadyMember": "이미 가입된 조직입니다.",
-      "alreadyPending": "이미 가입 신청 중인 조직입니다.",
-      "serverError": "서버 오류가 발생했습니다."
-    },
-    "detail": {
-      "members": "멤버",
-      "membersCount": "{{count}}명",
-      "pendingRequests": "가입 신청 목록",
-      "noRequests": "대기 중인 가입 신청이 없습니다.",
-      "permissionLabel": "권한",
-      "permission0": "일반 사용자",
-      "permission1": "통계 조회",
-      "permission2": "통계+다운로드",
-      "permission3": "관리자",
-      "approve": "승인",
-      "reject": "거절",
-      "changePermission": "권한 변경",
-      "save": "저장",
-      "joinedAt": "가입일",
-      "requestedAt": "신청일",
-      "approveSuccess": "승인되었습니다.",
-      "rejectSuccess": "거절되었습니다.",
-      "permissionSaved": "권한이 변경되었습니다.",
-      "classRequests": "반 생성 신청",
-      "noClassRequests": "대기 중인 반 생성 신청이 없습니다.",
-      "className": "반 이름",
-      "classCode": "복합 코드",
-      "classOwner": "신청자",
-      "classApproveSuccess": "반이 승인되었습니다.",
-      "classRejectSuccess": "반 신청이 거절되었습니다."
-    },
-    "leave": {
-      "btn": "조직 탈퇴",
-      "title": "조직 탈퇴",
-      "warning": "{{name}} 조직에서 탈퇴합니다. 다시 가입하려면 승인이 필요합니다.",
-      "confirm": "탈퇴 확인",
-      "success": "조직에서 탈퇴했습니다.",
-      "lastAdmin": "유일한 관리자는 탈퇴할 수 없습니다. 다른 멤버에게 관리자 권한을 부여하세요.",
-      "serverError": "오류가 발생했습니다. 잠시 후 다시 시도해주세요."
-    },
-    "delete": {
-      "btn": "조직 삭제",
-      "title": "조직 삭제",
-      "warning": "{{name}} 조직을 삭제합니다. 조직의 모든 반, 과제, 제출물이 함께 삭제되며 복구할 수 없습니다.",
-      "confirm": "삭제 확인",
-      "serverError": "오류가 발생했습니다. 잠시 후 다시 시도해주세요."
-    }
-  },
-  "class": {
-    "list": {
-      "title": "내 반",
-      "noClasses": "소속된 반이 없습니다.",
-      "applyBtn": "반 만들기",
-      "joinBtn": "코드로 가입",
-      "pendingBadge": "승인 대기",
-      "rejectedBadge": "거절됨",
-      "myApplications": "신청 현황"
-    },
-    "apply": {
-      "title": "반 만들기",
-      "orgLabel": "소속 조직",
-      "orgPlaceholder": "조직을 선택하세요",
-      "noOrgs": "소속된 조직이 없습니다. 먼저 조직에 가입해주세요.",
-      "nameLabel": "반 이름",
-      "namePlaceholder": "반 이름을 입력하세요",
-      "codeLabel": "반 코드 (4자리 숫자)",
-      "codePlaceholder": "예: 0103",
-      "codeHint": "숫자 4자리",
-      "compositePreview": "복합 코드 미리보기",
-      "submitBtn": "신청하기",
-      "success": "반 생성이 신청되었습니다. 조직 관리자 승인 후 이용 가능합니다.",
-      "orgRequired": "조직을 선택해주세요.",
-      "nameRequired": "반 이름을 입력해주세요.",
-      "codeInvalid": "반 코드는 4자리 숫자여야 합니다.",
-      "codeDuplicate": "이미 사용 중인 반 코드입니다.",
-      "notOrgMember": "해당 조직의 멤버가 아닙니다.",
-      "serverError": "서버 오류가 발생했습니다."
-    },
-    "join": {
-      "title": "반 가입",
-      "description": "조직 코드(4자리 영문)와 반 코드(4자리 숫자)를 연속으로 입력하세요.",
-      "submitBtn": "가입 신청",
-      "success": "{{className}} 반에 가입 신청이 완료되었습니다. 반장 승인 후 이용 가능합니다.",
-      "codeInvalid": "코드는 8자리여야 합니다.",
-      "orgNotFound": "존재하지 않는 조직 코드입니다.",
-      "notOrgMember": "해당 조직의 멤버가 아닙니다.",
-      "notFound": "존재하지 않는 반 코드입니다.",
-      "alreadyMember": "이미 가입된 반입니다.",
-      "alreadyPending": "이미 가입 신청 중인 반입니다.",
-      "serverError": "서버 오류가 발생했습니다."
-    },
-    "detail": {
-      "members": "멤버",
-      "membersCount": "{{count}}명",
-      "pendingRequests": "가입 신청 목록",
-      "noRequests": "대기 중인 가입 신청이 없습니다.",
-      "roleLabel": "역할",
-      "permLeader": "반장",
-      "permStudent": "학생",
-      "approve": "승인",
-      "reject": "거절",
-      "requestedAt": "신청일",
-      "approveSuccess": "승인되었습니다.",
-      "rejectSuccess": "거절되었습니다.",
-      "permissionSaved": "역할이 변경되었습니다."
-    },
-    "leave": {
-      "btn": "반 탈퇴",
-      "title": "반 탈퇴",
-      "warning": "{{name}} 반에서 탈퇴합니다. 다시 가입하려면 반장 승인이 필요합니다.",
-      "confirm": "탈퇴 확인",
-      "success": "반에서 탈퇴했습니다.",
-      "lastLeader": "유일한 반장은 탈퇴할 수 없습니다. 다른 멤버를 반장으로 지정하세요.",
-      "serverError": "오류가 발생했습니다. 잠시 후 다시 시도해주세요."
-    },
-    "delete": {
-      "btn": "반 삭제",
-      "title": "반 삭제",
-      "warning": "{{name}} 반을 삭제합니다. 반의 모든 과제와 제출물이 함께 삭제되며 복구할 수 없습니다.",
-      "confirm": "삭제 확인",
-      "serverError": "오류가 발생했습니다. 잠시 후 다시 시도해주세요."
-    }
-  },
-  "resource": {
-    "nav": "자료실",
-    "title": "자료실",
-    "empty": "등록된 자료가 없습니다.",
-    "upload": "자료 업로드",
-    "uploadBtn": "업로드",
-    "titleLabel": "제목",
-    "titlePlaceholder": "자료 제목을 입력하세요",
-    "titleRequired": "제목을 입력해주세요.",
-    "descLabel": "설명 (선택)",
-    "descPlaceholder": "자료에 대한 설명을 입력하세요",
-    "tabFile": "파일 업로드",
-    "tabLink": "링크",
-    "fileLabel": "파일 (최대 20MB)",
-    "linkLabel": "링크 URL",
-    "linkPlaceholder": "https://...",
-    "noContent": "파일 또는 링크를 입력해주세요.",
-    "fileTooLarge": "파일 크기 합계가 한도를 초과합니다.",
-    "fileTooLargeServer": "파일이 너무 큽니다. 한도 이하로 올려주세요.",
-    "leaderOnly": "반장만 자료를 업로드할 수 있습니다.",
-    "deleteConfirm": "이 자료를 삭제하시겠습니까?",
-    "deleteBtn": "삭제",
-    "deleteSuccess": "자료가 삭제되었습니다.",
-    "uploadSuccess": "자료가 업로드되었습니다.",
-    "serverError": "오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
-    "files": "첨부파일",
-    "linkBtn": "링크 열기",
-    "downloadFailed": "파일을 다운로드할 수 없습니다. 권한이 없거나 파일이 삭제되었을 수 있습니다.",
-    "create": {
-      "title": "자료 업로드",
-      "fileHint": "최대 {{files}}개, 합계 {{mb}}MB 이하",
-      "limitSectionTitle": "파일 한도",
-      "currentLimits": "현재 한도: 최대 {{files}}개, {{mb}}MB",
-      "requestLimitExpand": "한도 확장 요청",
-      "reqMaxFiles": "최대 파일 수",
-      "reqMaxSizeMb": "최대 크기 (MB)",
-      "reqReason": "요청 사유 (선택)",
-      "reqReasonPlaceholder": "한도 확장이 필요한 이유를 입력하세요",
-      "submitRequest": "확장 요청",
-      "limitRequested": "한도 확장 요청이 접수되었습니다."
-    }
-  },
-  "report": {
-    "reportBtn": "신고",
-    "modalTitle": "사용자 신고",
-    "targetLabel": "신고 대상",
-    "reasonLabel": "신고 사유",
-    "reasonPlaceholder": "신고 사유를 자세히 입력해주세요.",
-    "reasonRequired": "신고 사유를 입력해주세요.",
-    "submitBtn": "신고하기",
-    "submitSuccess": "신고가 접수되었습니다.",
-    "cannotReportSelf": "자기 자신을 신고할 수 없습니다.",
-    "serverError": "서버 오류가 발생했습니다.",
-    "reportedLabel": "피신고자",
-    "reporterLabel": "신고자",
-    "classLabel": "반",
-    "handled": "처리되었습니다.",
-    "page": {
-      "title": "신고 관리",
-      "tabHandle": "처리 대기",
-      "tabMine": "내가 접수한 신고",
-      "empty": "표시할 신고가 없습니다."
-    },
-    "stage": {
-      "class_leader": "반장 처리",
-      "org_admin": "조직 관리자 처리",
-      "akademiya": "Akademiya 처리"
-    },
-    "status": {
-      "pending": "처리 대기",
-      "resolved": "해결됨",
-      "escalated": "에스컬레이션됨"
-    },
-    "handleModal": {
-      "title": "신고 처리",
-      "noteLabel": "처리 메모 (선택)",
-      "notePlaceholder": "처리 사유 또는 메모를 입력하세요.",
-      "resolve": "해결로 처리",
-      "escalate": "상위 단계로 에스컬레이션",
-      "ban": "영구 밴"
-    }
-  },
-  "kick": {
-    "btn": "강퇴",
-    "modalTitle": "구성원 강퇴",
-    "targetLabel": "강퇴 대상",
-    "reasonLabel": "강퇴 사유",
-    "reasonPlaceholder": "강퇴 사유를 입력해주세요.",
-    "reasonRequired": "강퇴 사유를 입력해주세요.",
-    "submitBtn": "강퇴하기",
-    "success": "강퇴되었습니다.",
-    "serverError": "서버 오류가 발생했습니다."
-  },
-  "assignment": {
-    "list": {
-      "title": "과제 목록",
-      "createBtn": "과제 만들기",
-      "empty": "등록된 과제가 없습니다.",
-      "dueAt": "마감",
-      "by": "작성"
-    },
-    "create": {
-      "title": "과제 만들기",
-      "titleLabel": "제목",
-      "titlePlaceholder": "과제 제목을 입력하세요",
-      "descLabel": "설명",
-      "descPlaceholder": "과제 설명을 입력하세요 (선택)",
-      "dueLabel": "마감일시",
-      "dueHint": "미입력 시 마감 없음",
-      "submitBtn": "생성하기",
-      "titleRequired": "제목을 입력해주세요.",
-      "leaderOnly": "반장만 과제를 만들 수 있습니다.",
-      "serverError": "서버 오류가 발생했습니다."
-    },
-    "detail": {
-      "noDue": "마감 없음",
-      "pastDueLabel": "마감됨",
-      "submitSection": "과제 제출",
-      "tabFile": "파일 업로드",
-      "tabLink": "링크 제출",
-      "fileHint": "최대 5MB",
-      "fileHintMulti": "최대 {{count}}개, 합산 {{mb}}MB 이하",
-      "fileRequired": "파일을 선택해주세요.",
-      "tooManyFiles": "파일은 최대 {{max}}개까지 첨부할 수 있습니다.",
-      "totalTooLarge": "파일 합산 크기는 {{mb}}MB를 초과할 수 없습니다.",
-      "linkRequired": "링크를 입력해주세요.",
-      "linkPlaceholder": "https://...",
-      "submitBtn": "제출하기",
-      "resubmitBtn": "재제출",
-      "downloadFile": "파일 다운로드",
-      "feedback": "반환 사유",
-      "submissionsSection": "제출 현황",
-      "notSubmitted": "미제출",
-      "approveBtn": "승인",
-      "returnBtn": "반환",
-      "returnModalTitle": "반환 사유 입력",
-      "returnFeedbackLabel": "반환 사유 (선택)",
-      "returnFeedbackPlaceholder": "학생에게 전달할 메시지를 입력하세요.",
-      "confirmReturn": "반환하기",
-      "approveSuccess": "승인되었습니다.",
-      "returnSuccess": "반환되었습니다.",
-      "submitSuccess": "제출되었습니다.",
-      "fileTooLarge": "파일 크기 초과입니다.",
-      "pastDue": "마감된 과제입니다.",
-      "alreadyApproved": "이미 승인된 제출입니다.",
-      "commentsSection": "댓글",
-      "commentPlaceholder": "댓글을 입력하세요.",
-      "commentSubmit": "등록",
-      "commentFiltered": "(욕설 필터 적용됨)",
-      "deleteComment": "삭제",
-      "currentLimits": "현재 한도: 최대 {{files}}개, {{mb}}MB",
-      "requestLimitExpand": "한도 확장 요청",
-      "reqMaxFiles": "최대 파일 수",
-      "reqMaxSizeMb": "최대 크기 (MB)",
-      "reqReason": "요청 사유 (선택)",
-      "reqReasonPlaceholder": "한도 확장이 필요한 이유를 입력하세요",
-      "submitRequest": "확장 요청",
-      "limitRequested": "한도 확장 요청이 접수되었습니다.",
-      "editBtn": "수정",
-      "deleteBtn": "삭제",
-      "deleteConfirm": "이 과제를 삭제하시겠습니까? 관련 제출 파일이 모두 영구 삭제됩니다.",
-      "editSuccess": "과제가 수정되었습니다."
-    },
-    "status": {
-      "submitted": "제출됨",
-      "approved": "승인됨",
-      "returned": "반환됨"
+      "joinedAuto": "{{name}} 조직에 가입되었습니다.",
+      "joinRequested": "{{name}} 조직에 가입을 신청했습니다. 관리자 승인을 기다려주세요.",
+      "leaveConfirm": "{{name}} 조직에서 탈퇴하시겠습니까?",
+      "errNotFound": "해당 코드의 조직을 찾을 수 없습니다.",
+      "errAlreadyMember": "이미 가입한 조직입니다.",
+      "errAlreadyPending": "이미 가입 신청 중입니다.",
+      "errLastAdmin": "조직의 마지막 관리자는 탈퇴할 수 없습니다."
     }
   },
   "pwaInstall": {
@@ -537,16 +270,13 @@
   },
   "calendar": {
     "title": "달력",
-    "noEvents": "이 날에는 이벤트가 없습니다.",
-    "selectHint": "날짜를 클릭하면 해당 날의 이벤트를 볼 수 있습니다.",
+    "noEvents": "이 날에는 일정이 없습니다.",
+    "selectHint": "날짜를 클릭하면 해당 날의 일정을 볼 수 있습니다.",
     "holiday": "공휴일",
-    "assignments": "과제 마감",
-    "customEvents": "일정",
     "event": {
       "addBtn": "일정 추가",
       "addTitle": "일정 추가",
       "scopeLabel": "대상",
-      "scopeClass": "반",
       "scopeOrg": "조직",
       "titleLabel": "제목",
       "titlePlaceholder": "일정 제목을 입력하세요",
@@ -556,7 +286,10 @@
       "descLabel": "설명 (선택)",
       "descPlaceholder": "일정 설명을 입력하세요",
       "colorLabel": "색상",
-      "confirmDelete": "이 일정을 삭제하시겠습니까?"
+      "confirmDelete": "이 일정을 삭제하시겠습니까?",
+      "editTitle": "일정 수정",
+      "scopePersonal": "개인 일정",
+      "deleteBtn": "삭제"
     }
   },
   "survey": {
@@ -574,12 +307,9 @@
     "descLabel": "설명 (선택)",
     "descPlaceholder": "설문에 대한 설명을 입력하세요",
     "scopeLabel": "배포 대상",
-    "scope_class": "반 대상",
     "scope_org": "조직 대상",
     "scope_public": "URL 배포 (공개)",
-    "selectClass": "반 선택",
     "selectOrg": "조직 선택",
-    "noLeaderClass": "반장 권한이 있는 반이 없습니다.",
     "noAdminOrg": "관리자 권한이 있는 조직이 없습니다.",
     "allowAnonymous": "익명 응답 허용",
     "expiresAt": "마감",
@@ -605,7 +335,6 @@
     "ratingHint": "1~5 중 선택 (응답 시)",
     "addQuestion": "문항 추가",
     "submitCreate": "설문 생성",
-    "scopeClass": "반",
     "scopeOrg": "조직",
     "scopePublic": "공개",
     "expired": "마감됨",
@@ -737,7 +466,6 @@
     "limitRequests": {
       "title": "파일 한도 확장 요청",
       "noRequests": "대기 중인 요청이 없습니다.",
-      "class": "반",
       "requester": "요청자",
       "current": "현재 한도",
       "requested": "요청 한도",
@@ -748,24 +476,35 @@
       "approveSuccess": "승인되었습니다.",
       "rejectSuccess": "거절되었습니다."
     },
-    "resourceLimitRequests": {
-      "title": "자료실 파일 한도 확장 요청"
-    },
     "oauthQuotaRequests": {
       "title": "OAuth 공개 앱 한도 확장 요청"
     },
     "orgs": {
-      "title": "조직 생성 신청",
-      "noRequests": "대기 중인 신청이 없습니다.",
-      "owner": "신청자",
-      "code": "코드",
+      "title": "조직 관리",
+      "hint": "조직은 사용자에게 노출되지 않는 내부 기능입니다. GMCAuto 3처럼 특정 학교 재학생만 로그인할 수 있는 OAuth 앱이 소속을 판별하는 근거로 사용합니다.",
+      "noOrgs": "등록된 조직이 없습니다.",
+      "createBtn": "조직 만들기",
+      "createSuccess": "조직이 생성되었습니다.",
+      "updateSuccess": "저장되었습니다.",
+      "deleteSuccess": "조직이 삭제되었습니다.",
+      "deleteConfirm": "{{name}} 조직을 삭제하시겠습니까? 구성원과 가입 신청이 모두 사라집니다.",
+      "codeDuplicate": "이미 사용 중인 코드입니다.",
+      "invalidInput": "조직 이름과 4자리 영문 코드를 입력해주세요.",
+      "namePlaceholder": "조직 이름",
+      "codePlaceholder": "코드 (영문 4자)",
+      "domainPlaceholder": "Google Workspace 도메인 (예: hafs.hs.kr)",
+      "domainHint": "도메인을 지정하면 해당 도메인의 Google 계정으로 로그인한 사용자가 코드 입력만으로 승인 없이 자동 가입됩니다.",
+      "noDomain": "미설정",
+      "members": "구성원",
+      "pendingJoins": "승인 대기 {{count}}건",
       "domain": "Google 도메인",
       "timezone": "시간대",
-      "appliedAt": "신청일",
+      "createdAt": "생성일",
+      "pendingBadge": "승인 대기",
       "approve": "승인",
-      "reject": "거절",
       "approveSuccess": "조직이 승인되었습니다.",
-      "rejectSuccess": "신청이 거절되었습니다."
+      "editDomain": "도메인 수정",
+      "delete": "삭제"
     },
     "bugReports": {
       "title": "버그 리포트",
@@ -803,10 +542,8 @@
       "loginMeansLabel": "로그인 허용 수단",
       "scopeRangeLabel": "로그인 허용 범위",
       "scopeOrgRequired": "조직을 선택해주세요.",
-      "scopeClassRequired": "반을 선택해주세요.",
       "scopeDomainRequired": "Google Workspace 도메인을 입력해주세요.",
       "scopeOrgPlaceholder": "조직을 선택하세요",
-      "scopeClassPlaceholder": "반을 선택하세요",
       "quotaUsage": "공개(Public) 앱 {{used}}/{{max}}개 사용 중 (조직/반 앱은 무제한)",
       "quotaExceeded": "공개 앱 한도({{max}}개)에 도달했습니다.",
       "quotaSectionTitle": "공개 앱 개수 한도",
@@ -987,13 +724,11 @@
       "errorNotEligible": "이 앱에 로그인할 수 있는 권한이 없습니다.",
       "errorGoogleOnly": "이 앱은 Google 계정으로만 로그인할 수 있습니다.",
       "scopeOrgNotice": "{{orgName}}[{{orgCode}}] 조직에 가입된 계정만 이용 가능합니다.",
-      "scopeClassNotice": "{{className}}[{{classCode}}] 반에 가입된 계정만 이용 가능합니다.",
       "scopeGoogleWorkspaceNotice": "{{domain}} 도메인 Google 계정만 이용 가능합니다.",
       "googleOnlyNotice": "Google로 로그인만 사용할 수 있습니다.",
       "akademiyaOnlyNotice": "Google로 로그인은 허용되지 않습니다.",
       "sharePicture": "프로필 사진",
-      "shareOrgMembership": "가입한 조직 목록",
-      "shareClassMembership": "가입한 반 목록"
+      "shareOrgMembership": "가입한 조직 목록"
     }
   },
   "privacy": {

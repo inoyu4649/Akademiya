@@ -265,10 +265,11 @@
   transition: border-color 0.12s, background 0.12s;
 }
 
-.assignmentItem {
+/* 클릭하면 수정 모달이 열리는 일정 항목 */
+.eventItemClickable {
   cursor: pointer;
 }
-.assignmentItem:hover {
+.eventItemClickable:hover {
   border-color: var(--accent);
   background: rgba(19, 229, 106, 0.06);
 }

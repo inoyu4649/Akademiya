@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/auth.store";
-import { adminApi, type PendingOrg, type LimitRequest, type ResourceLimitRequest, type OAuthQuotaRequest } from "../../api/admin.api";
+import { adminApi, type AdminOrg, type OAuthQuotaRequest } from "../../api/admin.api";
 import { bugReportApi, type BugReport } from "../../api/bugReport.api";
 import styles from "./AdminPage.module.css";
 
-type Tab = "orgs" | "bugReports" | "limitRequests";
+type Tab = "orgs" | "bugReports" | "quotaRequests";
 
 const STATUS_OPTS = ["open", "in_progress", "closed"] as const;
 const STATUS_LABEL: Record<string, string> = {
@@ -20,6 +20,8 @@ const STATUS_CLASS: Record<string, string> = {
   closed:      "badgeClosed",
 };
 
+const EMPTY_ORG_FORM = { name: "", code: "", google_domain: "", timezone: "Asia/Seoul" };
+
 export default function AdminPage() {
   const { t }    = useTranslation();
   const navigate = useNavigate();
@@ -27,11 +29,18 @@ export default function AdminPage() {
 
   const [tab, setTab] = useState<Tab>("orgs");
 
-  // ── Orgs tab ──
-  const [orgs,    setOrgs]    = useState<PendingOrg[]>([]);
+  // ── 조직 탭 ──
+  // 조직은 사용자에게 노출되지 않는 내부 기능이다. OAuth 앱(GMCAuto 3 등)이
+  // "이 학교 재학생만 로그인 가능"을 판별하는 근거이므로 운영자만 관리한다.
+  const [orgs, setOrgs] = useState<AdminOrg[]>([]);
   const [loadingOrgs, setLoadingOrgs] = useState(true);
+  const [orgForm, setOrgForm] = useState(EMPTY_ORG_FORM);
+  const [creatingOrg, setCreatingOrg] = useState(false);
+  const [orgFormOpen, setOrgFormOpen] = useState(false);
+  const [editingOrgId, setEditingOrgId] = useState<number | null>(null);
+  const [editDomain, setEditDomain] = useState("");
 
-  // ── Bug reports tab ──
+  // ── 버그 리포트 탭 ──
   const [reports,       setReports]       = useState<BugReport[]>([]);
   const [loadingBugs,   setLoadingBugs]   = useState(false);
   const [bugFilter,     setBugFilter]     = useState<string>("all");
@@ -40,22 +49,22 @@ export default function AdminPage() {
   const [editStatus,    setEditStatus]    = useState<Record<number, string>>({});
   const [savingId,      setSavingId]      = useState<number | null>(null);
 
-  // ── Limit requests tab ──
-  const [limitReqs,         setLimitReqs]         = useState<LimitRequest[]>([]);
-  const [limitNotes,        setLimitNotes]         = useState<Record<number, string>>({});
-  const [resourceLimitReqs, setResourceLimitReqs] = useState<ResourceLimitRequest[]>([]);
-  const [resLimitNotes,     setResLimitNotes]      = useState<Record<number, string>>({});
-  const [oauthQuotaReqs,    setOauthQuotaReqs]     = useState<OAuthQuotaRequest[]>([]);
-  const [oauthQuotaNotes,   setOauthQuotaNotes]    = useState<Record<number, string>>({});
+  // ── 한도 확장 요청 탭 ──
+  const [oauthQuotaReqs,  setOauthQuotaReqs]  = useState<OAuthQuotaRequest[]>([]);
+  const [oauthQuotaNotes, setOauthQuotaNotes] = useState<Record<number, string>>({});
 
   const [toast, setToast] = useState("");
 
-  useEffect(() => {
-    if (user?.role !== "admin") { navigate("/"); return; }
+  function loadOrgs() {
     adminApi.getOrgs()
       .then((res) => setOrgs(res.data.orgs))
-      .catch(() => {})
+      .catch(() => { /* 무시 */ })
       .finally(() => setLoadingOrgs(false));
+  }
+
+  useEffect(() => {
+    if (user?.role !== "admin") { navigate("/"); return; }
+    loadOrgs();
   }, [user]);
 
   useEffect(() => {
@@ -64,16 +73,10 @@ export default function AdminPage() {
   }, [tab, bugFilter]);
 
   useEffect(() => {
-    if (tab !== "limitRequests") return;
-    adminApi.getLimitRequests("pending")
-      .then((r) => setLimitReqs(r.data.requests))
-      .catch(() => {});
-    adminApi.getResourceLimitRequests("pending")
-      .then((r) => setResourceLimitReqs(r.data.requests))
-      .catch(() => {});
+    if (tab !== "quotaRequests") return;
     adminApi.getOAuthQuotaRequests("pending")
       .then((r) => setOauthQuotaReqs(r.data.requests))
-      .catch(() => {});
+      .catch(() => { /* 무시 */ });
   }, [tab]);
 
   function loadBugReports() {
@@ -81,7 +84,7 @@ export default function AdminPage() {
     const status = bugFilter === "all" ? undefined : bugFilter;
     bugReportApi.adminList(status)
       .then((d) => setReports(d.reports))
-      .catch(() => {})
+      .catch(() => { /* 무시 */ })
       .finally(() => setLoadingBugs(false));
   }
 
@@ -90,20 +93,62 @@ export default function AdminPage() {
     setTimeout(() => setToast(""), 3000);
   }
 
-  // ── Org handlers ──
-  async function handleApprove(id: number) {
+  // ── 조직 핸들러 ──
+  async function handleCreateOrg(e: React.FormEvent) {
+    e.preventDefault();
+    if (!orgForm.name.trim() || !/^[A-Za-z]{4}$/.test(orgForm.code.trim())) {
+      showToast(t("admin.orgs.invalidInput"));
+      return;
+    }
+    setCreatingOrg(true);
+    try {
+      await adminApi.createOrg({
+        name: orgForm.name.trim(),
+        code: orgForm.code.trim().toUpperCase(),
+        google_domain: orgForm.google_domain.trim() || undefined,
+        timezone: orgForm.timezone.trim() || "Asia/Seoul",
+      });
+      setOrgForm(EMPTY_ORG_FORM);
+      setOrgFormOpen(false);
+      loadOrgs();
+      showToast(t("admin.orgs.createSuccess"));
+    } catch (err: unknown) {
+      const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      showToast(code === "org.apply.codeDuplicate" ? t("admin.orgs.codeDuplicate") : t("common.error"));
+    } finally {
+      setCreatingOrg(false);
+    }
+  }
+
+  async function handleSaveDomain(org: AdminOrg) {
+    try {
+      await adminApi.updateOrg(org.id, { google_domain: editDomain.trim() || null });
+      setEditingOrgId(null);
+      loadOrgs();
+      showToast(t("admin.orgs.updateSuccess"));
+    } catch {
+      showToast(t("common.error"));
+    }
+  }
+
+  async function handleApproveOrg(id: number) {
     await adminApi.approveOrg(id);
-    setOrgs((prev) => prev.filter((o) => o.id !== id));
+    loadOrgs();
     showToast(t("admin.orgs.approveSuccess"));
   }
 
-  async function handleReject(id: number) {
-    await adminApi.rejectOrg(id);
-    setOrgs((prev) => prev.filter((o) => o.id !== id));
-    showToast(t("admin.orgs.rejectSuccess"));
+  async function handleDeleteOrg(org: AdminOrg) {
+    if (!confirm(t("admin.orgs.deleteConfirm", { name: org.name }))) return;
+    try {
+      await adminApi.deleteOrg(org.id);
+      loadOrgs();
+      showToast(t("admin.orgs.deleteSuccess"));
+    } catch {
+      showToast(t("common.error"));
+    }
   }
 
-  // ── Bug report handlers ──
+  // ── 버그 리포트 핸들러 ──
   async function handleSaveBug(id: number) {
     setSavingId(id);
     try {
@@ -146,52 +191,143 @@ export default function AdminPage() {
           {t("admin.bugReports.title")}
         </button>
         <button
-          className={`${styles.tab} ${tab === "limitRequests" ? styles.tabActive : ""}`}
-          onClick={() => setTab("limitRequests")}
+          className={`${styles.tab} ${tab === "quotaRequests" ? styles.tabActive : ""}`}
+          onClick={() => setTab("quotaRequests")}
         >
-          {t("admin.limitRequests.title")}
+          {t("admin.oauthQuotaRequests.title")}
         </button>
       </div>
 
-      {/* ── Orgs tab ── */}
+      {/* ── 조직 탭 ── */}
       {tab === "orgs" && (
         <section className={styles.section}>
+          <p className={styles.sectionHint}>{t("admin.orgs.hint")}</p>
+
+          {orgFormOpen ? (
+            <form className={styles.orgForm} onSubmit={handleCreateOrg}>
+              <div className={styles.orgFormRow}>
+                <input
+                  className={styles.noteInput}
+                  placeholder={t("admin.orgs.namePlaceholder")}
+                  value={orgForm.name}
+                  onChange={(e) => setOrgForm((p) => ({ ...p, name: e.target.value }))}
+                  maxLength={200}
+                />
+                <input
+                  className={styles.noteInput}
+                  placeholder={t("admin.orgs.codePlaceholder")}
+                  value={orgForm.code}
+                  onChange={(e) => setOrgForm((p) => ({ ...p, code: e.target.value.toUpperCase() }))}
+                  maxLength={4}
+                  style={{ maxWidth: 110, fontFamily: "var(--font-mono)", letterSpacing: 2 }}
+                />
+              </div>
+              <div className={styles.orgFormRow}>
+                <input
+                  className={styles.noteInput}
+                  placeholder={t("admin.orgs.domainPlaceholder")}
+                  value={orgForm.google_domain}
+                  onChange={(e) => setOrgForm((p) => ({ ...p, google_domain: e.target.value }))}
+                  maxLength={255}
+                />
+                <input
+                  className={styles.noteInput}
+                  placeholder="Asia/Seoul"
+                  value={orgForm.timezone}
+                  onChange={(e) => setOrgForm((p) => ({ ...p, timezone: e.target.value }))}
+                  maxLength={50}
+                  style={{ maxWidth: 180 }}
+                />
+              </div>
+              <p className={styles.sectionHint}>{t("admin.orgs.domainHint")}</p>
+              <div className={styles.cardActions}>
+                <button className={styles.btnApprove} type="submit" disabled={creatingOrg}>
+                  {creatingOrg ? t("common.loading") : t("admin.orgs.createBtn")}
+                </button>
+                <button
+                  className={styles.btnReject}
+                  type="button"
+                  onClick={() => { setOrgFormOpen(false); setOrgForm(EMPTY_ORG_FORM); }}
+                >
+                  {t("common.cancel")}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button className={styles.btnApprove} onClick={() => setOrgFormOpen(true)} style={{ marginBottom: 16 }}>
+              + {t("admin.orgs.createBtn")}
+            </button>
+          )}
+
           {orgs.length === 0 ? (
-            <p className={styles.empty}>{t("admin.orgs.noRequests")}</p>
+            <p className={styles.empty}>{t("admin.orgs.noOrgs")}</p>
           ) : (
             <div className={styles.list}>
               {orgs.map((org) => (
                 <div key={org.id} className={styles.card}>
                   <div className={styles.cardMain}>
                     <div className={styles.orgCode}>{org.code}</div>
-                    <div className={styles.orgName}>{org.name}</div>
+                    <div className={styles.orgName}>
+                      {org.name}
+                      {org.status === "pending" && (
+                        <span className={styles.badge} style={{ marginLeft: 8 }}>
+                          {t("admin.orgs.pendingBadge")}
+                        </span>
+                      )}
+                    </div>
                     <div className={styles.orgMeta}>
                       <span>
-                        <span className={styles.metaLabel}>{t("admin.orgs.owner")}:</span>
-                        {" "}{org.owner_name} ({org.owner_email})
+                        <span className={styles.metaLabel}>{t("admin.orgs.members")}:</span>
+                        {" "}{org.member_count}
+                        {org.pending_count > 0 && ` (${t("admin.orgs.pendingJoins", { count: org.pending_count })})`}
                       </span>
                       <span>
                         <span className={styles.metaLabel}>{t("admin.orgs.timezone")}:</span>
                         {" "}{org.timezone}
                       </span>
-                      {org.google_domain && (
-                        <span>
-                          <span className={styles.metaLabel}>{t("admin.orgs.domain")}:</span>
-                          {" "}{org.google_domain}
-                        </span>
-                      )}
                       <span>
-                        <span className={styles.metaLabel}>{t("admin.orgs.appliedAt")}:</span>
-                        {" "}{new Date(org.created_at).toLocaleString()}
+                        <span className={styles.metaLabel}>{t("admin.orgs.domain")}:</span>
+                        {" "}{org.google_domain || t("admin.orgs.noDomain")}
+                      </span>
+                      <span>
+                        <span className={styles.metaLabel}>{t("admin.orgs.createdAt")}:</span>
+                        {" "}{new Date(org.created_at).toLocaleDateString()}
                       </span>
                     </div>
+
+                    {editingOrgId === org.id && (
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10 }}>
+                        <input
+                          className={styles.noteInput}
+                          placeholder={t("admin.orgs.domainPlaceholder")}
+                          value={editDomain}
+                          onChange={(e) => setEditDomain(e.target.value)}
+                          maxLength={255}
+                        />
+                        <button className={styles.btnApprove} onClick={() => handleSaveDomain(org)}>
+                          {t("common.save")}
+                        </button>
+                        <button className={styles.btnReject} onClick={() => setEditingOrgId(null)}>
+                          {t("common.cancel")}
+                        </button>
+                      </div>
+                    )}
                   </div>
+
                   <div className={styles.cardActions}>
-                    <button className={styles.btnApprove} onClick={() => handleApprove(org.id)}>
-                      {t("admin.orgs.approve")}
+                    {org.status === "pending" && (
+                      <button className={styles.btnApprove} onClick={() => handleApproveOrg(org.id)}>
+                        {t("admin.orgs.approve")}
+                      </button>
+                    )}
+                    <button
+                      className={styles.btnApprove}
+                      onClick={() => { setEditingOrgId(org.id); setEditDomain(org.google_domain ?? ""); }}
+                    >
+                      {t("admin.orgs.editDomain")}
                     </button>
-                    <button className={styles.btnReject} onClick={() => handleReject(org.id)}>
-                      {t("admin.orgs.reject")}
+                    <button className={styles.btnReject} onClick={() => handleDeleteOrg(org)}>
+                      {t("admin.orgs.delete")}
                     </button>
                   </div>
                 </div>
@@ -201,7 +337,7 @@ export default function AdminPage() {
         </section>
       )}
 
-      {/* ── Bug reports tab ── */}
+      {/* ── 버그 리포트 탭 ── */}
       {tab === "bugReports" && (
         <section className={styles.section}>
           {/* Filter */}
@@ -303,153 +439,9 @@ export default function AdminPage() {
         </section>
       )}
 
-      {/* ── Limit requests tab ── */}
-      {tab === "limitRequests" && (
+      {/* ── OAuth 공개 앱 한도 확장 요청 탭 ── */}
+      {tab === "quotaRequests" && (
         <section className={styles.section}>
-          {/* ── 과제 제출 한도 확장 요청 ── */}
-          <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 12 }}>
-            {t("admin.limitRequests.title")}
-          </h3>
-          {limitReqs.length === 0 ? (
-            <p className={styles.empty}>{t("admin.limitRequests.noRequests")}</p>
-          ) : (
-            <div className={styles.list}>
-              {limitReqs.map((r) => (
-                <div key={r.id} className={styles.card}>
-                  <div className={styles.cardMain}>
-                    <div className={styles.orgName}>{r.assignment_title}</div>
-                    <div className={styles.orgMeta}>
-                      <span>
-                        <span className={styles.metaLabel}>{t("admin.limitRequests.class")}:</span>
-                        {" "}{r.class_name}
-                      </span>
-                      <span>
-                        <span className={styles.metaLabel}>{t("admin.limitRequests.requester")}:</span>
-                        {" "}{r.requester_name} ({r.requester_email})
-                      </span>
-                      <span>
-                        <span className={styles.metaLabel}>{t("admin.limitRequests.current")}:</span>
-                        {" "}{r.current_max_files}개 / {r.current_max_size_mb}MB
-                      </span>
-                      <span>
-                        <span className={styles.metaLabel}>{t("admin.limitRequests.requested")}:</span>
-                        {" "}{r.requested_max_files}개 / {r.requested_max_size_mb}MB
-                      </span>
-                      {r.reason && (
-                        <span>
-                          <span className={styles.metaLabel}>{t("admin.limitRequests.reason")}:</span>
-                          {" "}{r.reason}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
-                      <input
-                        className={styles.noteInput}
-                        placeholder={t("admin.limitRequests.notePlaceholder")}
-                        value={limitNotes[r.id] ?? ""}
-                        onChange={(e) => setLimitNotes((prev) => ({ ...prev, [r.id]: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  <div className={styles.cardActions}>
-                    <button
-                      className={styles.btnApprove}
-                      onClick={async () => {
-                        await adminApi.approveLimitRequest(r.id, limitNotes[r.id]);
-                        setLimitReqs((prev) => prev.filter((x) => x.id !== r.id));
-                        showToast(t("admin.limitRequests.approveSuccess"));
-                      }}
-                    >
-                      {t("admin.limitRequests.approve")}
-                    </button>
-                    <button
-                      className={styles.btnReject}
-                      onClick={async () => {
-                        await adminApi.rejectLimitRequest(r.id, limitNotes[r.id]);
-                        setLimitReqs((prev) => prev.filter((x) => x.id !== r.id));
-                        showToast(t("admin.limitRequests.rejectSuccess"));
-                      }}
-                    >
-                      {t("admin.limitRequests.reject")}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ── 자료실 파일 한도 확장 요청 ── */}
-          <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 12, marginTop: 28 }}>
-            {t("admin.resourceLimitRequests.title")}
-          </h3>
-          {resourceLimitReqs.length === 0 ? (
-            <p className={styles.empty}>{t("admin.limitRequests.noRequests")}</p>
-          ) : (
-            <div className={styles.list}>
-              {resourceLimitReqs.map((r) => (
-                <div key={r.id} className={styles.card}>
-                  <div className={styles.cardMain}>
-                    <div className={styles.orgName}>{r.class_name}</div>
-                    <div className={styles.orgMeta}>
-                      <span>
-                        <span className={styles.metaLabel}>{t("admin.limitRequests.requester")}:</span>
-                        {" "}{r.requester_name} ({r.requester_email})
-                      </span>
-                      <span>
-                        <span className={styles.metaLabel}>{t("admin.limitRequests.current")}:</span>
-                        {" "}{r.current_max_files}개 / {r.current_max_size_mb}MB
-                      </span>
-                      <span>
-                        <span className={styles.metaLabel}>{t("admin.limitRequests.requested")}:</span>
-                        {" "}{r.requested_max_files}개 / {r.requested_max_size_mb}MB
-                      </span>
-                      {r.reason && (
-                        <span>
-                          <span className={styles.metaLabel}>{t("admin.limitRequests.reason")}:</span>
-                          {" "}{r.reason}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
-                      <input
-                        className={styles.noteInput}
-                        placeholder={t("admin.limitRequests.notePlaceholder")}
-                        value={resLimitNotes[r.id] ?? ""}
-                        onChange={(e) => setResLimitNotes((prev) => ({ ...prev, [r.id]: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  <div className={styles.cardActions}>
-                    <button
-                      className={styles.btnApprove}
-                      onClick={async () => {
-                        await adminApi.approveResourceLimitRequest(r.id, resLimitNotes[r.id]);
-                        setResourceLimitReqs((prev) => prev.filter((x) => x.id !== r.id));
-                        showToast(t("admin.limitRequests.approveSuccess"));
-                      }}
-                    >
-                      {t("admin.limitRequests.approve")}
-                    </button>
-                    <button
-                      className={styles.btnReject}
-                      onClick={async () => {
-                        await adminApi.rejectResourceLimitRequest(r.id, resLimitNotes[r.id]);
-                        setResourceLimitReqs((prev) => prev.filter((x) => x.id !== r.id));
-                        showToast(t("admin.limitRequests.rejectSuccess"));
-                      }}
-                    >
-                      {t("admin.limitRequests.reject")}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ── OAuth 공개 앱 한도 확장 요청 ── */}
-          <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 12, marginTop: 28 }}>
-            {t("admin.oauthQuotaRequests.title")}
-          </h3>
           {oauthQuotaReqs.length === 0 ? (
             <p className={styles.empty}>{t("admin.limitRequests.noRequests")}</p>
           ) : (
@@ -461,11 +453,11 @@ export default function AdminPage() {
                     <div className={styles.orgMeta}>
                       <span>
                         <span className={styles.metaLabel}>{t("admin.limitRequests.current")}:</span>
-                        {" "}{r.current_max_apps}개
+                        {" "}{r.current_max_apps}
                       </span>
                       <span>
                         <span className={styles.metaLabel}>{t("admin.limitRequests.requested")}:</span>
-                        {" "}{r.requested_max_apps}개
+                        {" "}{r.requested_max_apps}
                       </span>
                       {r.reason && (
                         <span>

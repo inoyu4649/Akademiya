@@ -133,344 +133,77 @@
     "privacyPolicy": "Privacy Policy",
     "termsOfUse": "Terms of Use",
     "home": "Home",
-    "classes": "Classes",
-    "reports": "Reports",
     "calendar": "Calendar",
     "surveys": "Surveys",
     "bugReport": "Bug Report",
-    "gmcAuto": "GMCAuto",
     "admin": "Admin Panel",
     "profile": "Profile",
     "logout": "Log Out",
     "developerTools": "Developer Tools",
-    "akademiyaOauth": "Akademiya OAuth"
+    "akademiyaOauth": "Akademiya OAuth",
+    "accountCenter": "Account Center"
   },
-  "org": {
-    "list": {
-      "title": "My Organizations",
-      "noOrgs": "You are not a member of any organization.",
-      "applyBtn": "Create Organization",
-      "joinBtn": "Join by Code",
-      "pendingBadge": "Pending Approval",
-      "rejectedBadge": "Rejected",
-      "myApplications": "My Applications"
+  "dashboard": {
+    "greeting": "Welcome, {{name}}",
+    "subtitle": "Services you can use with your Akademiya account.",
+    "comingSoon": "Coming soon",
+    "surveys": {
+      "title": "Akademiya Surveys",
+      "desc": "Smart survey building: from collecting responses all the way to analysing the stats!"
     },
-    "apply": {
-      "title": "Create Organization",
-      "nameLabel": "Organization Name",
-      "namePlaceholder": "Enter organization name",
-      "codeLabel": "Organization Code (4 letters)",
-      "codePlaceholder": "e.g. HAFS",
-      "codeHint": "4 uppercase letters (auto-converted to uppercase)",
-      "domainLabel": "Google School Domain (optional)",
-      "domainPlaceholder": "e.g. school.edu",
-      "domainHint": "Members with this Google domain will be auto-approved",
-      "timezoneLabel": "Timezone",
-      "submitBtn": "Submit Application",
-      "success": "Application submitted. Your organization will be available after admin approval.",
-      "nameRequired": "Please enter an organization name.",
-      "codeInvalid": "Organization code must be exactly 4 letters.",
-      "codeDuplicate": "This organization code is already in use.",
-      "alreadyPending": "You already have a pending application with this code.",
-      "serverError": "Server error. Please try again."
+    "account": {
+      "title": "Akademiya Account Center",
+      "desc": "Manage every service connected to Akademiya, all in one view"
     },
-    "join": {
-      "title": "Join Organization",
-      "description": "Enter the 4-letter organization code.",
-      "submitBtn": "Request to Join",
-      "success": "Join request submitted. You can access the organization after admin approval.",
-      "autoApproved": "School email verified — you have been joined automatically!",
-      "notFound": "Organization not found.",
-      "alreadyMember": "You are already a member of this organization.",
-      "alreadyPending": "You already have a pending join request for this organization.",
-      "serverError": "Server error. Please try again."
+    "gmcAuto": {
+      "title": "GMCAuto 3",
+      "badge": "HAFS accounts only",
+      "desc": "Every HAFS student's never-ending chore — file your GMC PASS automatically, every single day"
     },
-    "detail": {
-      "members": "Members",
-      "membersCount": "{{count}} members",
-      "pendingRequests": "Join Requests",
-      "noRequests": "No pending join requests.",
-      "permissionLabel": "Role",
-      "permission0": "Member",
-      "permission1": "Stats Viewer",
-      "permission2": "Stats + Download",
-      "permission3": "Admin",
-      "approve": "Approve",
-      "reject": "Reject",
-      "changePermission": "Change Role",
-      "save": "Save",
-      "joinedAt": "Joined",
-      "requestedAt": "Requested",
-      "approveSuccess": "Approved successfully.",
-      "rejectSuccess": "Rejected successfully.",
-      "permissionSaved": "Role updated successfully.",
-      "classRequests": "Class Creation Requests",
-      "noClassRequests": "No pending class creation requests.",
-      "className": "Class Name",
-      "classCode": "Composite Code",
-      "classOwner": "Applicant",
-      "classApproveSuccess": "Class approved.",
-      "classRejectSuccess": "Class application rejected."
+    "imsiQuiz": {
+      "title": "ImsiQuiz",
+      "desc": "Perfect for exam-week cramming and pulling the concepts together. When time is short, ImsiQuiz."
     },
-    "leave": {
-      "btn": "Leave Organization",
-      "title": "Leave Organization",
-      "warning": "You are about to leave {{name}}. You will need admin approval to rejoin.",
-      "confirm": "Confirm Leave",
-      "success": "You have left the organization.",
-      "lastAdmin": "You are the only admin and cannot leave. Assign another admin first.",
-      "serverError": "An error occurred. Please try again."
-    },
-    "delete": {
-      "btn": "Delete Organization",
-      "title": "Delete Organization",
-      "warning": "You are about to delete {{name}}. All classes, assignments, and submissions will be permanently deleted and cannot be recovered.",
-      "confirm": "Confirm Delete",
-      "serverError": "An error occurred. Please try again."
+    "hyProject": {
+      "title": "HY Project",
+      "desc": "For our school holidays and those gloriously idle weeks. Handle with care during exams."
     }
   },
-  "class": {
-    "list": {
-      "title": "My Classes",
-      "noClasses": "You are not a member of any class.",
-      "applyBtn": "Create Class",
-      "joinBtn": "Join by Code",
-      "pendingBadge": "Pending Approval",
-      "rejectedBadge": "Rejected",
-      "myApplications": "My Applications"
+  "account": {
+    "title": "Account Center",
+    "subtitle": "Manage your account details and the services connected to Akademiya.",
+    "profile": {
+      "title": "Account details",
+      "hint": "Change your name, contact number and profile picture."
     },
-    "apply": {
-      "title": "Create Class",
-      "orgLabel": "Organization",
-      "orgPlaceholder": "Select an organization",
-      "noOrgs": "You have no organizations. Please join an organization first.",
-      "nameLabel": "Class Name",
-      "namePlaceholder": "Enter class name",
-      "codeLabel": "Class Code (4 digits)",
-      "codePlaceholder": "e.g. 0103",
-      "codeHint": "4 digits (numbers only)",
-      "compositePreview": "Composite code preview",
-      "submitBtn": "Submit Application",
-      "success": "Class creation requested. Available after organization admin approval.",
-      "orgRequired": "Please select an organization.",
-      "nameRequired": "Please enter a class name.",
-      "codeInvalid": "Class code must be exactly 4 digits.",
-      "codeDuplicate": "This class code is already in use in this organization.",
-      "notOrgMember": "You are not a member of this organization.",
-      "serverError": "Server error. Please try again."
+    "connections": {
+      "title": "Connected services",
+      "hint": "Services you signed into with \"Sign in with Akademiya\". Revoking access cuts the service off immediately and it will have to ask for your consent again next time.",
+      "empty": "No connected services.",
+      "revokeBtn": "Revoke",
+      "revokeConfirm": "Revoke access for {{name}}? You will be signed out of that service.",
+      "scope": {
+        "profile": "Name",
+        "email": "Email",
+        "picture": "Profile picture",
+        "org_membership": "Organization membership"
+      }
     },
-    "join": {
-      "title": "Join Class",
-      "description": "Enter the organization code (4 letters) followed by the class code (4 digits).",
-      "submitBtn": "Request to Join",
-      "success": "Join request submitted for {{className}}. Available after class leader approval.",
-      "codeInvalid": "Code must be exactly 8 characters.",
-      "orgNotFound": "Organization not found.",
-      "notOrgMember": "You are not a member of this organization.",
-      "notFound": "Class not found.",
-      "alreadyMember": "You are already a member of this class.",
-      "alreadyPending": "You already have a pending join request for this class.",
-      "serverError": "Server error. Please try again."
-    },
-    "detail": {
-      "members": "Members",
-      "membersCount": "{{count}} members",
-      "pendingRequests": "Join Requests",
-      "noRequests": "No pending join requests.",
-      "roleLabel": "Role",
-      "permLeader": "Leader",
-      "permStudent": "Student",
-      "approve": "Approve",
-      "reject": "Reject",
-      "requestedAt": "Requested",
-      "approveSuccess": "Approved successfully.",
-      "rejectSuccess": "Rejected successfully.",
-      "permissionSaved": "Role updated successfully."
-    },
-    "leave": {
-      "btn": "Leave Class",
-      "title": "Leave Class",
-      "warning": "You are about to leave {{name}}. You will need class leader approval to rejoin.",
-      "confirm": "Confirm Leave",
-      "success": "You have left the class.",
-      "lastLeader": "You are the only leader and cannot leave. Assign another leader first.",
-      "serverError": "An error occurred. Please try again."
-    },
-    "delete": {
-      "btn": "Delete Class",
-      "title": "Delete Class",
-      "warning": "You are about to delete {{name}}. All assignments and submissions will be permanently deleted and cannot be recovered.",
-      "confirm": "Confirm Delete",
-      "serverError": "An error occurred. Please try again."
-    }
-  },
-  "resource": {
-    "nav": "Resources",
-    "title": "Class Resources",
-    "empty": "No resources have been posted yet.",
-    "upload": "Upload Resource",
-    "uploadBtn": "Upload",
-    "titleLabel": "Title",
-    "titlePlaceholder": "Enter resource title",
-    "titleRequired": "Please enter a title.",
-    "descLabel": "Description (optional)",
-    "descPlaceholder": "Enter a description",
-    "tabFile": "File Upload",
-    "tabLink": "Link",
-    "fileLabel": "File (max total)",
-    "linkLabel": "Link URL",
-    "linkPlaceholder": "https://...",
-    "noContent": "Please attach a file or enter a link.",
-    "fileTooLarge": "Total file size exceeds the limit.",
-    "fileTooLargeServer": "File is too large. Please stay within the limit.",
-    "leaderOnly": "Only class leaders can upload resources.",
-    "deleteConfirm": "Delete this resource?",
-    "deleteBtn": "Delete",
-    "deleteSuccess": "Resource deleted.",
-    "uploadSuccess": "Resource uploaded.",
-    "serverError": "An error occurred. Please try again.",
-    "files": "Attachments",
-    "linkBtn": "Open Link",
-    "downloadFailed": "Unable to download the file. You may not have permission, or it may have been deleted.",
-    "create": {
-      "title": "Upload Resource",
-      "fileHint": "Up to {{files}} files, {{mb}}MB total",
-      "limitSectionTitle": "File Limit",
-      "currentLimits": "Current limit: up to {{files}} files, {{mb}}MB",
-      "requestLimitExpand": "Request Limit Expansion",
-      "reqMaxFiles": "Max file count",
-      "reqMaxSizeMb": "Max size (MB)",
-      "reqReason": "Reason (optional)",
-      "reqReasonPlaceholder": "Explain why you need a higher limit",
-      "submitRequest": "Submit Request",
-      "limitRequested": "Limit expansion request submitted."
-    }
-  },
-  "report": {
-    "reportBtn": "Report",
-    "modalTitle": "Report User",
-    "targetLabel": "Reporting",
-    "reasonLabel": "Reason",
-    "reasonPlaceholder": "Please describe the reason for this report in detail.",
-    "reasonRequired": "Please enter a reason.",
-    "submitBtn": "Submit Report",
-    "submitSuccess": "Report submitted successfully.",
-    "cannotReportSelf": "You cannot report yourself.",
-    "serverError": "Server error. Please try again.",
-    "reportedLabel": "Reported user",
-    "reporterLabel": "Reporter",
-    "classLabel": "Class",
-    "handled": "Report handled successfully.",
-    "page": {
-      "title": "Report Management",
-      "tabHandle": "Pending",
-      "tabMine": "My Reports",
-      "empty": "No reports to display."
-    },
-    "stage": {
-      "class_leader": "Class Leader",
-      "org_admin": "Org Admin",
-      "akademiya": "Akademiya"
-    },
-    "status": {
-      "pending": "Pending",
-      "resolved": "Resolved",
-      "escalated": "Escalated"
-    },
-    "handleModal": {
-      "title": "Handle Report",
-      "noteLabel": "Note (optional)",
-      "notePlaceholder": "Enter handling note or reason.",
-      "resolve": "Mark as Resolved",
-      "escalate": "Escalate",
-      "ban": "Permanent Ban"
-    }
-  },
-  "kick": {
-    "btn": "Kick",
-    "modalTitle": "Remove Member",
-    "targetLabel": "Member",
-    "reasonLabel": "Reason",
-    "reasonPlaceholder": "Enter a reason for removing this member.",
-    "reasonRequired": "Please provide a reason.",
-    "submitBtn": "Remove Member",
-    "success": "Member has been removed.",
-    "serverError": "An error occurred. Please try again."
-  },
-  "assignment": {
-    "list": {
-      "title": "Assignments",
-      "createBtn": "New Assignment",
-      "empty": "No assignments yet.",
-      "dueAt": "Due",
-      "by": "by"
-    },
-    "create": {
-      "title": "New Assignment",
-      "titleLabel": "Title",
-      "titlePlaceholder": "Enter assignment title",
-      "descLabel": "Description",
-      "descPlaceholder": "Enter assignment description (optional)",
-      "dueLabel": "Due Date & Time",
-      "dueHint": "Leave blank for no deadline",
-      "submitBtn": "Create",
-      "titleRequired": "Please enter a title.",
-      "leaderOnly": "Only class leaders can create assignments.",
-      "serverError": "Server error. Please try again."
-    },
-    "detail": {
-      "noDue": "No deadline",
-      "pastDueLabel": "Closed",
-      "submitSection": "Submit Assignment",
-      "tabFile": "Upload File",
-      "tabLink": "Submit Link",
-      "fileHint": "Max 5 MB",
-      "fileRequired": "Please select a file.",
-      "linkRequired": "Please enter a link.",
-      "linkPlaceholder": "https://...",
-      "submitBtn": "Submit",
-      "resubmitBtn": "Resubmit",
-      "downloadFile": "Download File",
-      "feedback": "Return Reason",
-      "submissionsSection": "Submissions",
-      "notSubmitted": "Not submitted",
-      "approveBtn": "Approve",
-      "returnBtn": "Return",
-      "returnModalTitle": "Return Feedback",
-      "returnFeedbackLabel": "Feedback (optional)",
-      "returnFeedbackPlaceholder": "Enter a message for the student.",
-      "confirmReturn": "Return",
-      "approveSuccess": "Approved.",
-      "returnSuccess": "Returned.",
-      "submitSuccess": "Submitted successfully.",
-      "fileTooLarge": "File size must not exceed 5 MB.",
-      "pastDue": "This assignment is past its deadline.",
-      "alreadyApproved": "This submission has already been approved.",
-      "commentsSection": "Comments",
-      "commentPlaceholder": "Write a comment...",
-      "commentSubmit": "Post",
-      "commentFiltered": "(profanity filtered)",
-      "deleteComment": "Delete",
-      "fileHintMulti": "Up to {{count}} files, combined ≤{{mb}}MB",
-      "tooManyFiles": "You can attach up to {{max}} files.",
-      "totalTooLarge": "Total file size cannot exceed {{mb}}MB.",
-      "currentLimits": "Current limits: max {{files}} files, {{mb}}MB",
-      "requestLimitExpand": "Request Limit Increase",
-      "reqMaxFiles": "Max files",
-      "reqMaxSizeMb": "Max size (MB)",
-      "reqReason": "Reason (optional)",
-      "reqReasonPlaceholder": "Explain why you need a higher limit",
-      "submitRequest": "Submit Request",
-      "limitRequested": "Limit increase request submitted.",
-      "editBtn": "Edit",
-      "deleteBtn": "Delete",
-      "deleteConfirm": "Delete this assignment? All submitted files will be permanently removed.",
-      "editSuccess": "Assignment updated."
-    },
-    "status": {
-      "submitted": "Submitted",
-      "approved": "Approved",
-      "returned": "Returned"
+    "org": {
+      "title": "Organizations",
+      "hint": "Joining an organization (such as your school) unlocks services built for it, like GMCAuto 3. If you signed in with a school Google account, the code alone is enough to join.",
+      "empty": "You are not in any organization.",
+      "codePlaceholder": "Org code",
+      "joinBtn": "Join",
+      "leaveBtn": "Leave",
+      "pendingBadge": "Pending",
+      "joinedAuto": "You have joined {{name}}.",
+      "joinRequested": "Requested to join {{name}}. Please wait for an administrator to approve it.",
+      "leaveConfirm": "Leave {{name}}?",
+      "errNotFound": "No organization found with that code.",
+      "errAlreadyMember": "You are already a member.",
+      "errAlreadyPending": "Your request is already pending.",
+      "errLastAdmin": "The last administrator of an organization cannot leave."
     }
   },
   "pwaInstall": {
@@ -538,15 +271,12 @@
   "calendar": {
     "title": "Calendar",
     "noEvents": "No events on this day.",
-    "selectHint": "Click a date to view events.",
+    "selectHint": "Click a date to see its events.",
     "holiday": "Public Holiday",
-    "assignments": "Assignment Deadlines",
-    "customEvents": "Events",
     "event": {
       "addBtn": "Add Event",
-      "addTitle": "Add Event",
+      "addTitle": "Add event",
       "scopeLabel": "Target",
-      "scopeClass": "Class",
       "scopeOrg": "Organization",
       "titleLabel": "Title",
       "titlePlaceholder": "Enter event title",
@@ -556,7 +286,10 @@
       "descLabel": "Description (optional)",
       "descPlaceholder": "Enter event description",
       "colorLabel": "Color",
-      "confirmDelete": "Delete this event?"
+      "confirmDelete": "Delete this event?",
+      "editTitle": "Edit event",
+      "scopePersonal": "Personal",
+      "deleteBtn": "Delete"
     }
   },
   "survey": {
@@ -574,12 +307,9 @@
     "descLabel": "Description (optional)",
     "descPlaceholder": "Enter a description for this survey",
     "scopeLabel": "Target Audience",
-    "scope_class": "Class",
     "scope_org": "Organization",
     "scope_public": "Public (URL)",
-    "selectClass": "Select Class",
     "selectOrg": "Select Organization",
-    "noLeaderClass": "No class where you are a leader.",
     "noAdminOrg": "No organization where you are an admin.",
     "allowAnonymous": "Allow anonymous responses",
     "expiresAt": "Expires",
@@ -605,7 +335,6 @@
     "ratingHint": "Respondents choose 1–5",
     "addQuestion": "Add Question",
     "submitCreate": "Create Survey",
-    "scopeClass": "Class",
     "scopeOrg": "Org",
     "scopePublic": "Public",
     "expired": "Expired",
@@ -737,7 +466,6 @@
     "limitRequests": {
       "title": "File Limit Requests",
       "noRequests": "No pending requests.",
-      "class": "Class",
       "requester": "Requester",
       "current": "Current Limits",
       "requested": "Requested Limits",
@@ -748,24 +476,35 @@
       "approveSuccess": "Approved.",
       "rejectSuccess": "Rejected."
     },
-    "resourceLimitRequests": {
-      "title": "Resource File Limit Requests"
-    },
     "oauthQuotaRequests": {
       "title": "OAuth Public App Limit Requests"
     },
     "orgs": {
-      "title": "Organization Applications",
-      "noRequests": "No pending applications.",
-      "owner": "Applicant",
-      "code": "Code",
-      "domain": "Google Domain",
-      "timezone": "Timezone",
-      "appliedAt": "Applied",
+      "title": "Organizations",
+      "hint": "Organizations are internal and never shown to users. OAuth apps that only allow students of a given school — GMCAuto 3, for instance — use them to check membership.",
+      "noOrgs": "No organizations yet.",
+      "createBtn": "Create organization",
+      "createSuccess": "Organization created.",
+      "updateSuccess": "Saved.",
+      "deleteSuccess": "Organization deleted.",
+      "deleteConfirm": "Delete {{name}}? All members and pending join requests will be removed.",
+      "codeDuplicate": "That code is already in use.",
+      "invalidInput": "Enter an organization name and a 4-letter code.",
+      "namePlaceholder": "Organization name",
+      "codePlaceholder": "Code (4 letters)",
+      "domainPlaceholder": "Google Workspace domain (e.g. hafs.hs.kr)",
+      "domainHint": "With a domain set, users signed in with a Google account on that domain join instantly by entering the code — no approval needed.",
+      "noDomain": "Not set",
+      "members": "Members",
+      "pendingJoins": "{{count}} pending",
+      "domain": "Google domain",
+      "timezone": "Time zone",
+      "createdAt": "Created",
+      "pendingBadge": "Pending",
       "approve": "Approve",
-      "reject": "Reject",
       "approveSuccess": "Organization approved.",
-      "rejectSuccess": "Application rejected."
+      "editDomain": "Edit domain",
+      "delete": "Delete"
     },
     "bugReports": {
       "title": "Bug Reports",
@@ -803,10 +542,8 @@
       "loginMeansLabel": "Allowed Sign-in Methods",
       "scopeRangeLabel": "Allowed Sign-in Scope",
       "scopeOrgRequired": "Please select an organization.",
-      "scopeClassRequired": "Please select a class.",
       "scopeDomainRequired": "Please enter a Google Workspace domain.",
       "scopeOrgPlaceholder": "Select an organization",
-      "scopeClassPlaceholder": "Select a class",
       "quotaUsage": "Public apps: {{used}}/{{max}} used (org/class apps are unlimited)",
       "quotaExceeded": "You've reached the public app limit ({{max}}).",
       "quotaSectionTitle": "Public App Limit",
@@ -987,13 +724,11 @@
       "errorNotEligible": "You're not eligible to sign in to this app.",
       "errorGoogleOnly": "This app only supports signing in with a Google account.",
       "scopeOrgNotice": "Only accounts belonging to the {{orgName}}[{{orgCode}}] organization can use this.",
-      "scopeClassNotice": "Only accounts belonging to the {{className}}[{{classCode}}] class can use this.",
       "scopeGoogleWorkspaceNotice": "Only Google accounts on the {{domain}} domain can use this.",
       "googleOnlyNotice": "You can only sign in with Google.",
       "akademiyaOnlyNotice": "Signing in with Google is not allowed.",
       "sharePicture": "Profile picture",
-      "shareOrgMembership": "List of joined organizations",
-      "shareClassMembership": "List of joined classes"
+      "shareOrgMembership": "List of joined organizations"
     }
   },
   "privacy": {

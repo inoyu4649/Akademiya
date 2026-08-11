@@ -1,17 +1,22 @@
 {
   "name": "Akademiya",
   "short_name": "Akademiya",
-  "description": "교사 전용의 한계를 넘은 교육 플랫폼. 동아리 부장·학급 임원도 조직과 반을 자유롭게 운영하세요.",
+  "description": "Akademiya 계정 하나로 스마트한 설문지 제작부터 연동 서비스 로그인까지.",
   "start_url": "/",
   "display": "standalone",
   "scope": "/",
-  "launch_handler": { "client_mode": "navigate-existing" },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "capture_links": "existing-client-navigate",
   "background_color": "#1a1a1a",
-  "theme_color": "#4fc3f7",
+  "theme_color": "#13e56a",
   "lang": "ko",
   "dir": "ltr",
-  "categories": ["education", "productivity"],
+  "categories": [
+    "education",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "/logo.png",

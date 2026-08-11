@@ -7,26 +7,17 @@ import dotenv from "dotenv";
 import "./config/passport.js";
 import authRouter from "./routes/auth.js";
 import orgsRouter from "./routes/orgs.js";
-import classesRouter from "./routes/classes.js";
-import reportsRouter from "./routes/reports.js";
 import adminRouter from "./routes/admin.js";
-import assignmentsRouter from "./routes/assignments.js";
-import submissionsRouter from "./routes/submissions.js";
-import commentsRouter from "./routes/comments.js";
 import notificationsRouter from "./routes/notifications.js";
 import calendarRouter from "./routes/calendar.js";
-import statsRouter from "./routes/stats.js";
 import bugReportsRouter from "./routes/bugReports.js";
 import openoauthRouter from "./routes/openoauth.js";
 import surveysRouter from "./routes/surveys.js";
 import privacyRouter from "./routes/privacy.js";
 import termsRouter from "./routes/terms.js";
 import intlTransferRouter from "./routes/intl-transfer.js";
-import resourcesRouter from "./routes/resources.js";
-import filesRouter from "./routes/files.js";
 import pushRouter from "./routes/push.js";
 import avatarRouter from "./routes/avatar.js";
-import { startDeadlineScheduler } from "./scheduler/deadlines.js";
 import { preloadHolidays } from "./utils/holidays.js";
 
 dotenv.config();
@@ -122,29 +113,21 @@ const authLimiter = rateLimit({
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 
-// 업로드 파일은 공개 정적 서빙하지 않고 인증·멤버십 검사 라우트(/api/files)로만 제공.
+// 업로드 파일 중 공개 정적 서빙 대상은 프로필 사진(/api/avatars)뿐이다.
 // (H-2 저장형 XSS / M-4 접근 통제 — 과거 express.static "/uploads" 제거)
 
 // ── 라우터 등록 ──────────────────────────────────────────────────────────────
 app.use("/api/auth",         authLimiter, authRouter);   // 인증 엔드포인트: 엄격한 rate limit
-app.use("/api/orgs",         orgsRouter);
-app.use("/api/classes",      classesRouter);
-app.use("/api/reports",      reportsRouter);
+app.use("/api/orgs",         orgsRouter);      // 조직: 계정 센터 가입 + 관리자 운영 (일반 UI 미노출)
 app.use("/api/admin",        adminRouter);
-app.use("/api/assignments",  assignmentsRouter);
-app.use("/api/submissions",  submissionsRouter);
-app.use("/api/comments",     commentsRouter);
 app.use("/api/notifications",notificationsRouter);
 app.use("/api/calendar",     calendarRouter);
-app.use("/api/stats",        statsRouter);
 app.use("/api/bug-reports",  bugReportsRouter);
 app.use("/api/openoauth",    openoauthRouter);    // Akademiya OpenOAuth — 범용 OAuth2 제공자
 app.use("/api/surveys",      surveysRouter);
 app.use("/api/privacy",      privacyRouter);
 app.use("/api/terms",        termsRouter);
 app.use("/api/intl-transfer", intlTransferRouter);
-app.use("/api/resources",    resourcesRouter);
-app.use("/api/files",        filesRouter);     // 인증·멤버십 검사 업로드 파일 다운로드
 app.use("/api/push",         pushRouter);
 app.use("/api/avatars",      avatarRouter);   // 프로필 사진 업로드 + 공개 서빙(민감정보 아님)
 
@@ -168,7 +151,6 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 // ── 서버 시작 ────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`Akademiya backend running on port ${PORT} [${isProd ? "production" : "development"}]`);
-  startDeadlineScheduler();
   preloadHolidays().catch((e) => console.warn("[공휴일 초기화 실패]", e.message));
 });
 

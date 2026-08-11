@@ -34,13 +34,6 @@ function toMysqlDatetime(v: string | null | undefined): string | null {
 
 async function canAccessSurvey(userId: number, survey: any): Promise<boolean> {
   if (survey.scope_type === "public") return true;
-  if (survey.scope_type === "class") {
-    const [rows] = await pool.execute(
-      "SELECT id FROM class_members WHERE class_id = ? AND user_id = ?",
-      [survey.scope_id, userId]
-    ) as any[];
-    return (rows as any[]).length > 0;
-  }
   if (survey.scope_type === "org") {
     const [rows] = await pool.execute(
       "SELECT id FROM org_members WHERE org_id = ? AND user_id = ?",
@@ -188,7 +181,7 @@ router.post("/", requireAuth, async (req, res) => {
     res.status(400).json({ error: "survey.missingFields" });
     return;
   }
-  if (!["class", "org", "public"].includes(scope_type)) {
+  if (!["org", "public"].includes(scope_type)) {
     res.status(400).json({ error: "survey.invalidScope" });
     return;
   }
@@ -201,16 +194,7 @@ router.post("/", requireAuth, async (req, res) => {
   const sid        = scope_id ? Number(scope_id) : null;
 
   // scope 권한 확인
-  if (scope_type === "class" && sid) {
-    const [rows] = await pool.execute(
-      "SELECT permission FROM class_members WHERE class_id = ? AND user_id = ?",
-      [sid, userId]
-    ) as any[];
-    if (!(rows as any[]).length || (rows as any[])[0].permission < 1) {
-      res.status(403).json({ error: "survey.forbidden" });
-      return;
-    }
-  } else if (scope_type === "org" && sid) {
+  if (scope_type === "org" && sid) {
     const [rows] = await pool.execute(
       "SELECT permission FROM org_members WHERE org_id = ? AND user_id = ?",
       [sid, userId]
@@ -237,7 +221,7 @@ router.post("/", requireAuth, async (req, res) => {
 
     await insertQuestions(conn, surveyId, questions);
 
-    // 새 설문 알림 (class/org)
+    // 새 설문 알림 (조직 설문)
     const notifyMembers = async (memberQuery: string, params: any[]) => {
       const [members] = await conn.execute(memberQuery, params) as any[];
       if ((members as any[]).length > 0) {
@@ -252,9 +236,7 @@ router.post("/", requireAuth, async (req, res) => {
         );
       }
     };
-    if (scope_type === "class" && sid) {
-      await notifyMembers("SELECT user_id FROM class_members WHERE class_id = ?", [sid]);
-    } else if (scope_type === "org" && sid) {
+    if (scope_type === "org" && sid) {
       await notifyMembers("SELECT user_id FROM org_members WHERE org_id = ?", [sid]);
     }
 
@@ -291,15 +273,13 @@ router.get("/viewable", requireAuth, async (req, res) => {
             s.creator_id,
             u.display_name AS creator_name,
             CASE
-              WHEN s.scope_type = 'class' THEN c.name
-              WHEN s.scope_type = 'org'   THEN o.name
+              WHEN s.scope_type = 'org' THEN o.name
               ELSE NULL
             END AS scope_name,
             (SELECT COUNT(*) FROM survey_responses sr WHERE sr.survey_id = s.id) AS response_count
      FROM survey_stat_viewers ssv
      JOIN surveys s ON s.id = ssv.survey_id
      JOIN users u ON u.id = s.creator_id
-     LEFT JOIN classes c ON c.id = s.scope_id AND s.scope_type = 'class'
      LEFT JOIN organizations o ON o.id = s.scope_id AND s.scope_type = 'org'
      WHERE ssv.user_id = ? AND s.creator_id != ?
      ORDER BY s.created_at DESC`,
@@ -311,21 +291,6 @@ router.get("/viewable", requireAuth, async (req, res) => {
 // ── GET /api/surveys/feed ─────────────────────────────────────────────────────
 router.get("/feed", requireAuth, async (req, res) => {
   const userId = req.user!.id;
-
-  const [classSurveys] = await pool.execute(
-    `SELECT s.id, s.title, s.scope_type, s.scope_id, s.is_active,
-            s.allow_edit, s.allow_multiple, s.expires_at, s.created_at,
-            c.name AS scope_name,
-            (SELECT COUNT(*) FROM survey_responses sr WHERE sr.survey_id = s.id) AS response_count,
-            (SELECT COUNT(*) > 0 FROM survey_responses sr2 WHERE sr2.survey_id = s.id AND sr2.user_id = ?) AS already_responded
-     FROM surveys s
-     JOIN class_members cm ON cm.class_id = s.scope_id AND cm.user_id = ?
-     JOIN classes c ON c.id = s.scope_id
-     WHERE s.scope_type = 'class' AND s.is_active = 1
-       AND (s.expires_at IS NULL OR s.expires_at > NOW())
-     ORDER BY s.created_at DESC`,
-    [userId, userId]
-  ) as any[];
 
   const [orgSurveys] = await pool.execute(
     `SELECT s.id, s.title, s.scope_type, s.scope_id, s.is_active,
@@ -342,32 +307,7 @@ router.get("/feed", requireAuth, async (req, res) => {
     [userId, userId]
   ) as any[];
 
-  res.json({ surveys: [...(classSurveys as any[]), ...(orgSurveys as any[])] });
-});
-
-// ── GET /api/surveys/class/:classId ──────────────────────────────────────────
-router.get("/class/:classId", requireAuth, async (req, res) => {
-  const userId  = req.user!.id;
-  const classId = Number(req.params.classId);
-
-  const [pm] = await pool.execute(
-    "SELECT permission FROM class_members WHERE class_id = ? AND user_id = ?",
-    [classId, userId]
-  ) as any[];
-  if (!(pm as any[]).length) { res.status(403).json({ error: "forbidden" }); return; }
-
-  const [rows] = await pool.execute(
-    `SELECT s.id, s.title, s.scope_type, s.scope_id, s.is_active,
-            s.allow_edit, s.allow_multiple, s.expires_at, s.created_at,
-            (SELECT COUNT(*) FROM survey_responses sr WHERE sr.survey_id = s.id) AS response_count,
-            (SELECT COUNT(*) > 0 FROM survey_responses sr2 WHERE sr2.survey_id = s.id AND sr2.user_id = ?) AS already_responded
-     FROM surveys s
-     WHERE s.scope_type = 'class' AND s.scope_id = ? AND s.is_active = 1
-       AND (s.expires_at IS NULL OR s.expires_at > NOW())
-     ORDER BY s.created_at DESC`,
-    [userId, classId]
-  ) as any[];
-  res.json({ surveys: rows });
+  res.json({ surveys: orgSurveys as any[] });
 });
 
 // ── GET /api/surveys/org/:orgId ───────────────────────────────────────────────

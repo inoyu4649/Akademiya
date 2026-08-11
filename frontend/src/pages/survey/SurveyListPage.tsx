@@ -12,11 +12,7 @@ function SurveyCard({ survey, onClick }: { survey: Survey; onClick: () => void }
     <div className={styles.card} onClick={onClick}>
       <div className={styles.cardHeader}>
         <span className={`${styles.scopeBadge} ${styles[`scope_${survey.scope_type}`]}`}>
-          {survey.scope_type === "class"
-            ? t("survey.scopeClass")
-            : survey.scope_type === "org"
-            ? t("survey.scopeOrg")
-            : t("survey.scopePublic")}
+          {survey.scope_type === "org" ? t("survey.scopeOrg") : t("survey.scopePublic")}
         </span>
         {survey.scope_name && (
           <span className={styles.scopeName}>{survey.scope_name}</span>
@@ -55,11 +51,7 @@ function ViewableSurveyCard({ survey, onClick }: { survey: Survey; onClick: () =
     <div className={styles.card} onClick={onClick}>
       <div className={styles.cardHeader}>
         <span className={`${styles.scopeBadge} ${styles[`scope_${survey.scope_type}`]}`}>
-          {survey.scope_type === "class"
-            ? t("survey.scopeClass")
-            : survey.scope_type === "org"
-            ? t("survey.scopeOrg")
-            : t("survey.scopePublic")}
+          {survey.scope_type === "org" ? t("survey.scopeOrg") : t("survey.scopePublic")}
         </span>
         {survey.scope_name && (
           <span className={styles.scopeName}>{survey.scope_name}</span>

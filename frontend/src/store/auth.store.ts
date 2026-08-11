@@ -11,6 +11,8 @@ export interface AuthUser {
   language: string | null;
   role: "user" | "admin";
   developerMode: boolean;
+  /** 비밀번호가 설정된 계정인지 (Google 전용 계정이면 false) */
+  hasPassword: boolean;
 }
 
 interface AuthState {

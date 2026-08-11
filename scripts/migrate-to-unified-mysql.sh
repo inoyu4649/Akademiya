@@ -4,8 +4,7 @@
 #  호스트 MySQL → Akademiya 통합 mysql 도커 컨테이너 마이그레이션
 #
 #  대상 DB: akademiya (호스트 MySQL → mysql 컨테이너)
-#  제외:    akashaalt (완전 독립 스키마, 이 스크립트로 마이그레이션하지 않음 — DEPLOYMENT.md 10-4 참조)
-#           gmcauto   (완전 독립 스키마, 별도 컨테이너/DB이므로 이 스크립트 대상 아님)
+#  제외:    gmcauto (완전 독립 스키마, 별도 컨테이너/DB이므로 이 스크립트 대상 아님)
 #
 #  사용법:
 #    chmod +x scripts/migrate-to-unified-mysql.sh
@@ -147,7 +146,6 @@ info "앱 유저 권한 재설정 중..."
 docker exec -i "$CONTAINER" mysql \
   -u root --password="$MYSQL_ROOT_PASSWORD" << SQL
 GRANT ALL PRIVILEGES ON \`akademiya\`.*  TO '${MYSQL_APP_USER}'@'%';
-GRANT ALL PRIVILEGES ON \`akashaalt\`.*  TO '${MYSQL_APP_USER}'@'%';
 FLUSH PRIVILEGES;
 SQL
 info "권한 설정 완료"
@@ -212,9 +210,8 @@ echo "  리포트:    $DUMP_DIR/row_counts.txt"
 echo ""
 echo "  다음 단계:"
 echo "  1. backend/.env 에서 DB_HOST=mysql 확인"
-echo "  2. akashaalt/.env 에서 AKASHAALT_DB_HOST/USER/PASSWORD/NAME 확인"
-echo "  3. docker compose up -d --build"
-echo "  4. 서비스 정상 동작 확인 후 호스트 MySQL 백업"
+echo "  2. docker compose up -d --build"
+echo "  3. 서비스 정상 동작 확인 후 호스트 MySQL 백업"
 echo ""
 echo "  롤백 방법 (문제 발생 시):"
 echo "  - docker-compose.yml 의 backend.environment 에서"

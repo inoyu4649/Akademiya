@@ -5,19 +5,16 @@
 # 컨테이너 안에서는 존재하지 않는 변수 — 예전에 이 스크립트가 그 이름을 잘못 참조해 GRANT 문의 대상이
 # 빈 문자열('@'%')이 되어 "ERROR 1410: not allowed to create a user with GRANT"로 실패했었음.
 # MYSQL_DATABASE=akademiya 는 컨테이너가 자동 생성.
-# gmcauto/akashaalt DB 생성 및 앱 유저 권한 부여 (둘 다 Akademiya 본체와 분리된 독립 스키마).
+# gmcauto DB 생성 및 앱 유저 권한 부여 (Akademiya 본체와 분리된 독립 스키마).
 
 mysql -u root -p"${MYSQL_ROOT_PASSWORD}" <<SQL
 CREATE DATABASE IF NOT EXISTS \`gmcauto\`
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE DATABASE IF NOT EXISTS \`gmcauto3\`
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE DATABASE IF NOT EXISTS \`akashaalt\`
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 GRANT ALL PRIVILEGES ON \`akademiya\`.* TO '${MYSQL_USER}'@'%';
 GRANT ALL PRIVILEGES ON \`gmcauto\`.*   TO '${MYSQL_USER}'@'%';
 GRANT ALL PRIVILEGES ON \`gmcauto3\`.*  TO '${MYSQL_USER}'@'%';
-GRANT ALL PRIVILEGES ON \`akashaalt\`.* TO '${MYSQL_USER}'@'%';
 FLUSH PRIVILEGES;
 SQL

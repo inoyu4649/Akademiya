@@ -81,7 +81,7 @@ router.delete("/", requireAuth, async (req, res) => {
 });
 
 // ── POST /api/notifications/broadcast — 브로드캐스트 ─────────────────────────
-// body: { title, body?, link?, scope: "class"|"org"|"all", scope_id?: number }
+// body: { title, body?, link?, scope: "org"|"all", scope_id?: number }
 router.post("/broadcast", requireAuth, async (req, res) => {
   const userId = req.user!.id;
   const {
@@ -94,7 +94,7 @@ router.post("/broadcast", requireAuth, async (req, res) => {
     title: string;
     body?: string;
     link?: string;
-    scope: "class" | "org" | "all";
+    scope: "org" | "all";
     scope_id?: number;
   };
 
@@ -105,27 +105,7 @@ router.post("/broadcast", requireAuth, async (req, res) => {
 
   let targetUserIds: number[] = [];
 
-  if (scope === "class") {
-    if (!scope_id) {
-      res.status(400).json({ error: "notification.broadcast.missingScope" });
-      return;
-    }
-    // 반장(permission>=1) 확인
-    const [permRows] = await pool.execute(
-      "SELECT permission FROM class_members WHERE class_id = ? AND user_id = ?",
-      [scope_id, userId]
-    ) as any[];
-    if (!(permRows as any[]).length || (permRows as any[])[0].permission < 1) {
-      res.status(403).json({ error: "forbidden" });
-      return;
-    }
-    const [members] = await pool.execute(
-      "SELECT user_id FROM class_members WHERE class_id = ?",
-      [scope_id]
-    ) as any[];
-    targetUserIds = (members as any[]).map((m: any) => m.user_id as number);
-
-  } else if (scope === "org") {
+  if (scope === "org") {
     if (!scope_id) {
       res.status(400).json({ error: "notification.broadcast.missingScope" });
       return;

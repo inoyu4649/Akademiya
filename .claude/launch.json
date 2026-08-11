@@ -4,26 +4,35 @@
     {
       "name": "frontend",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--dir", "frontend", "run", "dev"],
+      "runtimeArgs": [
+        "--dir",
+        "frontend",
+        "run",
+        "dev"
+      ],
       "port": 5173
     },
     {
       "name": "backend",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--dir", "backend", "run", "dev"],
+      "runtimeArgs": [
+        "--dir",
+        "backend",
+        "run",
+        "dev"
+      ],
       "port": 3000
     },
     {
       "name": "gmc-frontend",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "gmc", "run", "dev"],
+      "runtimeArgs": [
+        "--prefix",
+        "gmc",
+        "run",
+        "dev"
+      ],
       "port": 5174
-    },
-    {
-      "name": "akashaalt-frontend",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "akashaalt", "run", "dev"],
-      "port": 5175
     }
   ]
 }

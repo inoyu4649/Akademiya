@@ -8,27 +8,12 @@ import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import OAuthCallbackPage from "./pages/auth/OAuthCallbackPage";
 import CompleteProfilePage from "./pages/auth/CompleteProfilePage";
-import ProfilePage from "./pages/auth/ProfilePage";
+import AccountCenterPage from "./pages/account/AccountCenterPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AppLayout from "./components/layout/AppLayout";
-import OrgListPage from "./pages/org/OrgListPage";
-import OrgApplyPage from "./pages/org/OrgApplyPage";
-import OrgJoinPage from "./pages/org/OrgJoinPage";
-import OrgDetailPage from "./pages/org/OrgDetailPage";
-import ClassListPage from "./pages/class/ClassListPage";
-import ClassApplyPage from "./pages/class/ClassApplyPage";
-import ClassJoinPage from "./pages/class/ClassJoinPage";
-import ClassDetailPage from "./pages/class/ClassDetailPage";
-import ClassResourcesPage from "./pages/class/ClassResourcesPage";
-import ClassResourceCreatePage from "./pages/class/ClassResourceCreatePage";
-import AssignmentListPage from "./pages/assignment/AssignmentListPage";
-import AssignmentCreatePage from "./pages/assignment/AssignmentCreatePage";
-import AssignmentDetailPage from "./pages/assignment/AssignmentDetailPage";
-import ReportManagePage from "./pages/report/ReportManagePage";
+import DashboardPage from "./pages/dashboard/DashboardPage";
 import AdminPage from "./pages/admin/AdminPage";
 import CalendarPage from "./pages/calendar/CalendarPage";
-import ClassStatsPage from "./pages/stats/ClassStatsPage";
-import OrgStatsPage from "./pages/stats/OrgStatsPage";
 import BugReportPage from "./pages/bugReport/BugReportPage";
 import SurveyListPage from "./pages/survey/SurveyListPage";
 import SurveyCreatePage from "./pages/survey/SurveyCreatePage";
@@ -69,25 +54,12 @@ const router = createBrowserRouter([
   {
     element: <ProtectedRoute><AppLayout /></ProtectedRoute>,
     children: [
-      { index: true, element: <OrgListPage /> },
-      { path: "org/apply", element: <OrgApplyPage /> },
-      { path: "org/join", element: <OrgJoinPage /> },
-      { path: "org/:id", element: <OrgDetailPage /> },
-      { path: "classes", element: <ClassListPage /> },
-      { path: "classes/apply", element: <ClassApplyPage /> },
-      { path: "classes/join", element: <ClassJoinPage /> },
-      { path: "classes/:id", element: <ClassDetailPage /> },
-      { path: "classes/:classId/resources",        element: <ClassResourcesPage /> },
-      { path: "classes/:classId/resources/create", element: <ClassResourceCreatePage /> },
-      { path: "classes/:classId/assignments", element: <AssignmentListPage /> },
-      { path: "classes/:classId/assignments/create", element: <AssignmentCreatePage /> },
-      { path: "assignments/:id", element: <AssignmentDetailPage /> },
-      { path: "reports",                element: <ReportManagePage /> },
+      { index: true, element: <DashboardPage /> },
+      { path: "account",                element: <AccountCenterPage /> },
+      // 구 경로 호환 — 사이드바/북마크의 /profile을 계정 센터로 넘긴다
+      { path: "profile",                element: <Navigate to="/account" replace /> },
       { path: "admin",                  element: <AdminPage /> },
-      { path: "profile",                element: <ProfilePage /> },
       { path: "calendar",               element: <CalendarPage /> },
-      { path: "classes/:classId/stats", element: <ClassStatsPage /> },
-      { path: "org/:id/stats",          element: <OrgStatsPage /> },
       { path: "bug-report",             element: <BugReportPage /> },
       { path: "surveys",                element: <SurveyListPage /> },
       { path: "surveys/create",         element: <SurveyCreatePage /> },
