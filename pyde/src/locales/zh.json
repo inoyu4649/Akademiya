@@ -124,7 +124,10 @@
       "TOO_MANY_FILES": "已超出文件数量上限。",
       "NAME_ALREADY_EXISTS": "已存在同名文件。",
       "NOT_FOUND": "找不到文件,共享可能已被取消。"
-    }
+    },
+    "closeTab": "关闭 {{name}}",
+    "confirmClose": "“{{name}}”有未保存的更改。仍要关闭吗?",
+    "tooManyTabs": "最多可打开 {{max}} 个标签页,请先关闭一个。"
   },
   "share": {
     "title": "共享",

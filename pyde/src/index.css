@@ -62,6 +62,7 @@
 
   /* ── 레이아웃 ── */
   --header-height: 48px;
+  --tabbar-height: 32px;
   --statusbar-height: 24px;
 
   font-size: 14px;

@@ -1,6 +1,7 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import Editor from '@monaco-editor/react'
+import Editor, { type OnMount } from '@monaco-editor/react'
+import type { editor as MonacoEditor } from 'monaco-editor'
 import type { NbCell } from '../../notebook/nbformat'
 import { renderMarkdown } from '../../notebook/markdown'
 import { PYDE_THEME } from '../editor/pydeTheme'
@@ -15,6 +16,10 @@ interface Props {
   queued: boolean
   onSelect: () => void
   onEdit: () => void
+  /** 에디터에 실제로 포커스가 들어왔다 = 편집 모드 */
+  onEnterEdit: () => void
+  /** 포커스가 빠졌다 = 명령 모드 */
+  onLeaveEdit: () => void
   onChange: (source: string) => void
   onRunAdvance: () => void
   onRunInPlace: () => void
@@ -33,12 +38,21 @@ export default function NotebookCell({
   queued,
   onSelect,
   onEdit,
+  onEnterEdit,
+  onLeaveEdit,
   onChange,
   onRunAdvance,
   onRunInPlace,
 }: Props) {
   const { t } = useTranslation()
   const isCode = cell.cell_type === 'code'
+  const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null)
+
+  // 키보드로 편집 모드에 들어온 경우(Enter) 실제 포커스도 옮겨줘야 타이핑이 먹힌다.
+  // 이게 없으면 "편집 모드인데 글자가 안 써지는" 상태가 된다.
+  useEffect(() => {
+    if (editing && selected) editorRef.current?.focus()
+  }, [editing, selected])
 
   // Monaco 인스턴스마다 ResizeObserver를 붙이면(automaticLayout) 셀이 많아질수록
   // 무거워진다. 줄 수로 높이를 직접 계산해 레이아웃을 고정한다.
@@ -48,6 +62,27 @@ export default function NotebookCell({
   }, [cell.source])
 
   const marker = running ? '[*]' : queued ? '[…]' : isCode ? `[${cell.execution_count ?? ' '}]` : ''
+
+  const handleEditorMount: OnMount = (editor, monaco) => {
+    editorRef.current = editor
+
+    // ⚠️ 편집/명령 모드는 "에디터에 포커스가 있는가"로 판정한다.
+    //    클릭만으로 커서를 넣었을 때도 편집 모드가 되어야 한다. 안 그러면 사용자가
+    //    타이핑한 a·b·d 같은 글자를 노트북이 셀 추가/삭제 단축키로 가로챈다.
+    editor.onDidFocusEditorText(onEnterEdit)
+    editor.onDidBlurEditorText(onLeaveEdit)
+
+    // Jupyter 관례: Shift+Enter는 실행 후 다음 셀, Ctrl+Enter는 제자리 실행
+    editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, onRunAdvance)
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, onRunInPlace)
+    // Esc로 명령 모드 복귀 — Monaco 안에서 눌러야 하므로 여기서 잡는다
+    editor.addCommand(monaco.KeyCode.Escape, () => {
+      onLeaveEdit()
+      // 포커스를 노트북 컨테이너로 돌려야 방향키·A/B 같은 명령이 먹는다
+      const container = editor.getDomNode()?.closest<HTMLElement>('[data-notebook-root]')
+      container?.focus()
+    })
+  }
 
   const showEditor = isCode || editing
 
@@ -73,11 +108,7 @@ export default function NotebookCell({
               theme={PYDE_THEME}
               value={cell.source}
               onChange={(v) => onChange(v ?? '')}
-              onMount={(editor, monaco) => {
-                // Jupyter 관례: Shift+Enter는 실행 후 다음 셀, Ctrl+Enter는 제자리 실행
-                editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, onRunAdvance)
-                editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, onRunInPlace)
-              }}
+              onMount={handleEditorMount}
               options={{
                 fontFamily: "'D2Coding', 'Cascadia Code', Consolas, monospace",
                 fontSize: 13.5,

@@ -1,23 +1,24 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, useSearchParams } from 'react-router-dom'
 import AppHeader from '../components/layout/AppHeader'
 import EditorToolbar from '../components/layout/EditorToolbar'
 import IdeLayout from '../components/layout/IdeLayout'
+import TabBar from '../components/layout/TabBar'
 import BootSplash from '../components/boot/BootSplash'
 import CodeEditor from '../components/editor/CodeEditor'
 import TerminalPanel from '../components/terminal/TerminalPanel'
 import CanvasPanel from '../components/canvas/CanvasPanel'
-import NotebookView from '../components/notebook/NotebookView'
+import NotebookPane, { type NotebookApi } from '../components/notebook/NotebookPane'
 import FileBrowserModal from '../components/files/FileBrowserModal'
 import ConflictModal from '../components/files/ConflictModal'
 import ShareModal from '../components/share/ShareModal'
-import { kindOf, useLocalDraft, DEFAULT_DRAFT, type Draft, type FileKind } from '../hooks/useLocalDraft'
+import { kindOf, DEFAULT_DRAFT, type Draft, type FileKind } from '../hooks/useLocalDraft'
+import { useWorkspace, MAX_OPEN_TABS, type Doc } from '../hooks/useWorkspace'
 import { useCloudSync } from '../hooks/useCloudSync'
 import { useAuth } from '../hooks/authContext'
 import { usePyodideRuntime } from '../runtime/usePyodideRuntime'
 import { useRunner } from '../runtime/useRunner'
-import { useNotebook } from '../notebook/useNotebook'
 import { createNotebook, parseNotebook, serializeNotebook } from '../notebook/nbformat'
 import { readFile, readPublicFile } from '../api/cloud.api'
 
@@ -30,12 +31,16 @@ export default function IdePage() {
 
   const runtime = usePyodideRuntime()
   const runner = useRunner(runtime)
-  // 공유 링크로 들어왔으면 내 초안을 덮어쓰지 않는다(읽기만 하고 지나가는 경우가 대부분)
-  const { draft, setContent, replace, patchMeta } = useLocalDraft({ persist: !shareToken })
-  const cloud = useCloudSync({ draft, patchMeta, signedIn })
+  // 공유 링크로 들어왔으면 내 작업 공간을 건드리지 않는다(읽고 지나가는 경우가 대부분)
+  const ws = useWorkspace({ persist: !shareToken })
+  const draft = ws.active
+  const cloud = useCloudSync({ draft, patchMeta: ws.patchMeta, signedIn })
 
   const kind = kindOf(draft.name)
-  const nb = useNotebook(runtime, kind === 'ipynb' ? draft.content : '', setContent)
+  // 노트북 상태는 NotebookPane이 문서 단위로 들고 있다(탭 사이 오염 방지).
+  // 툴바가 실행/중지를 부를 수 있게 API만 ref로 받아 둔다.
+  const nbApi = useRef<NotebookApi | null>(null)
+  const [nbRunning, setNbRunning] = useState(false)
 
   const [browsing, setBrowsing] = useState(false)
   const [sharing, setSharing] = useState(false)
@@ -57,14 +62,17 @@ export default function IdePage() {
     ;(window as unknown as Record<string, unknown>).__pyde = runtime
   }, [runtime])
 
-  /** 문서를 통째로 바꾸는 모든 경로가 거쳐야 하는 지점 — 노트북 상태 리셋을 빠뜨리지 않도록 */
+  /** 문서를 새로 여는 모든 경로가 거쳐야 하는 지점 */
   const openDocument = useCallback(
     (next: Draft) => {
-      replace(next)
+      const failure = ws.openDoc(next)
+      if (failure === 'TOO_MANY_TABS') {
+        window.alert(t('files.tooManyTabs', { max: MAX_OPEN_TABS }))
+        return
+      }
       runner.clear()
-      if (kindOf(next.name) === 'ipynb') nb.reset(next.content)
     },
-    [replace, runner, nb]
+    [ws, runner, t]
   )
 
   // ── 공유 링크(/s/:token)로 들어온 경우 ───────────────────────────────────
@@ -93,7 +101,7 @@ export default function IdePage() {
             setShareLoaded(true)
             return
           } catch {
-            // 권한 승격 실패 — 아래의 읽기 전용 경로로 계속 간다
+            // 권한 승격 실패 — 아래 읽기 전용 경로로 계속 간다
           }
         }
         openDocument({
@@ -119,18 +127,22 @@ export default function IdePage() {
   }, [shareToken, shareLoaded, signedIn, openDocument])
 
   const ready = runtime.status === 'ready'
-  const running = kind === 'ipynb' ? nb.runningCellId !== null : runner.status === 'running'
+  const running = kind === 'ipynb' ? nbRunning : runner.status === 'running'
 
   const handleRun = useCallback(() => {
     if (!ready || running) return
-    if (kind === 'ipynb') nb.runCell(nb.selectedId)
-    else runner.run(draft.content)
-  }, [ready, running, kind, nb, runner, draft.content])
+    if (kind === 'ipynb') {
+      const api = nbApi.current
+      if (api) api.runCell(api.selectedId)
+    } else {
+      runner.run(draft.content)
+    }
+  }, [ready, running, kind, runner, draft.content])
 
   const handleStop = useCallback(() => {
-    if (kind === 'ipynb') nb.interrupt()
+    if (kind === 'ipynb') nbApi.current?.interrupt()
     else runner.stop()
-  }, [kind, nb, runner])
+  }, [kind, runner])
 
   // Ctrl/⌘+S — 브라우저의 "페이지 저장"을 막고 클라우드 저장으로 돌린다
   useEffect(() => {
@@ -146,8 +158,9 @@ export default function IdePage() {
 
   const handleDownload = useCallback(() => {
     // 브라우저 안에서만 처리한다 — 코드가 서버로 나가지 않는다
-    const text = kind === 'ipynb' ? serializeNotebook(nb.notebook) : draft.content
+    // 노트북도 draft.content에 직렬화된 상태로 들어 있다(NotebookPane이 갱신)
     const mime = kind === 'ipynb' ? 'application/json' : 'text/x-python'
+    const text = draft.content
     const blob = new Blob([text], { type: `${mime};charset=utf-8` })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -155,14 +168,15 @@ export default function IdePage() {
     a.download = draft.name
     a.click()
     URL.revokeObjectURL(url)
-  }, [kind, nb.notebook, draft])
+  }, [kind, draft])
 
+  /** 새 파일은 항상 새 탭으로 연다(VS Code와 동일) */
   const handleNew = useCallback(
     (next: FileKind) => {
       openDocument(
         next === 'ipynb'
           ? { name: 'notebook.ipynb', content: serializeNotebook(createNotebook()) }
-          : DEFAULT_DRAFT
+          : { ...DEFAULT_DRAFT, name: 'untitled.py', content: '' }
       )
     },
     [openDocument]
@@ -187,6 +201,25 @@ export default function IdePage() {
     openDocument({ name: `${base} (copy)${ext}`, content: draft.content })
   }, [draft, kind, openDocument])
 
+  /**
+   * 빨간 점 = 저장되지 않은 변경.
+   * 게스트는 localStorage에 자동 보관되어 잃을 것이 없으므로 점을 띄우지 않는다 —
+   * 손쓸 방법이 없는 경고는 소음일 뿐이다. 로그인 사용자에게만 "클라우드와 다름"을 알린다.
+   */
+  const isDirty = useCallback(
+    (doc: Doc) => signedIn && doc.content !== doc.savedContent,
+    [signedIn]
+  )
+
+  const handleCloseTab = useCallback(
+    (docId: string) => {
+      const doc = ws.docs.find((d) => d.docId === docId)
+      if (doc && isDirty(doc) && !window.confirm(t('files.confirmClose', { name: doc.name }))) return
+      ws.closeDoc(docId)
+    },
+    [ws, isDirty, t]
+  )
+
   const toolbar = (
     <EditorToolbar
       fileName={draft.name}
@@ -194,7 +227,7 @@ export default function IdePage() {
       running={running}
       ready={ready}
       onRun={handleRun}
-      onRunAll={nb.runAll}
+      onRunAll={() => nbApi.current?.runAll()}
       onStop={handleStop}
       onDownload={handleDownload}
       onNew={handleNew}
@@ -211,6 +244,17 @@ export default function IdePage() {
     />
   )
 
+  const tabs = (
+    <TabBar
+      docs={ws.docs}
+      activeId={ws.activeId}
+      isDirty={isDirty}
+      onActivate={ws.activate}
+      onClose={handleCloseTab}
+      onNew={() => handleNew('py')}
+    />
+  )
+
   return (
     <>
       {runtime.status !== 'ready' && (
@@ -224,14 +268,33 @@ export default function IdePage() {
 
       {kind === 'ipynb' ? (
         // 노트북은 셀마다 출력이 붙으므로 아래 터미널·오른쪽 캔버스를 쓰지 않는다
-        <IdeLayout header={<AppHeader>{toolbar}</AppHeader>} editor={<NotebookView nb={nb} />} />
+        <IdeLayout
+          header={<AppHeader>{toolbar}</AppHeader>}
+          tabs={tabs}
+          editor={
+            <NotebookPane
+              // 문서마다 새 인스턴스 — 탭 사이에 노트북 상태가 섞이지 않게 한다
+              key={draft.docId}
+              runtime={runtime}
+              initialSource={draft.content}
+              // ⚠️ 반드시 문서를 지정해 쓴다. 노트북은 언마운트(탭 전환) 시 마지막 편집을
+              //    한 번 더 흘려보내는데, 그때 활성 문서는 이미 다른 파일이다.
+              onChange={(text) => ws.setDocContent(draft.docId, text)}
+              apiRef={nbApi}
+              onRunningChange={setNbRunning}
+            />
+          }
+        />
       ) : (
         <IdeLayout
           header={<AppHeader>{toolbar}</AppHeader>}
+          tabs={tabs}
           editor={
             <CodeEditor
+              // 탭을 옮기면 에디터를 새로 만든다 — 실행 취소 이력이 문서 사이에 섞이면 안 된다
+              key={draft.docId}
               value={draft.content}
-              onChange={setContent}
+              onChange={ws.setContent}
               onRun={handleRun}
               readOnly={cloud.readOnly}
             />
@@ -251,11 +314,7 @@ export default function IdePage() {
       {browsing && <FileBrowserModal onClose={() => setBrowsing(false)} onOpen={openDocument} />}
 
       {sharing && draft.cloudId && (
-        <ShareModal
-          fileId={draft.cloudId}
-          fileName={draft.name}
-          onClose={() => setSharing(false)}
-        />
+        <ShareModal fileId={draft.cloudId} fileName={draft.name} onClose={() => setSharing(false)} />
       )}
 
       {cloud.conflict && (
@@ -284,16 +343,9 @@ export default function IdePage() {
         />
       )}
 
-      {/* 읽기 전용으로 열렸으면 사본을 만들 길을 열어준다 */}
-      {cloud.readOnly && (
-        <div className="srOnly" role="status">
-          {t('files.readOnly')}
-        </div>
-      )}
-
       {(authError || shareError) && (
         <div className="srOnly" role="alert">
-          {shareError ? t('files.error.LOAD_FAILED') : t([`auth.error.${authError}`, 'common.error'])}
+          {shareError ? t('files.error.NOT_FOUND') : t([`auth.error.${authError}`, 'common.error'])}
         </div>
       )}
 

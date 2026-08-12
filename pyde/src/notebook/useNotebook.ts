@@ -65,6 +65,14 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
     return () => window.clearTimeout(timer)
   }, [notebook])
 
+  // ⚠️ 언마운트(=탭 전환) 시 디바운스 대기 중이던 마지막 편집을 반드시 흘려보낸다.
+  //    안 그러면 "타이핑하고 0.5초 안에 탭을 옮기면 방금 친 게 사라지는" 버그가 된다.
+  useEffect(() => {
+    return () => {
+      onChangeRef.current(serializeNotebook(notebookRef.current))
+    }
+  }, [])
+
   // ── 셀 조작 ──────────────────────────────────────────────────────────────
   const updateCell = useCallback((id: string, patch: (cell: NbCell) => NbCell) => {
     setNotebook((nb) => ({

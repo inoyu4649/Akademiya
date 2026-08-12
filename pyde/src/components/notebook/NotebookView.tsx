@@ -22,6 +22,11 @@ export default function NotebookView({ nb }: Props) {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // ⚠️ Monaco 안에서 올라온 키 이벤트는 절대 가로채지 않는다.
+      //    mode 상태만 믿으면 포커스와 어긋난 순간(클릭 직후 등)에 사용자가 친 글자가
+      //    셀 추가·삭제 단축키로 실행돼 버린다. 이벤트 출처를 직접 확인한다.
+      if ((e.target as HTMLElement | null)?.closest?.('.monaco-editor')) return
+
       // 편집 모드에서는 Esc 말고는 전부 에디터에 맡긴다
       if (nb.mode === 'edit') {
         if (e.key === 'Escape') {
@@ -108,6 +113,8 @@ export default function NotebookView({ nb }: Props) {
       onKeyDown={handleKeyDown}
       role="list"
       aria-label={t('notebook.title')}
+      // 셀 안 Monaco에서 Esc를 눌렀을 때 포커스를 되돌릴 대상
+      data-notebook-root=""
     >
       {nb.notebook.cells.map((cell) => (
         <NotebookCell
@@ -122,6 +129,11 @@ export default function NotebookView({ nb }: Props) {
             nb.setSelectedId(cell.id)
             nb.setMode('edit')
           }}
+          onEnterEdit={() => {
+            nb.setSelectedId(cell.id)
+            nb.setMode('edit')
+          }}
+          onLeaveEdit={() => nb.setMode('command')}
           onChange={(source) => nb.setCellSource(cell.id, source)}
           onRunAdvance={() => nb.runAndAdvance(cell.id)}
           onRunInPlace={() => nb.runCell(cell.id)}

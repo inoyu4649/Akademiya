@@ -11,23 +11,25 @@
   display: grid;
   grid-template-areas:
     'header header'
+    'tabs tabs'
     'editor canvas'
     'terminal terminal';
   grid-template-columns: 1fr var(--canvas-width, 340px);
-  grid-template-rows: var(--header-height) 1fr var(--terminal-height, 220px);
+  grid-template-rows: var(--header-height) var(--tabbar-height) 1fr var(--terminal-height, 220px);
   height: 100%;
   min-height: 0;
   background: var(--bg-base);
 }
 
-/* 노트북 모드 — 헤더 + 본문 한 덩어리 */
+/* 노트북 모드 — 헤더 + 탭 + 본문 */
 .layoutFull {
   display: grid;
   grid-template-areas:
     'header'
+    'tabs'
     'editor';
   grid-template-columns: 1fr;
-  grid-template-rows: var(--header-height) 1fr;
+  grid-template-rows: var(--header-height) var(--tabbar-height) 1fr;
   height: 100%;
   min-height: 0;
   background: var(--bg-base);
@@ -67,11 +69,12 @@
   .layout {
     grid-template-areas:
       'header'
+      'tabs'
       'editor'
       'canvas'
       'terminal';
     grid-template-columns: 1fr;
-    grid-template-rows: var(--header-height) 1fr auto var(--terminal-height, 200px);
+    grid-template-rows: var(--header-height) var(--tabbar-height) 1fr auto var(--terminal-height, 200px);
   }
   .editor {
     border-right: none;

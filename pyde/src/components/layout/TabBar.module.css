@@ -1,0 +1,114 @@
+.bar {
+  grid-area: tabs;
+  display: flex;
+  align-items: stretch;
+  height: var(--tabbar-height);
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  user-select: none;
+  scrollbar-width: none;
+}
+.bar::-webkit-scrollbar {
+  height: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px 0 12px;
+  min-width: 110px;
+  max-width: 220px;
+  border-right: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  /* 활성 탭 표시용 위쪽 띠 자리 — 비활성일 땐 투명 */
+  box-shadow: inset 0 2px 0 transparent;
+  transition: background 0.12s, color 0.12s;
+}
+
+.tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.tabActive {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.tabName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-mono);
+  text-align: left;
+}
+
+/* 읽기 전용(공유받은 파일)임을 아이콘으로 구분 */
+.readOnlyMark {
+  flex-shrink: 0;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* 저장되지 않은 변경 — VS Code의 점. 여기서는 요구대로 빨간색 */
+.dirtyDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+.closeBtn {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+  /* 평소엔 숨기고 hover·활성 탭에서만 보여 탭이 시끄럽지 않게 한다 */
+  opacity: 0;
+}
+
+.tab:hover .closeBtn,
+.tabActive .closeBtn {
+  opacity: 1;
+}
+
+.closeBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* 저장 안 된 탭은 점이 닫기 버튼 자리를 차지하다가, hover하면 닫기로 바뀐다 */
+.tab:hover .dirtyDot {
+  display: none;
+}
+
+.newTabBtn {
+  flex-shrink: 0;
+  width: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+}
+.newTabBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}

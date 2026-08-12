@@ -124,7 +124,10 @@
       "TOO_MANY_FILES": "You have reached the file count limit.",
       "NAME_ALREADY_EXISTS": "A file with that name already exists.",
       "NOT_FOUND": "File not found. The share may have been revoked."
-    }
+    },
+    "closeTab": "Close {{name}}",
+    "confirmClose": "\"{{name}}\" has unsaved changes. Close anyway?",
+    "tooManyTabs": "You can open up to {{max}} tabs. Please close one first."
   },
   "share": {
     "title": "Share",
