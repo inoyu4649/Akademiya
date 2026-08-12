@@ -78,7 +78,8 @@
       "stopped": "已停止"
     },
     "elapsed": "{{seconds}}秒",
-    "waitingInput": "等待输入"
+    "waitingInput": "等待输入",
+    "hint": "运行后结果会显示在这里。"
   },
   "canvas": {
     "title": "结果",

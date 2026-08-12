@@ -78,7 +78,8 @@
       "stopped": "停止しました"
     },
     "elapsed": "{{seconds}}秒",
-    "waitingInput": "入力待ち"
+    "waitingInput": "入力待ち",
+    "hint": "実行するとここに結果が表示されます。"
   },
   "canvas": {
     "title": "結果",

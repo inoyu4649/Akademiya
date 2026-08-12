@@ -9,8 +9,9 @@
 //  사용자 코드가 무엇을 하든 브라우저 샌드박스 + 워커 경계 밖으로 나가지 못한다.
 // ============================================================================
 import {
+  KOREAN_FONT_CDN_URL,
+  KOREAN_FONT_FALLBACK_URL,
   KOREAN_FONT_FAMILY,
-  KOREAN_FONT_URL,
   PRELOAD_PACKAGES,
   PYODIDE_BASE_URL,
   PYODIDE_VERSION,
@@ -162,6 +163,24 @@ async function prefetchAll(tasks: FetchTask[], stage: BootStage, determinate: bo
   )
 }
 
+/**
+ * Matplotlib용 한글 TTF를 가져온다.
+ * CDN을 먼저 시도하는 건 순전히 서버 egress 때문이다(4.2MB × 접속자 수).
+ * 학교망에서 CDN이 막히면 앱 전체가 못 쓰게 되면 안 되므로 서버 사본으로 폴백한다.
+ */
+async function fetchFont(): Promise<ArrayBuffer> {
+  try {
+    const res = await fetch(KOREAN_FONT_CDN_URL)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    return await res.arrayBuffer()
+  } catch (err) {
+    log(`CDN 폰트 실패(${(err as Error).message}) — 서버 사본으로 대체합니다`, 'warn')
+    const res = await fetch(KOREAN_FONT_FALLBACK_URL)
+    if (!res.ok) throw new Error(`폰트를 불러오지 못했습니다 (HTTP ${res.status})`)
+    return await res.arrayBuffer()
+  }
+}
+
 // ============================================================================
 //  2) 부팅
 // ============================================================================
@@ -221,8 +240,9 @@ async function boot(): Promise<void> {
     )
 
     // ── 한글 폰트 ──────────────────────────────────────────────────────────
+    // CDN 우선(서버 egress 절약), 실패 시에만 서버 사본으로 폴백
     indeterminate('font')
-    const fontBuf = await (await fetch(KOREAN_FONT_URL)).arrayBuffer()
+    const fontBuf = await fetchFont()
     log(`D2Coding ${mb(fontBuf.byteLength)}`)
 
     // ── Pyodide 초기화 ─────────────────────────────────────────────────────
@@ -316,6 +336,17 @@ matplotlib.rcParams["font.family"] = "${KOREAN_FONT_FAMILY}"
 matplotlib.rcParams["axes.unicode_minus"] = False
 
 import matplotlib.pyplot as plt
+
+# plt.show()를 무해한 no-op으로 바꾼다.
+# AGG 백엔드에서 show()를 부르면 "FigureCanvasAgg is non-interactive" 경고가 뜨는데,
+# 학생은 교과서대로 썼을 뿐이고 그림도 실제로 오른쪽 캔버스에 정상 표시된다.
+# 아무 잘못 없는 코드에 경고가 뜨면 그게 오류라고 오해하므로 경고만 없앤다
+# (열려 있는 figure는 실행이 끝난 뒤 자동으로 거둬 캔버스로 보낸다).
+def _pyde_show(*args, **kwargs):
+    return None
+
+plt.show = _pyde_show
+
 import numpy, pandas, scipy, sklearn
 `
 

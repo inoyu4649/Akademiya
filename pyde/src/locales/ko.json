@@ -78,7 +78,8 @@
       "stopped": "중지됨"
     },
     "elapsed": "{{seconds}}초",
-    "waitingInput": "입력 대기 중"
+    "waitingInput": "입력 대기 중",
+    "hint": "실행 버튼을 누르면 결과가 여기에 표시됩니다."
   },
   "canvas": {
     "title": "결과",

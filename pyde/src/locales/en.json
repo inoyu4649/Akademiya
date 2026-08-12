@@ -78,7 +78,8 @@
       "stopped": "Stopped"
     },
     "elapsed": "{{seconds}}s",
-    "waitingInput": "Waiting for input"
+    "waitingInput": "Waiting for input",
+    "hint": "Run your code and the output will appear here."
   },
   "canvas": {
     "title": "Output",

@@ -24,8 +24,16 @@ export const PYODIDE_BASE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VER
  */
 export const PRELOAD_PACKAGES = ['numpy', 'pandas', 'matplotlib', 'scipy', 'scikit-learn'] as const
 
-/** Matplotlib 한글 렌더링용 폰트 (PyDe 서버가 직접 서빙) */
-export const KOREAN_FONT_URL = '/fonts/D2Coding-1.3.3.ttf'
+// ── Matplotlib 한글 폰트 ─────────────────────────────────────────────────────
+//  ⚠️ TTF는 4.2MB로 우리 서버가 내보내는 파일 중 압도적으로 크다. OCI 무료 egress
+//     한도를 아끼려고 CDN을 먼저 쓰고, 학교 방화벽 등으로 CDN이 막힌 경우에만
+//     서버에 둔 사본으로 넘어간다(로컬 사본은 그래서 계속 유지한다).
+//  CDN 파일명에 'ligature'가 없는 쪽이 사용자가 지정한 non-ligature 기본판이다
+//  (합자 버전은 d2coding-ligature-*.ttf로 따로 있다).
+export const KOREAN_FONT_CDN_URL =
+  'https://cdn.jsdelivr.net/npm/d2coding@1.3.2/fonts/d2coding-full.ttf'
+/** CDN 실패 시 폴백 — 서버가 직접 서빙(파일명에 버전이 있어 불변 캐싱 대상) */
+export const KOREAN_FONT_FALLBACK_URL = '/fonts/D2Coding-1.3.3.ttf'
 export const KOREAN_FONT_FAMILY = 'D2Coding'
 
 /**

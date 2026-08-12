@@ -21,15 +21,7 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     minify: 'esbuild',
-    rollupOptions: {
-      output: {
-        // Monaco는 통째로 300KB+라 앱 청크와 분리해야 초기 로딩이 빨라진다.
-        // ⚠️ Vite 8(rolldown)은 객체 형태 manualChunks를 받지 않는다 — 함수만 허용.
-        manualChunks(id: string) {
-          if (id.includes('monaco-editor') || id.includes('@monaco-editor')) return 'monaco'
-          return undefined
-        },
-      },
-    },
+    // Monaco는 번들하지 않고 CDN(AMD 로더)에서 불러온다 — 서버 egress 절약.
+    // 자세한 근거는 src/components/editor/monacoLoader.ts 참고.
   },
 })
