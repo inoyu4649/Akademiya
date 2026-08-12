@@ -69,8 +69,17 @@ export default function AppHeader({ children }: Props) {
         ) : (
           <>
             <span className={styles.guestBadge}>{t('auth.guestMode')}</span>
-            <button className={`btn btnPrimary ${styles.signInBtn}`} onClick={() => signIn()}>
-              {t('auth.signIn')}
+            {/* 공식 브랜드 아이콘 — OpenOAuth 가이드 "브랜드 아이콘" 절.
+                로고의 비율·색상은 변경하지 않는다. 고배율 화면용 2x는 srcset으로. */}
+            <button className={styles.akademiyaBtn} onClick={() => signIn()}>
+              <img
+                src="https://akademiya.kr/brand/akademiya-icon-32.png"
+                srcSet="https://akademiya.kr/brand/akademiya-icon-64.png 2x"
+                width={18}
+                height={18}
+                alt=""
+              />
+              <span>{t('auth.signIn')}</span>
             </button>
           </>
         )}

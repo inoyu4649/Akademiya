@@ -49,6 +49,40 @@ const app: Express = express()
 app.set('trust proxy', 1)
 app.disable('x-powered-by')
 
+// ── Content-Security-Policy ──────────────────────────────────────────────────
+//  사용자가 작성한 Python이 브라우저에서 실행되는 앱이라 XSS 방어선이 특히 중요하다.
+//  각 directive를 왜 이렇게 열었는지 근거를 남긴다(무심코 넓히지 않도록):
+//
+//   script-src 'wasm-unsafe-eval'
+//     Pyodide는 WebAssembly를 컴파일해야 한다. 'unsafe-eval'까지 열면 XSS가 임의
+//     JS를 실행할 수 있게 되므로 WASM 컴파일만 허용하는 이 토큰으로 좁힌다.
+//   script-src https://cdn.jsdelivr.net
+//     Pyodide 런타임(pyodide.mjs)을 CDN에서 ESM으로 가져온다.
+//   worker-src 'self' blob:
+//     Vite가 번들한 워커는 'self'지만 Monaco는 blob: 워커를 만든다.
+//   style-src 'unsafe-inline'
+//     Monaco가 토큰 색상을 <style> 태그로 주입한다. 제거하려면 Monaco를 포크해야 해서
+//     현실적으로 열어둘 수밖에 없다(스타일 주입만으로 스크립트 실행은 불가).
+//   img-src blob: data:
+//     matplotlib 결과 PNG를 data: URL로 캔버스에 띄운다.
+//   connect-src https://cdn.jsdelivr.net
+//     휠·wasm·lock 파일을 fetch로 받는다.
+//   img-src https://akademiya.kr
+//     로그인 사용자의 Akademiya 프로필 사진과 브랜드 아이콘.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net",
+  "worker-src 'self' blob:",
+  "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+  "font-src 'self' https://cdn.jsdelivr.net data:",
+  "img-src 'self' data: blob: https://akademiya.kr",
+  "connect-src 'self' https://cdn.jsdelivr.net",
+  "frame-src 'none'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ')
+
 // ── 보안 헤더 ────────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response, next: NextFunction) => {
   // Cross-origin isolation. SharedArrayBuffer가 여기에 의존하고, 그게 있어야
@@ -62,6 +96,8 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   res.setHeader('X-Content-Type-Options', 'nosniff')
   res.setHeader('X-Frame-Options', 'SAMEORIGIN')
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  res.setHeader('Content-Security-Policy', CSP)
   next()
 })
 
@@ -193,13 +229,41 @@ app.get('/auth/callback', async (req: Request, res: Response) => {
     res.redirect(safeReturnTo(stored.returnTo))
   } catch (err) {
     // ⚠️ 토큰/코드는 절대 로그에 남기지 않는다 — 상태코드와 에러코드만 기록
-    const detail = axios.isAxiosError(err)
-      ? `${err.response?.status ?? '?'} ${(err.response?.data as { error?: string })?.error ?? err.code ?? ''}`
-      : (err as Error).message
-    console.error('[PyDe] OAuth 콜백 실패:', detail)
-    res.redirect('/?authError=exchange')
+    const upstream = axios.isAxiosError(err)
+      ? (err.response?.data as { error?: string } | undefined)?.error
+      : undefined
+    const status = axios.isAxiosError(err) ? err.response?.status : undefined
+    console.error('[PyDe] OAuth 콜백 실패:', `${status ?? '?'} ${upstream ?? (err as Error).message}`)
+    res.redirect(`/?authError=${encodeURIComponent(mapAuthError(upstream))}`)
   }
 })
+
+/**
+ * Akademiya OpenOAuth 오류 코드를 프론트 i18n 키로 매핑한다.
+ * 코드 목록은 guides/akademiya-openoauth-guide.md "주요 오류 코드" 절 기준.
+ * 사용자가 스스로 해결할 수 있는 것(자격 미달·차단)과 운영자가 고쳐야 하는 설정 오류
+ * (Client ID·redirect_uri 미등록)를 구분해서 안내해야 원인 파악이 빠르다.
+ */
+function mapAuthError(code: string | undefined): string {
+  switch (code) {
+    case 'OAUTH_NOT_ELIGIBLE':
+      return 'notEligible'
+    case 'OAUTH_GOOGLE_ONLY':
+      return 'googleOnly'
+    case 'OAUTH_APP_BANNED':
+      return 'banned'
+    case 'INVALID_OR_EXPIRED_CODE':
+    case 'INVALID_CODE_VERIFIER':
+      return 'state'
+    // 아래는 전부 PyDe 쪽 설정 실수 — 사용자가 재시도해도 절대 풀리지 않는다
+    case 'INVALID_CLIENT':
+    case 'REDIRECT_URI_NOT_WHITELISTED':
+    case 'PKCE_REQUIRED':
+      return 'config'
+    default:
+      return 'exchange'
+  }
+}
 
 // ── GET /api/me ──────────────────────────────────────────────────────────────
 app.get('/api/me', (req: Request, res: Response) => {

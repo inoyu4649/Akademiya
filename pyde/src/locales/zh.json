@@ -29,7 +29,11 @@
     "error": {
       "state": "登录请求已过期或无效,请重试。",
       "exchange": "Akademiya 认证失败,请稍后再试。",
-      "userinfo": "无法获取账户信息。"
+      "userinfo": "无法获取账户信息。",
+      "notEligible": "该账户没有登录此服务的权限。",
+      "googleOnly": "只能使用 Google 账户登录。请先将 Google 关联到您的 Akademiya 账户。",
+      "banned": "该账户已被限制登录此服务。",
+      "config": "登录配置有问题,请联系管理员。"
     }
   },
   "boot": {
