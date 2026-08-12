@@ -4,7 +4,7 @@ export type LoginMeans = "akademiya" | "google" | "both";
 export type ScopeRange = "all" | "org" | "google_workspace";
 // 필수 scope(이름·이메일)는 항상 부여되며 설정 대상이 아니다.
 // 선택 scope만 개발자 화면 체크박스로 켜고 끌 수 있다.
-export type OptionalScope = "picture" | "org_membership";
+export type OptionalScope = "picture" | "org_membership" | "cloud";
 
 export interface OAuthApp {
   id: number;

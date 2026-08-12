@@ -701,6 +701,8 @@
       "pictureDesc": "Shares the URL of the user's Akademiya profile picture.",
       "org_membership": "Organization membership",
       "org_membershipDesc": "Shares the full list of organizations the user belongs to (name, code, permission).",
+      "cloud": "Akademiya Cloud",
+      "cloudDesc": "Lets the app read and write the user's Akademiya Cloud files. Unlike the other scopes, this grants storage access rather than sharing a piece of information.",
       "class_membership": "Class membership",
       "class_membershipDesc": "Shares the full list of classes the user belongs to (name, code, permission).",
       "forcedHint": "Automatically enabled by the allowed sign-in scope setting"
@@ -728,7 +730,8 @@
       "googleOnlyNotice": "You can only sign in with Google.",
       "akademiyaOnlyNotice": "Signing in with Google is not allowed.",
       "sharePicture": "Profile picture",
-      "shareOrgMembership": "List of joined organizations"
+      "shareOrgMembership": "List of joined organizations",
+      "shareCloud": "Read and write access to your Akademiya Cloud files"
     }
   },
   "privacy": {

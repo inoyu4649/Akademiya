@@ -228,6 +228,8 @@ export default function OAuthAuthorizePage() {
         <li>{t("oauth.authorize.shareEmail")}</li>
         {info.enabledScopes.includes("picture") && <li>{t("oauth.authorize.sharePicture")}</li>}
         {info.enabledScopes.includes("org_membership") && <li>{t("oauth.authorize.shareOrgMembership")}</li>}
+        {/* cloud는 "공유되는 정보"가 아니라 "부여되는 권한"이라 문구를 따로 둔다 */}
+        {info.enabledScopes.includes("cloud") && <li>{t("oauth.authorize.shareCloud")}</li>}
       </ul>
       <button className={s.btn} onClick={handleAllow} disabled={authorizing}>
         {authorizing ? t("common.loading") : t("oauth.authorize.allowBtn")}

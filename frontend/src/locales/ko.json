@@ -701,6 +701,8 @@
       "pictureDesc": "사용자의 Akademiya 프로필 사진 URL을 공유합니다.",
       "org_membership": "조직 가입 현황",
       "org_membershipDesc": "사용자가 가입한 모든 조직 목록(이름·코드·권한)을 공유합니다.",
+      "cloud": "Akademiya Cloud",
+      "cloudDesc": "사용자의 Akademiya Cloud 파일을 읽고 쓸 수 있게 합니다. 다른 정보 scope와 달리 데이터를 조회하는 것이 아니라 저장소 접근 권한을 부여합니다.",
       "class_membership": "반 가입 현황",
       "class_membershipDesc": "사용자가 가입한 모든 반 목록(이름·코드·권한)을 공유합니다.",
       "forcedHint": "로그인 허용 범위 설정에 의해 자동으로 켜짐"
@@ -728,7 +730,8 @@
       "googleOnlyNotice": "Google로 로그인만 사용할 수 있습니다.",
       "akademiyaOnlyNotice": "Google로 로그인은 허용되지 않습니다.",
       "sharePicture": "프로필 사진",
-      "shareOrgMembership": "가입한 조직 목록"
+      "shareOrgMembership": "가입한 조직 목록",
+      "shareCloud": "Akademiya Cloud 파일 읽기·쓰기 권한"
     }
   },
   "privacy": {

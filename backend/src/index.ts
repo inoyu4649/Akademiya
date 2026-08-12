@@ -18,6 +18,7 @@ import termsRouter from "./routes/terms.js";
 import intlTransferRouter from "./routes/intl-transfer.js";
 import pushRouter from "./routes/push.js";
 import avatarRouter from "./routes/avatar.js";
+import cloudRouter from "./routes/cloud.js";
 import { preloadHolidays } from "./utils/holidays.js";
 
 dotenv.config();
@@ -96,6 +97,11 @@ app.use(
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: "TOO_MANY_REQUESTS" },
+    // ⚠️ /api/cloud는 제외한다. PyDe Web 서버가 도커 내부에서 사용자 요청을 대리
+    //    호출하므로 전체 사용자가 컨테이너 IP 하나로 보이고, IP 캡에 걸리면 한 명의
+    //    사용량 때문에 전원이 동시에 차단된다. cloud 라우터가 인증된 user_id 기준
+    //    자체 리미터(15분/600)를 적용한다.
+    skip: (req) => req.path.startsWith("/api/cloud"),
   })
 );
 
@@ -110,6 +116,11 @@ const authLimiter = rateLimit({
 });
 
 // ── 파서 ──────────────────────────────────────────────────────────────────────
+// Akademiya Cloud는 파일 본문(개당 최대 5MB)을 통째로 주고받으므로 전역 2MB 파서보다
+// 먼저, 자체 한도로 마운트한다. body-parser는 이미 파싱된 요청을 건너뛰므로
+// 아래 전역 파서와 충돌하지 않는다.
+app.use("/api/cloud", express.json({ limit: "6mb" }), cloudRouter);
+
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 

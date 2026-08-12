@@ -31,9 +31,11 @@ type Row = Record<string, unknown>;
 // "필수 scope + 이 앱에 켜진 선택 scope"로 서버가 결정한다 — 요청 측이 앱 소유자가
 // 켜지 않은 scope를 자체적으로 더 요구할 수 없다.
 // v2.0에서 반(class) 구조가 폐지되면서 class_membership scope와 class scope_range는 제거됐다.
-type OptionalScope = "picture" | "org_membership";
+// cloud: Akademiya Cloud(routes/cloud.ts) 파일 읽기·쓰기 권한. userinfo 응답에는
+// 아무것도 추가하지 않고, /api/cloud 호출 자격으로만 쓰인다(middleware/apiAuth.ts).
+type OptionalScope = "picture" | "org_membership" | "cloud";
 const REQUIRED_SCOPES: readonly string[] = ["profile", "email"];
-const OPTIONAL_SCOPES: readonly OptionalScope[] = ["picture", "org_membership"];
+const OPTIONAL_SCOPES: readonly OptionalScope[] = ["picture", "org_membership", "cloud"];
 const KNOWN_SCOPE_TOKENS: readonly string[] = ["openid", ...REQUIRED_SCOPES, ...OPTIONAL_SCOPES];
 
 function parseEnabledScopes(raw: unknown): OptionalScope[] {

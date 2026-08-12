@@ -701,6 +701,8 @@
       "pictureDesc": "共享用户 Akademiya 头像的 URL。",
       "org_membership": "组织加入情况",
       "org_membershipDesc": "共享用户加入的所有组织列表(名称、代码、权限)。",
+      "cloud": "Akademiya Cloud",
+      "cloudDesc": "允许应用读写用户的 Akademiya Cloud 文件。与其他信息 scope 不同,它授予的是存储访问权限,而非共享某项信息。",
       "class_membership": "班级加入情况",
       "class_membershipDesc": "共享用户加入的所有班级列表(名称、代码、权限)。",
       "forcedHint": "由登录允许范围设置自动开启"
@@ -728,7 +730,8 @@
       "googleOnlyNotice": "仅可使用 Google 登录。",
       "akademiyaOnlyNotice": "不允许使用 Google 登录。",
       "sharePicture": "头像",
-      "shareOrgMembership": "已加入的组织列表"
+      "shareOrgMembership": "已加入的组织列表",
+      "shareCloud": "读写 Akademiya Cloud 文件的权限"
     }
   },
   "privacy": {
