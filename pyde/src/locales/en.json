@@ -1,0 +1,116 @@
+{
+  "app": {
+    "name": "PyDe Web",
+    "tagline": "Python, right in your browser",
+    "version": "PyDe Web version 1.0.0"
+  },
+  "common": {
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "save": "Save",
+    "delete": "Delete",
+    "rename": "Rename",
+    "retry": "Retry",
+    "copy": "Copy",
+    "copied": "Copied",
+    "error": "Error",
+    "language": "Language"
+  },
+  "auth": {
+    "signIn": "Sign in with Akademiya",
+    "signInHint": "Sign in to auto-save your work to Akademiya Cloud and share it with others.",
+    "signOut": "Sign out",
+    "guestMode": "Guest",
+    "guestNotice": "You can write and run code without signing in, but your work stays only in this browser.",
+    "account": "Account",
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "error": {
+      "state": "The sign-in request expired or was invalid. Please try again.",
+      "exchange": "Akademiya authentication failed. Please try again in a moment.",
+      "userinfo": "Could not retrieve your account information."
+    }
+  },
+  "boot": {
+    "title": "Preparing your Python environment",
+    "subtitle": "This downloads once — later visits start much faster.",
+    "showDetails": "Show details",
+    "hideDetails": "Hide details",
+    "ready": "Ready",
+    "failed": "Could not load the Python environment.",
+    "stage": {
+      "checkingCache": "Checking cache",
+      "runtime": "Downloading Python runtime",
+      "packages": "Downloading libraries",
+      "package": "Downloading {{name}}",
+      "font": "Preparing Korean font",
+      "initializing": "Initializing Python",
+      "warmup": "Warming up libraries",
+      "done": "Ready"
+    },
+    "cached": "Using browser cache",
+    "versionMismatch": "A newer version is available — downloading again."
+  },
+  "header": {
+    "run": "Run",
+    "runCell": "Run cell",
+    "stop": "Stop",
+    "save": "Save",
+    "share": "Share",
+    "files": "Files",
+    "newFile": "New file",
+    "openLocal": "Open from my computer",
+    "download": "Download"
+  },
+  "terminal": {
+    "title": "Terminal",
+    "clear": "Clear",
+    "status": {
+      "idle": "Idle",
+      "running": "Running",
+      "done": "Finished",
+      "error": "Error",
+      "stopped": "Stopped"
+    },
+    "elapsed": "{{seconds}}s",
+    "waitingInput": "Waiting for input"
+  },
+  "canvas": {
+    "title": "Output",
+    "empty": "Charts and images you create will appear here.",
+    "download": "Save image"
+  },
+  "files": {
+    "title": "Files",
+    "cloud": "Akademiya Cloud",
+    "sharedWithMe": "Shared with me",
+    "local": "This browser",
+    "empty": "No files yet.",
+    "newPy": "New Python file",
+    "newNotebook": "New notebook",
+    "unsaved": "Unsaved",
+    "savedAt": "Saved at {{time}}",
+    "autosave": "Auto-save",
+    "conflict": "This file was changed somewhere else.",
+    "conflictOverwrite": "Overwrite with my version",
+    "conflictReload": "Load the saved version",
+    "readOnly": "Read-only"
+  },
+  "share": {
+    "title": "Share",
+    "byEmail": "Specific people",
+    "byOrg": "Everyone in the organization",
+    "byLink": "Anyone with the link",
+    "emailPlaceholder": "Akademiya account email",
+    "roleViewer": "Viewer",
+    "roleEditor": "Editor",
+    "linkOff": "Link sharing off",
+    "copyLink": "Copy link",
+    "add": "Add",
+    "remove": "Remove",
+    "owner": "Owner",
+    "anonymousReadOnly": "Visitors who open the link without signing in are always read-only.",
+    "userNotFound": "No Akademiya account found for that email."
+  }
+}

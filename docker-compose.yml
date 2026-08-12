@@ -105,6 +105,35 @@ services:
       retries: 5
       start_period: 60s
 
+  # ── PyDe Web ───────────────────────────────────────────────────────────────
+  #  Pyodide 기반 교육용 Python IDE. 사용자 Python 코드는 이 컨테이너가 아니라
+  #  브라우저의 Web Worker에서 실행된다 — 여기엔 Python 런타임이 없다.
+  pyde:
+    build:
+      context: ./pyde
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./pyde/.env
+    environment:
+      PORT:              "3002"
+      NODE_ENV:          production
+      TZ:                Asia/Seoul
+      AKADEMIYA_API_URL: "http://backend:3000/api"
+    networks:
+      - akademiya_net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "node", "-e",
+             "fetch('http://127.0.0.1:3002/api/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
   # ── Frontend / Nginx ───────────────────────────────────────────────────────
   frontend:
     build:
@@ -121,6 +150,8 @@ services:
       backend:
         condition: service_healthy
       gmcauto:
+        condition: service_healthy
+      pyde:
         condition: service_healthy
     networks:
       - akademiya_net

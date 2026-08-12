@@ -1,0 +1,116 @@
+{
+  "app": {
+    "name": "PyDe Web",
+    "tagline": "在浏览器里直接写 Python",
+    "version": "PyDe Web version 1.0.0"
+  },
+  "common": {
+    "loading": "加载中...",
+    "cancel": "取消",
+    "confirm": "确认",
+    "close": "关闭",
+    "save": "保存",
+    "delete": "删除",
+    "rename": "重命名",
+    "retry": "重试",
+    "copy": "复制",
+    "copied": "已复制",
+    "error": "错误",
+    "language": "语言"
+  },
+  "auth": {
+    "signIn": "使用 Akademiya 登录",
+    "signInHint": "登录后作品会自动保存到 Akademiya Cloud,并可与他人共享。",
+    "signOut": "退出登录",
+    "guestMode": "访客",
+    "guestNotice": "不登录也可以编写和运行代码,但作品只保存在此浏览器中。",
+    "account": "账户",
+    "sessionExpired": "登录已过期,请重新登录。",
+    "error": {
+      "state": "登录请求已过期或无效,请重试。",
+      "exchange": "Akademiya 认证失败,请稍后再试。",
+      "userinfo": "无法获取账户信息。"
+    }
+  },
+  "boot": {
+    "title": "正在准备 Python 环境",
+    "subtitle": "只需下载一次,以后启动会快得多。",
+    "showDetails": "查看详情",
+    "hideDetails": "收起详情",
+    "ready": "准备完成",
+    "failed": "无法加载 Python 环境。",
+    "stage": {
+      "checkingCache": "正在检查缓存",
+      "runtime": "正在下载 Python 运行时",
+      "packages": "正在下载库",
+      "package": "正在下载 {{name}}",
+      "font": "正在准备中日韩字体",
+      "initializing": "正在初始化 Python",
+      "warmup": "正在预热库",
+      "done": "准备完成"
+    },
+    "cached": "使用浏览器缓存",
+    "versionMismatch": "有新版本,正在重新下载。"
+  },
+  "header": {
+    "run": "运行",
+    "runCell": "运行单元格",
+    "stop": "停止",
+    "save": "保存",
+    "share": "共享",
+    "files": "文件",
+    "newFile": "新建文件",
+    "openLocal": "从本机打开",
+    "download": "下载"
+  },
+  "terminal": {
+    "title": "终端",
+    "clear": "清空",
+    "status": {
+      "idle": "空闲",
+      "running": "运行中",
+      "done": "运行完成",
+      "error": "错误",
+      "stopped": "已停止"
+    },
+    "elapsed": "{{seconds}}秒",
+    "waitingInput": "等待输入"
+  },
+  "canvas": {
+    "title": "结果",
+    "empty": "生成的图表或图片会显示在这里。",
+    "download": "保存图片"
+  },
+  "files": {
+    "title": "文件",
+    "cloud": "Akademiya Cloud",
+    "sharedWithMe": "共享给我的",
+    "local": "此浏览器",
+    "empty": "还没有文件。",
+    "newPy": "新建 Python 文件",
+    "newNotebook": "新建笔记本",
+    "unsaved": "未保存",
+    "savedAt": "已于 {{time}} 保存",
+    "autosave": "自动保存",
+    "conflict": "此文件已在别处被修改。",
+    "conflictOverwrite": "用我的内容覆盖",
+    "conflictReload": "载入已保存的内容",
+    "readOnly": "只读"
+  },
+  "share": {
+    "title": "共享",
+    "byEmail": "指定邮箱",
+    "byOrg": "整个组织",
+    "byLink": "拥有链接的所有人",
+    "emailPlaceholder": "Akademiya 账户邮箱",
+    "roleViewer": "仅查看",
+    "roleEditor": "可编辑",
+    "linkOff": "不公开链接",
+    "copyLink": "复制链接",
+    "add": "添加",
+    "remove": "移除",
+    "owner": "所有者",
+    "anonymousReadOnly": "未登录通过链接访问的人始终为只读。",
+    "userNotFound": "找不到该邮箱对应的 Akademiya 账户。"
+  }
+}

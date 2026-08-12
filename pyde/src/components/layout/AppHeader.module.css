@@ -1,0 +1,130 @@
+.header {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--header-height);
+  padding: 0 12px;
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.brandName {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.langSelect {
+  padding: 4px 6px;
+  font-size: 12px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+}
+.langSelect:hover {
+  background: var(--bg-hover);
+}
+.langSelect:focus {
+  box-shadow: none;
+  border-color: var(--border);
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bg-input);
+}
+
+.userName {
+  font-size: 12px;
+  color: var(--text-secondary);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guestBadge {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.signInBtn {
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+}
+.iconBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .brandName,
+  .userName {
+    display: none;
+  }
+}

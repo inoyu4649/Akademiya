@@ -1,0 +1,116 @@
+{
+  "app": {
+    "name": "PyDe Web",
+    "tagline": "ブラウザですぐ使えるPython",
+    "version": "PyDe Web version 1.0.0"
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "close": "閉じる",
+    "save": "保存",
+    "delete": "削除",
+    "rename": "名前を変更",
+    "retry": "再試行",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "error": "エラー",
+    "language": "言語"
+  },
+  "auth": {
+    "signIn": "Akademiyaでログイン",
+    "signInHint": "ログインすると作業内容がAkademiya Cloudに自動保存され、他の人と共有できます。",
+    "signOut": "ログアウト",
+    "guestMode": "ゲスト",
+    "guestNotice": "ログインしなくてもコードの作成と実行はできますが、作業内容はこのブラウザにのみ残ります。",
+    "account": "アカウント",
+    "sessionExpired": "ログインの有効期限が切れました。もう一度ログインしてください。",
+    "error": {
+      "state": "ログインリクエストが期限切れか無効です。もう一度お試しください。",
+      "exchange": "Akademiya認証に失敗しました。しばらくしてから再度お試しください。",
+      "userinfo": "アカウント情報を取得できませんでした。"
+    }
+  },
+  "boot": {
+    "title": "Python環境を準備しています",
+    "subtitle": "初回のみダウンロードし、次回からはずっと速く起動します。",
+    "showDetails": "詳細を表示",
+    "hideDetails": "詳細を隠す",
+    "ready": "準備完了",
+    "failed": "Python環境を読み込めませんでした。",
+    "stage": {
+      "checkingCache": "キャッシュを確認中",
+      "runtime": "Pythonランタイムをダウンロード中",
+      "packages": "ライブラリをダウンロード中",
+      "package": "{{name}}をダウンロード中",
+      "font": "日本語・韓国語フォントを準備中",
+      "initializing": "Pythonを初期化中",
+      "warmup": "ライブラリを準備中",
+      "done": "準備完了"
+    },
+    "cached": "ブラウザキャッシュを使用",
+    "versionMismatch": "新しいバージョンがあるため再ダウンロードします。"
+  },
+  "header": {
+    "run": "実行",
+    "runCell": "セルを実行",
+    "stop": "停止",
+    "save": "保存",
+    "share": "共有",
+    "files": "ファイル",
+    "newFile": "新規ファイル",
+    "openLocal": "パソコンから開く",
+    "download": "ダウンロード"
+  },
+  "terminal": {
+    "title": "ターミナル",
+    "clear": "クリア",
+    "status": {
+      "idle": "待機中",
+      "running": "実行中",
+      "done": "実行完了",
+      "error": "エラー",
+      "stopped": "停止しました"
+    },
+    "elapsed": "{{seconds}}秒",
+    "waitingInput": "入力待ち"
+  },
+  "canvas": {
+    "title": "結果",
+    "empty": "グラフや画像を作成するとここに表示されます。",
+    "download": "画像を保存"
+  },
+  "files": {
+    "title": "ファイル",
+    "cloud": "Akademiya Cloud",
+    "sharedWithMe": "共有されたファイル",
+    "local": "このブラウザ",
+    "empty": "まだファイルがありません。",
+    "newPy": "新しいPythonファイル",
+    "newNotebook": "新しいノートブック",
+    "unsaved": "未保存",
+    "savedAt": "{{time}}に保存",
+    "autosave": "自動保存",
+    "conflict": "このファイルは別の場所で変更されました。",
+    "conflictOverwrite": "自分の内容で上書き",
+    "conflictReload": "保存された内容を読み込む",
+    "readOnly": "読み取り専用"
+  },
+  "share": {
+    "title": "共有",
+    "byEmail": "メールで指定",
+    "byOrg": "組織全体",
+    "byLink": "リンクを知っている全員",
+    "emailPlaceholder": "Akademiyaアカウントのメール",
+    "roleViewer": "閲覧のみ",
+    "roleEditor": "編集可能",
+    "linkOff": "リンク共有しない",
+    "copyLink": "リンクをコピー",
+    "add": "追加",
+    "remove": "削除",
+    "owner": "所有者",
+    "anonymousReadOnly": "ログインせずにリンクを開いた人は常に読み取り専用です。",
+    "userNotFound": "そのメールのAkademiyaアカウントが見つかりません。"
+  }
+}

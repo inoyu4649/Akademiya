@@ -236,15 +236,21 @@ sudo apt install -y certbot
 sudo systemctl stop nginx 2>/dev/null || true
 docker compose down 2>/dev/null || true
 
-# 3개 도메인 한 번에 발급
+# 4개 도메인 한 번에 발급
 sudo certbot certonly --standalone \
   -d akademiya.kr \
   -d www.akademiya.kr \
   -d gmc.akademiya.kr \
+  -d pyde.akademiya.kr \
   --email lmg1152@naver.com \
   --agree-tos \
   --no-eff-email
 ```
+
+> ⚠️ **`pyde.akademiya.kr`(PyDe Web)는 기존 인증서에 들어있지 않다.** PyDe Web을
+> 처음 배포하기 전에 위 명령으로 **재발급**해야 하며, DNS A 레코드도 먼저 서버 IP로
+> 향하게 해 두어야 한다(certbot standalone이 도메인 소유 확인을 하기 때문).
+> 재발급을 건너뛰면 브라우저가 인증서 이름 불일치 오류를 낸다.
 
 성공 시 인증서 위치:
 ```
@@ -367,6 +373,30 @@ cat /dev/urandom | tr -dc 'A-Za-z0-9!@#$%' | head -c 48 && echo
 1. [Google 계정](https://myaccount.google.com) → 보안 → 2단계 인증 활성화
 2. 보안 → 앱 비밀번호 → 앱 선택: "메일" → 기기: "기타(Akademiya)"
 3. 생성된 16자리 비밀번호를 `SMTP_PASS`에 입력
+
+### PyDe Web (`pyde/.env`)
+
+PyDe Web은 Akademiya OpenOAuth의 **서드파티 앱**으로 동작한다. 첫 배포 전에 아래 순서를
+지켜야 로그인·클라우드 저장이 동작한다. (전체 항목은 `pyde/.env.example` 참고)
+
+1. akademiya.kr → **개발자 도구 → Akademiya OpenOAuth → 앱 만들기**
+   - 리디렉션 URI: `https://pyde.akademiya.kr/auth/callback` (정확일치로 등록 권장)
+   - **선택 scope에서 `Akademiya Cloud`를 반드시 켠다.** 끄면 파일 저장 API가
+     `INSUFFICIENT_SCOPE`(403)를 돌려주고, 앱은 로그인만 되고 저장이 안 되는 상태가 된다.
+2. 발급된 Client ID / Secret을 `pyde/.env`에 넣는다.
+3. 세션 쿠키 암호화 키를 만든다 — `openssl rand -hex 32` → `PYDE_SESSION_SECRET`.
+   ⚠️ 이 값을 바꾸면 기존 세션이 전부 무효가 되어 전원 재로그인이 필요하다.
+
+```dotenv
+PUBLIC_ORIGIN=https://pyde.akademiya.kr
+AKADEMIYA_OAUTH_CLIENT_ID=...
+AKADEMIYA_OAUTH_CLIENT_SECRET=...
+AKADEMIYA_OAUTH_REDIRECT_URI=https://pyde.akademiya.kr/auth/callback
+PYDE_SESSION_SECRET=...   # openssl rand -hex 32
+```
+
+> PyDe 컨테이너에는 **Python 런타임이 없다.** 사용자 코드는 전부 브라우저의
+> Web Worker(Pyodide)에서 실행되며, 서버는 정적 파일 서빙과 Cloud API 대리 호출만 한다.
 
 ---
 

@@ -33,6 +33,28 @@
         "dev"
       ],
       "port": 5174
+    },
+    {
+      "name": "pyde-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "pyde",
+        "run",
+        "dev"
+      ],
+      "port": 5175
+    },
+    {
+      "name": "pyde-server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "pyde",
+        "run",
+        "server"
+      ],
+      "port": 3002
     }
   ]
 }

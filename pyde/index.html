@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Primary Meta -->
+    <title>PyDe Web — 브라우저에서 바로 쓰는 Python IDE</title>
+    <meta
+      name="description"
+      content="설치 없이 브라우저에서 바로 Python을 배우고 실행하는 교육용 웹 IDE. NumPy·Pandas·Matplotlib·SciPy·scikit-learn을 지원하고, .py와 Jupyter Notebook(.ipynb)을 함께 다룹니다. 코드는 서버가 아니라 브라우저 안에서만 실행됩니다."
+    />
+    <meta
+      name="keywords"
+      content="PyDe Web, 웹 파이썬, 온라인 파이썬 IDE, Pyodide, 브라우저 파이썬, 주피터 노트북 온라인, 파이썬 교육, Akademiya"
+    />
+    <meta name="application-name" content="PyDe Web" />
+    <meta name="theme-color" content="#1a1a1a" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://pyde.akademiya.kr/" />
+
+    <link rel="icon" type="image/png" href="/pyde_logo.png" />
+    <link rel="apple-touch-icon" href="/pyde_logo.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PyDe Web" />
+    <meta property="og:title" content="PyDe Web — 브라우저에서 바로 쓰는 Python IDE" />
+    <meta
+      property="og:description"
+      content="설치 없이 브라우저에서 Python을 실행하는 교육용 웹 IDE. 코드는 서버가 아니라 브라우저 안에서만 실행됩니다."
+    />
+    <meta property="og:url" content="https://pyde.akademiya.kr/" />
+    <meta property="og:image" content="https://pyde.akademiya.kr/pyde_logo.png" />
+    <meta property="og:image:alt" content="PyDe Web 로고" />
+    <meta property="og:locale" content="ko_KR" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="PyDe Web — 브라우저에서 바로 쓰는 Python IDE" />
+    <meta name="twitter:description" content="설치 없이 브라우저에서 Python을 실행하는 교육용 웹 IDE." />
+    <meta name="twitter:image" content="https://pyde.akademiya.kr/pyde_logo.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "@id": "https://pyde.akademiya.kr/#app",
+            "name": "PyDe Web",
+            "url": "https://pyde.akademiya.kr/",
+            "description": "Pyodide 기반 교육용 Web Python IDE. 브라우저 안에서 Python 코드를 실행하며 .py와 Jupyter Notebook(.ipynb)을 지원한다.",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "Web",
+            "inLanguage": "ko",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" },
+            "featureList": [
+              "브라우저 내 Python 실행 (Pyodide)",
+              "NumPy·Pandas·Matplotlib·SciPy·scikit-learn 지원",
+              "Jupyter Notebook(.ipynb) 셀 단위 편집·실행",
+              "Akademiya 계정 클라우드 저장 및 공유"
+            ],
+            "isPartOf": { "@type": "WebSite", "name": "Akademiya", "url": "https://akademiya.kr/" }
+          }
+        ]
+      }
+    </script>
+
+    <!-- D2Coding — 한글이 표시되는 고정폭 폰트 (에디터·터미널 공용) -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/d2coding@1.3.2/d2coding-full.css"
+      crossorigin="anonymous"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
