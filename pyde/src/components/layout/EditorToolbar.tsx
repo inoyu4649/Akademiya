@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { FileKind } from '../../hooks/useLocalDraft'
+import type { SaveStatus } from '../../hooks/useCloudSync'
 import styles from './EditorToolbar.module.css'
 
 interface Props {
@@ -15,6 +16,17 @@ interface Props {
   onDownload: () => void
   onNew: (kind: FileKind) => void
   onOpenFile: (file: File) => void
+  // ── 클라우드 (로그인했을 때만 의미가 있다) ──
+  signedIn: boolean
+  saveStatus: SaveStatus
+  savedAt: Date | null
+  dirty: boolean
+  readOnly: boolean
+  /** 클라우드에 저장된 파일일 때만 공유할 수 있다 */
+  canShare: boolean
+  onSave: () => void
+  onShare: () => void
+  onBrowse: () => void
 }
 
 /** 맥에서는 Ctrl이 아니라 ⌘가 실제 단축키다 — 안내 문구를 플랫폼에 맞춘다 */
@@ -32,8 +44,17 @@ export default function EditorToolbar({
   onDownload,
   onNew,
   onOpenFile,
+  signedIn,
+  saveStatus,
+  savedAt,
+  dirty,
+  readOnly,
+  canShare,
+  onSave,
+  onShare,
+  onBrowse,
 }: Props) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -85,6 +106,17 @@ export default function EditorToolbar({
             >
               {t('header.openFile')}
             </button>
+            {signedIn && (
+              <button
+                className={styles.menuItem}
+                onClick={() => {
+                  setMenuOpen(false)
+                  onBrowse()
+                }}
+              >
+                {t('header.openFromCloud')}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -121,9 +153,41 @@ export default function EditorToolbar({
         </button>
       )}
 
+      {signedIn && !readOnly && (
+        <button className={styles.iconBtn} onClick={onSave} disabled={saveStatus === 'saving'}>
+          {t('header.save')}
+        </button>
+      )}
+
+      {signedIn && canShare && (
+        <button className={styles.iconBtn} onClick={onShare}>
+          {t('header.share')}
+        </button>
+      )}
+
       <button className={styles.iconBtn} onClick={onDownload}>
         {t('header.download')}
       </button>
+
+      {/* 자동 저장이 5분 간격이라 "지금 저장돼 있는지"를 항상 보여줘야 안심하고 쓴다 */}
+      {signedIn && (
+        <span className={styles.saveStatus}>
+          {readOnly
+            ? t('files.readOnly')
+            : saveStatus === 'saving'
+              ? t('files.saving')
+              : dirty
+                ? t('files.unsaved')
+                : savedAt
+                  ? t('files.savedAt', {
+                      time: savedAt.toLocaleTimeString(i18n.language, {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      }),
+                    })
+                  : ''}
+        </span>
+      )}
     </div>
   )
 }

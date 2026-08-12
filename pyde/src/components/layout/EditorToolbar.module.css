@@ -115,6 +115,19 @@
   cursor: not-allowed;
 }
 
+.saveStatus {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding-left: 2px;
+}
+
+@media (max-width: 900px) {
+  .saveStatus {
+    display: none;
+  }
+}
+
 @media (max-width: 760px) {
   .shortcut,
   .fileName {

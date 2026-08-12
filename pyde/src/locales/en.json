@@ -69,7 +69,8 @@
     "runAll": "Run all",
     "newPyFile": "New Python file",
     "newNotebookFile": "New notebook",
-    "openFile": "Open file"
+    "openFile": "Open file",
+    "openFromCloud": "Open from Akademiya Cloud"
   },
   "terminal": {
     "title": "Terminal",
@@ -104,7 +105,26 @@
     "conflict": "This file was changed somewhere else.",
     "conflictOverwrite": "Overwrite with my version",
     "conflictReload": "Load the saved version",
-    "readOnly": "Read-only"
+    "readOnly": "Read-only",
+    "myFiles": "My files",
+    "saving": "Saving...",
+    "confirmDelete": "Delete \"{{name}}\"? This cannot be undone.",
+    "usage": "{{files}}/{{maxFiles}} files · {{used}} / {{total}}",
+    "conflictDetail": "This file was saved somewhere else at {{time}}.",
+    "conflictHint": "Either choice discards the other version. Download a copy first if you need it.",
+    "signInToSave": "Sign in to auto-save to Akademiya Cloud.",
+    "sharedFrom": "Shared by {{owner}}",
+    "makeCopy": "Make a copy",
+    "error": {
+      "LOAD_FAILED": "Could not load your files.",
+      "DELETE_FAILED": "Could not delete the file.",
+      "NOT_AUTHENTICATED": "Please sign in.",
+      "QUOTA_EXCEEDED": "Your storage is full.",
+      "FILE_TOO_LARGE": "The file is too large (max 5MB).",
+      "TOO_MANY_FILES": "You have reached the file count limit.",
+      "NAME_ALREADY_EXISTS": "A file with that name already exists.",
+      "NOT_FOUND": "File not found. The share may have been revoked."
+    }
   },
   "share": {
     "title": "Share",
@@ -120,7 +140,18 @@
     "remove": "Remove",
     "owner": "Owner",
     "anonymousReadOnly": "Visitors who open the link without signing in are always read-only.",
-    "userNotFound": "No Akademiya account found for that email."
+    "userNotFound": "No Akademiya account found for that email.",
+    "noOrgs": "You are not in any organization.",
+    "selectOrg": "Select an organization",
+    "error": {
+      "LOAD_FAILED": "Could not load sharing settings.",
+      "SHARE_FAILED": "Sharing failed.",
+      "USER_NOT_FOUND": "No Akademiya account found for that email.",
+      "NOT_ORG_MEMBER": "You cannot share with an organization you have not joined.",
+      "CANNOT_SHARE_WITH_OWNER": "You cannot share a file with yourself.",
+      "NOT_AUTHENTICATED": "Please sign in again.",
+      "NOT_FOUND": "File not found. The share may have been revoked."
+    }
   },
   "notebook": {
     "title": "Notebook",

@@ -69,7 +69,8 @@
     "runAll": "모두 실행",
     "newPyFile": "새 Python 파일",
     "newNotebookFile": "새 노트북",
-    "openFile": "파일 열기"
+    "openFile": "파일 열기",
+    "openFromCloud": "Akademiya Cloud에서 열기"
   },
   "terminal": {
     "title": "터미널",
@@ -104,7 +105,26 @@
     "conflict": "다른 곳에서 이 파일이 수정되었습니다.",
     "conflictOverwrite": "내 내용으로 덮어쓰기",
     "conflictReload": "저장된 내용 불러오기",
-    "readOnly": "읽기 전용"
+    "readOnly": "읽기 전용",
+    "myFiles": "내 파일",
+    "saving": "저장 중...",
+    "confirmDelete": "\"{{name}}\"을(를) 삭제할까요? 되돌릴 수 없습니다.",
+    "usage": "파일 {{files}}/{{maxFiles}}개 · {{used}} / {{total}}",
+    "conflictDetail": "{{time}}에 다른 곳에서 이 파일이 저장되었습니다.",
+    "conflictHint": "어느 쪽을 골라도 다른 쪽 내용은 사라집니다. 필요하면 먼저 다운로드해 사본을 남기세요.",
+    "signInToSave": "로그인하면 Akademiya Cloud에 자동 저장됩니다.",
+    "sharedFrom": "{{owner}}님이 공유한 파일",
+    "makeCopy": "사본 만들기",
+    "error": {
+      "LOAD_FAILED": "파일 목록을 불러오지 못했습니다.",
+      "DELETE_FAILED": "삭제하지 못했습니다.",
+      "NOT_AUTHENTICATED": "로그인이 필요합니다.",
+      "QUOTA_EXCEEDED": "저장 공간이 가득 찼습니다.",
+      "FILE_TOO_LARGE": "파일이 너무 큽니다(최대 5MB).",
+      "TOO_MANY_FILES": "파일 개수 한도를 초과했습니다.",
+      "NAME_ALREADY_EXISTS": "같은 이름의 파일이 이미 있습니다.",
+      "NOT_FOUND": "파일을 찾을 수 없습니다. 공유가 해제되었을 수 있습니다."
+    }
   },
   "share": {
     "title": "공유",
@@ -120,7 +140,18 @@
     "remove": "제거",
     "owner": "소유자",
     "anonymousReadOnly": "링크로 들어온 비로그인 사용자는 항상 읽기 전용입니다.",
-    "userNotFound": "해당 이메일의 Akademiya 계정을 찾을 수 없습니다."
+    "userNotFound": "해당 이메일의 Akademiya 계정을 찾을 수 없습니다.",
+    "noOrgs": "가입한 조직이 없습니다.",
+    "selectOrg": "조직 선택",
+    "error": {
+      "LOAD_FAILED": "공유 정보를 불러오지 못했습니다.",
+      "SHARE_FAILED": "공유에 실패했습니다.",
+      "USER_NOT_FOUND": "해당 이메일의 Akademiya 계정을 찾을 수 없습니다.",
+      "NOT_ORG_MEMBER": "가입하지 않은 조직에는 공유할 수 없습니다.",
+      "CANNOT_SHARE_WITH_OWNER": "본인에게는 공유할 수 없습니다.",
+      "NOT_AUTHENTICATED": "로그인이 필요합니다. 다시 로그인해주세요.",
+      "NOT_FOUND": "파일을 찾을 수 없습니다. 공유가 해제되었을 수 있습니다."
+    }
   },
   "notebook": {
     "title": "노트북",

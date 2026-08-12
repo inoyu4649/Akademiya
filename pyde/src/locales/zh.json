@@ -69,7 +69,8 @@
     "runAll": "全部运行",
     "newPyFile": "新建 Python 文件",
     "newNotebookFile": "新建笔记本",
-    "openFile": "打开文件"
+    "openFile": "打开文件",
+    "openFromCloud": "从 Akademiya Cloud 打开"
   },
   "terminal": {
     "title": "终端",
@@ -104,7 +105,26 @@
     "conflict": "此文件已在别处被修改。",
     "conflictOverwrite": "用我的内容覆盖",
     "conflictReload": "载入已保存的内容",
-    "readOnly": "只读"
+    "readOnly": "只读",
+    "myFiles": "我的文件",
+    "saving": "保存中...",
+    "confirmDelete": "确定删除“{{name}}”吗?无法撤销。",
+    "usage": "文件 {{files}}/{{maxFiles}} · {{used}} / {{total}}",
+    "conflictDetail": "该文件已于 {{time}} 在别处被保存。",
+    "conflictHint": "无论选择哪一个,另一份内容都会丢失。如有需要请先下载备份。",
+    "signInToSave": "登录后可自动保存到 Akademiya Cloud。",
+    "sharedFrom": "{{owner}} 共享的文件",
+    "makeCopy": "创建副本",
+    "error": {
+      "LOAD_FAILED": "无法加载文件列表。",
+      "DELETE_FAILED": "删除失败。",
+      "NOT_AUTHENTICATED": "请先登录。",
+      "QUOTA_EXCEEDED": "存储空间已满。",
+      "FILE_TOO_LARGE": "文件过大(最大 5MB)。",
+      "TOO_MANY_FILES": "已超出文件数量上限。",
+      "NAME_ALREADY_EXISTS": "已存在同名文件。",
+      "NOT_FOUND": "找不到文件,共享可能已被取消。"
+    }
   },
   "share": {
     "title": "共享",
@@ -120,7 +140,18 @@
     "remove": "移除",
     "owner": "所有者",
     "anonymousReadOnly": "未登录通过链接访问的人始终为只读。",
-    "userNotFound": "找不到该邮箱对应的 Akademiya 账户。"
+    "userNotFound": "找不到该邮箱对应的 Akademiya 账户。",
+    "noOrgs": "您尚未加入任何组织。",
+    "selectOrg": "选择组织",
+    "error": {
+      "LOAD_FAILED": "无法加载共享设置。",
+      "SHARE_FAILED": "共享失败。",
+      "USER_NOT_FOUND": "找不到该邮箱对应的 Akademiya 账户。",
+      "NOT_ORG_MEMBER": "无法共享给未加入的组织。",
+      "CANNOT_SHARE_WITH_OWNER": "不能共享给自己。",
+      "NOT_AUTHENTICATED": "请重新登录。",
+      "NOT_FOUND": "找不到文件,共享可能已被取消。"
+    }
   },
   "notebook": {
     "title": "笔记本",

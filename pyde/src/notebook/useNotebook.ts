@@ -260,6 +260,23 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
     [runCell, insertCell]
   )
 
+  /**
+   * 다른 문서를 열었을 때 노트북을 통째로 갈아끼운다.
+   * ⚠️ notebook은 useState 초기화 함수로만 만들어지므로, 이 함수를 호출하지 않으면
+   *    클라우드에서 다른 .ipynb를 열어도 화면이 그대로 남는다(문서를 바꾸는 모든
+   *    경로에서 반드시 불러야 한다).
+   */
+  const reset = useCallback((source: string) => {
+    queue.current = []
+    activeRun.current = null
+    execCounter.current = 0
+    const next = parseNotebook(source) ?? createNotebook()
+    setNotebook(next)
+    setSelectedId(next.cells[0]?.id ?? '')
+    setMode('command')
+    setRunningCellId(null)
+  }, [])
+
   const selectedIndex = useMemo(
     () => notebook.cells.findIndex((c) => c.id === selectedId),
     [notebook.cells, selectedId]
@@ -295,5 +312,6 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
     runAndAdvance,
     interrupt,
     selectRelative,
+    reset,
   }
 }

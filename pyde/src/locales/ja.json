@@ -69,7 +69,8 @@
     "runAll": "すべて実行",
     "newPyFile": "新しいPythonファイル",
     "newNotebookFile": "新しいノートブック",
-    "openFile": "ファイルを開く"
+    "openFile": "ファイルを開く",
+    "openFromCloud": "Akademiya Cloudから開く"
   },
   "terminal": {
     "title": "ターミナル",
@@ -104,7 +105,26 @@
     "conflict": "このファイルは別の場所で変更されました。",
     "conflictOverwrite": "自分の内容で上書き",
     "conflictReload": "保存された内容を読み込む",
-    "readOnly": "読み取り専用"
+    "readOnly": "読み取り専用",
+    "myFiles": "マイファイル",
+    "saving": "保存中...",
+    "confirmDelete": "「{{name}}」を削除しますか?元に戻せません。",
+    "usage": "ファイル {{files}}/{{maxFiles}} · {{used}} / {{total}}",
+    "conflictDetail": "{{time}}に別の場所でこのファイルが保存されました。",
+    "conflictHint": "どちらを選んでももう一方の内容は失われます。必要ならまずダウンロードして控えを残してください。",
+    "signInToSave": "ログインするとAkademiya Cloudに自動保存されます。",
+    "sharedFrom": "{{owner}}さんが共有したファイル",
+    "makeCopy": "コピーを作成",
+    "error": {
+      "LOAD_FAILED": "ファイル一覧を取得できませんでした。",
+      "DELETE_FAILED": "削除できませんでした。",
+      "NOT_AUTHENTICATED": "ログインが必要です。",
+      "QUOTA_EXCEEDED": "保存容量がいっぱいです。",
+      "FILE_TOO_LARGE": "ファイルが大きすぎます(最大5MB)。",
+      "TOO_MANY_FILES": "ファイル数の上限を超えました。",
+      "NAME_ALREADY_EXISTS": "同じ名前のファイルが既にあります。",
+      "NOT_FOUND": "ファイルが見つかりません。共有が解除された可能性があります。"
+    }
   },
   "share": {
     "title": "共有",
@@ -120,7 +140,18 @@
     "remove": "削除",
     "owner": "所有者",
     "anonymousReadOnly": "ログインせずにリンクを開いた人は常に読み取り専用です。",
-    "userNotFound": "そのメールのAkademiyaアカウントが見つかりません。"
+    "userNotFound": "そのメールのAkademiyaアカウントが見つかりません。",
+    "noOrgs": "加入している組織がありません。",
+    "selectOrg": "組織を選択",
+    "error": {
+      "LOAD_FAILED": "共有情報を取得できませんでした。",
+      "SHARE_FAILED": "共有に失敗しました。",
+      "USER_NOT_FOUND": "そのメールのAkademiyaアカウントが見つかりません。",
+      "NOT_ORG_MEMBER": "加入していない組織には共有できません。",
+      "CANNOT_SHARE_WITH_OWNER": "自分自身には共有できません。",
+      "NOT_AUTHENTICATED": "再度ログインしてください。",
+      "NOT_FOUND": "ファイルが見つかりません。共有が解除された可能性があります。"
+    }
   },
   "notebook": {
     "title": "ノートブック",
