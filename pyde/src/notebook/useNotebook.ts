@@ -1,0 +1,299 @@
+// ============================================================================
+//  노트북 상태 + 셀 단위 실행
+// ============================================================================
+//  Pyodide는 전역 네임스페이스 하나를 계속 쓰므로 셀 사이에 변수가 자연스럽게
+//  이어진다 — Jupyter의 핵심 동작이 공짜로 얻어진다.
+//
+//  실행은 **한 번에 하나씩**만 한다. Shift+Enter를 연타하면 큐에 쌓아 순서대로
+//  돌린다(동시에 던지면 워커가 뒤엉키고 실행 순서가 뒤집힌다).
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { RunEvent } from '../runtime/usePyodideRuntime'
+import {
+  createCell,
+  createNotebook,
+  errorOutput,
+  imageOutput,
+  parseNotebook,
+  resultOutput,
+  serializeNotebook,
+  streamOutput,
+  type CellType,
+  type NbCell,
+  type NbOutput,
+  type Notebook,
+} from './nbformat'
+
+export type CellMode = 'command' | 'edit'
+
+interface Runtime {
+  run: (code: string) => number
+  interrupt: () => void
+  subscribe: (listener: (e: RunEvent) => void) => () => void
+}
+
+/** 직렬화 비용이 있으므로 타이핑이 잠깐 멈췄을 때만 상위로 알린다 */
+const SERIALIZE_DEBOUNCE_MS = 500
+
+export function useNotebook(runtime: Runtime, initialSource: string, onChange: (text: string) => void) {
+  const [notebook, setNotebook] = useState<Notebook>(
+    () => parseNotebook(initialSource) ?? createNotebook()
+  )
+  const [selectedId, setSelectedId] = useState<string>(() => notebook.cells[0]?.id ?? '')
+  const [mode, setMode] = useState<CellMode>('command')
+  const [runningCellId, setRunningCellId] = useState<string | null>(null)
+
+  const execCounter = useRef(0)
+  const queue = useRef<string[]>([])
+  const activeRun = useRef<{ runId: number; cellId: string } | null>(null)
+  // 이벤트 핸들러(실행 큐 등)에서 최신 노트북을 읽기 위한 거울.
+  // 렌더 중에 ref를 쓰면 react-hooks 규칙 위반이라 이펙트에서 갱신한다.
+  const notebookRef = useRef(notebook)
+  useEffect(() => {
+    notebookRef.current = notebook
+  }, [notebook])
+
+  // ── 상위(파일 초안)로 직렬화 결과 전달 ────────────────────────────────────
+  const onChangeRef = useRef(onChange)
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      onChangeRef.current(serializeNotebook(notebook))
+    }, SERIALIZE_DEBOUNCE_MS)
+    return () => window.clearTimeout(timer)
+  }, [notebook])
+
+  // ── 셀 조작 ──────────────────────────────────────────────────────────────
+  const updateCell = useCallback((id: string, patch: (cell: NbCell) => NbCell) => {
+    setNotebook((nb) => ({
+      ...nb,
+      cells: nb.cells.map((c) => (c.id === id ? patch(c) : c)),
+    }))
+  }, [])
+
+  const setCellSource = useCallback(
+    (id: string, source: string) => {
+      updateCell(id, (c) => (c.source === source ? c : { ...c, source }))
+    },
+    [updateCell]
+  )
+
+  const appendOutput = useCallback(
+    (cellId: string, output: NbOutput) => {
+      updateCell(cellId, (c) => {
+        const outputs = c.outputs ?? []
+        const last = outputs[outputs.length - 1]
+        // 연속된 같은 스트림은 한 덩어리로 합친다(Jupyter도 그렇게 저장한다)
+        if (
+          output.output_type === 'stream' &&
+          last?.output_type === 'stream' &&
+          last.name === output.name
+        ) {
+          const merged: NbOutput = { ...last, text: [...last.text, ...output.text] }
+          return { ...c, outputs: [...outputs.slice(0, -1), merged] }
+        }
+        return { ...c, outputs: [...outputs, output] }
+      })
+    },
+    [updateCell]
+  )
+
+  const insertCell = useCallback(
+    (anchorId: string, where: 'above' | 'below', type: CellType = 'code') => {
+      const cell = createCell(type)
+      setNotebook((nb) => {
+        const index = nb.cells.findIndex((c) => c.id === anchorId)
+        const at = index < 0 ? nb.cells.length : where === 'above' ? index : index + 1
+        const cells = [...nb.cells]
+        cells.splice(at, 0, cell)
+        return { ...nb, cells }
+      })
+      setSelectedId(cell.id)
+      return cell.id
+    },
+    []
+  )
+
+  const deleteCell = useCallback((id: string) => {
+    setNotebook((nb) => {
+      // 마지막 한 개는 지우지 않는다 — 빈 노트북은 편집할 곳이 없어진다
+      if (nb.cells.length <= 1) return nb
+      const index = nb.cells.findIndex((c) => c.id === id)
+      if (index < 0) return nb
+      const cells = nb.cells.filter((c) => c.id !== id)
+      const nextSelected = cells[Math.min(index, cells.length - 1)]
+      if (nextSelected) queueMicrotask(() => setSelectedId(nextSelected.id))
+      return { ...nb, cells }
+    })
+  }, [])
+
+  const moveCell = useCallback((id: string, delta: -1 | 1) => {
+    setNotebook((nb) => {
+      const index = nb.cells.findIndex((c) => c.id === id)
+      const target = index + delta
+      if (index < 0 || target < 0 || target >= nb.cells.length) return nb
+      const cells = [...nb.cells]
+      ;[cells[index], cells[target]] = [cells[target], cells[index]]
+      return { ...nb, cells }
+    })
+  }, [])
+
+  const changeCellType = useCallback(
+    (id: string, type: CellType) => {
+      updateCell(id, (c) => {
+        if (c.cell_type === type) return c
+        return type === 'code'
+          ? { ...c, cell_type: 'code', execution_count: null, outputs: [] }
+          : { id: c.id, cell_type: 'markdown', source: c.source, metadata: c.metadata }
+      })
+    },
+    [updateCell]
+  )
+
+  const clearOutputs = useCallback((id?: string) => {
+    setNotebook((nb) => ({
+      ...nb,
+      cells: nb.cells.map((c) =>
+        c.cell_type === 'code' && (id === undefined || c.id === id)
+          ? { ...c, outputs: [], execution_count: null }
+          : c
+      ),
+    }))
+  }, [])
+
+  // ── 실행 ─────────────────────────────────────────────────────────────────
+  const startNext = useCallback(() => {
+    if (activeRun.current) return
+    // 재귀 대신 루프로 건너뛴다(자기 자신을 참조하는 useCallback은 규칙 위반이기도 하다)
+    for (;;) {
+      const cellId = queue.current.shift()
+      if (!cellId) {
+        setRunningCellId(null)
+        return
+      }
+      const cell = notebookRef.current.cells.find((c) => c.id === cellId)
+      // 마크다운이거나 빈 셀은 건너뛴다 — Jupyter도 빈 셀엔 실행 번호를 주지 않는다
+      if (!cell || cell.cell_type !== 'code' || !cell.source.trim()) continue
+
+      updateCell(cellId, (c) => ({ ...c, outputs: [], execution_count: null }))
+      setRunningCellId(cellId)
+      const runId = runtime.run(cell.source)
+      activeRun.current = { runId, cellId }
+      return
+    }
+  }, [runtime, updateCell])
+
+  useEffect(() => {
+    const unsubscribe = runtime.subscribe((e) => {
+      const active = activeRun.current
+      if (!active || e.runId !== active.runId) return
+      const cellId = active.cellId
+
+      switch (e.type) {
+        case 'stdout':
+          appendOutput(cellId, streamOutput('stdout', e.text))
+          break
+        case 'stderr':
+          appendOutput(cellId, streamOutput('stderr', e.text))
+          break
+        case 'artifact':
+          appendOutput(cellId, imageOutput(e.artifact.data))
+          break
+        case 'run-done': {
+          const count = ++execCounter.current
+          if (e.result !== null) appendOutput(cellId, resultOutput(count, e.result))
+          updateCell(cellId, (c) => ({ ...c, execution_count: count }))
+          activeRun.current = null
+          startNext()
+          break
+        }
+        case 'run-error': {
+          const count = ++execCounter.current
+          appendOutput(cellId, errorOutput(e.friendly))
+          updateCell(cellId, (c) => ({ ...c, execution_count: count }))
+          activeRun.current = null
+          // 오류가 나면 남은 큐를 버린다 — Jupyter의 "Run All"과 같은 동작이고,
+          // 앞 셀이 실패했는데 뒤를 계속 돌리면 오류가 줄줄이 이어져 원인이 묻힌다.
+          queue.current = []
+          setRunningCellId(null)
+          break
+        }
+      }
+    })
+    return unsubscribe
+  }, [runtime, appendOutput, updateCell, startNext])
+
+  const runCell = useCallback(
+    (id: string) => {
+      queue.current.push(id)
+      startNext()
+    },
+    [startNext]
+  )
+
+  const runAll = useCallback(() => {
+    queue.current = notebookRef.current.cells.filter((c) => c.cell_type === 'code').map((c) => c.id)
+    startNext()
+  }, [startNext])
+
+  const interrupt = useCallback(() => {
+    queue.current = []
+    runtime.interrupt()
+  }, [runtime])
+
+  /** Shift+Enter — 실행하고 아래 셀로 이동(없으면 새로 만든다) */
+  const runAndAdvance = useCallback(
+    (id: string) => {
+      runCell(id)
+      const cells = notebookRef.current.cells
+      const index = cells.findIndex((c) => c.id === id)
+      if (index >= 0 && index < cells.length - 1) {
+        setSelectedId(cells[index + 1].id)
+        setMode('command')
+      } else {
+        insertCell(id, 'below')
+        setMode('edit')
+      }
+    },
+    [runCell, insertCell]
+  )
+
+  const selectedIndex = useMemo(
+    () => notebook.cells.findIndex((c) => c.id === selectedId),
+    [notebook.cells, selectedId]
+  )
+
+  const selectRelative = useCallback(
+    (delta: -1 | 1) => {
+      const cells = notebookRef.current.cells
+      const index = cells.findIndex((c) => c.id === selectedId)
+      const next = index + delta
+      if (next >= 0 && next < cells.length) setSelectedId(cells[next].id)
+    },
+    [selectedId]
+  )
+
+  return {
+    notebook,
+    selectedId,
+    selectedIndex,
+    mode,
+    runningCellId,
+    isQueued: (id: string) => queue.current.includes(id),
+    setSelectedId,
+    setMode,
+    setCellSource,
+    insertCell,
+    deleteCell,
+    moveCell,
+    changeCellType,
+    clearOutputs,
+    runCell,
+    runAll,
+    runAndAdvance,
+    interrupt,
+    selectRelative,
+  }
+}

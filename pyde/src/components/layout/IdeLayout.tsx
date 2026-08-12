@@ -4,22 +4,29 @@ import styles from './IdeLayout.module.css'
 interface Props {
   header: ReactNode
   editor: ReactNode
-  canvas: ReactNode
-  terminal: ReactNode
+  /** 노트북 모드에서는 출력이 셀 안에 붙으므로 두 패널을 쓰지 않는다 */
+  canvas?: ReactNode
+  terminal?: ReactNode
 }
 
 /**
  * IDE 셸의 뼈대. 각 영역의 내용은 페이지가 주입한다.
- * 영역 크기는 CSS 변수(--canvas-width / --terminal-height)로 조절되므로
- * Phase 4의 드래그 분할선은 이 변수만 바꾸면 된다.
+ * 영역 크기는 CSS 변수(--canvas-width / --terminal-height)로 조절된다.
  */
 export default function IdeLayout({ header, editor, canvas, terminal }: Props) {
+  // 노트북은 Jupyter처럼 셀마다 출력을 달고 있어 아래·오른쪽 패널이 오히려 방해가 된다
+  const split = canvas !== undefined && terminal !== undefined
+
   return (
-    <div className={styles.layout}>
+    <div className={split ? styles.layout : styles.layoutFull}>
       {header}
       <main className={styles.editor}>{editor}</main>
-      <aside className={styles.canvas}>{canvas}</aside>
-      <section className={styles.terminal}>{terminal}</section>
+      {split && (
+        <>
+          <aside className={styles.canvas}>{canvas}</aside>
+          <section className={styles.terminal}>{terminal}</section>
+        </>
+      )}
     </div>
   )
 }

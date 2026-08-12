@@ -65,7 +65,11 @@
     "files": "Files",
     "newFile": "New file",
     "openLocal": "Open from my computer",
-    "download": "Download"
+    "download": "Download",
+    "runAll": "Run all",
+    "newPyFile": "New Python file",
+    "newNotebookFile": "New notebook",
+    "openFile": "Open file"
   },
   "terminal": {
     "title": "Terminal",
@@ -117,5 +121,15 @@
     "owner": "Owner",
     "anonymousReadOnly": "Visitors who open the link without signing in are always read-only.",
     "userNotFound": "No Akademiya account found for that email."
+  },
+  "notebook": {
+    "title": "Notebook",
+    "addCode": "Code cell",
+    "addMarkdown": "Markdown cell",
+    "emptyMarkdown": "Empty markdown cell (double-click to edit)",
+    "runAll": "Run all",
+    "clearOutputs": "Clear outputs",
+    "invalidFile": "That is not a valid Jupyter notebook (.ipynb) file.",
+    "shortcuts": "Esc command mode · Enter edit · Shift+Enter run and select below · A/B add cell · DD delete · M markdown · Y code"
   }
 }

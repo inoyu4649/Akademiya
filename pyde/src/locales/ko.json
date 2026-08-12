@@ -65,7 +65,11 @@
     "files": "파일",
     "newFile": "새 파일",
     "openLocal": "내 컴퓨터에서 열기",
-    "download": "다운로드"
+    "download": "다운로드",
+    "runAll": "모두 실행",
+    "newPyFile": "새 Python 파일",
+    "newNotebookFile": "새 노트북",
+    "openFile": "파일 열기"
   },
   "terminal": {
     "title": "터미널",
@@ -117,5 +121,15 @@
     "owner": "소유자",
     "anonymousReadOnly": "링크로 들어온 비로그인 사용자는 항상 읽기 전용입니다.",
     "userNotFound": "해당 이메일의 Akademiya 계정을 찾을 수 없습니다."
+  },
+  "notebook": {
+    "title": "노트북",
+    "addCode": "코드 셀",
+    "addMarkdown": "마크다운 셀",
+    "emptyMarkdown": "비어 있는 마크다운 셀 (더블클릭해 편집)",
+    "runAll": "모두 실행",
+    "clearOutputs": "출력 지우기",
+    "invalidFile": "올바른 Jupyter 노트북(.ipynb) 파일이 아닙니다.",
+    "shortcuts": "Esc 명령 모드 · Enter 편집 · Shift+Enter 실행 후 다음 · A/B 셀 추가 · DD 삭제 · M 마크다운 · Y 코드"
   }
 }

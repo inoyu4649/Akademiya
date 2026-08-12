@@ -11,6 +11,13 @@ export interface Draft {
   content: string
 }
 
+export type FileKind = 'py' | 'ipynb'
+
+/** 확장자로 편집 방식을 정한다 — .ipynb만 노트북, 나머지는 일반 소스로 다룬다 */
+export function kindOf(name: string): FileKind {
+  return name.toLowerCase().endsWith('.ipynb') ? 'ipynb' : 'py'
+}
+
 export const DEFAULT_DRAFT: Draft = {
   name: 'main.py',
   content: `# PyDe Web에 오신 것을 환영합니다.
@@ -76,5 +83,10 @@ export function useLocalDraft() {
     setDraft((prev) => ({ ...prev, name }))
   }, [])
 
-  return { draft, setContent, setName }
+  /** 새 파일 만들기 / 내 컴퓨터에서 열기 — 이름과 내용을 한꺼번에 바꾼다 */
+  const replace = useCallback((next: Draft) => {
+    setDraft(next)
+  }, [])
+
+  return { draft, setContent, setName, replace }
 }

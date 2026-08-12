@@ -65,7 +65,11 @@
     "files": "ファイル",
     "newFile": "新規ファイル",
     "openLocal": "パソコンから開く",
-    "download": "ダウンロード"
+    "download": "ダウンロード",
+    "runAll": "すべて実行",
+    "newPyFile": "新しいPythonファイル",
+    "newNotebookFile": "新しいノートブック",
+    "openFile": "ファイルを開く"
   },
   "terminal": {
     "title": "ターミナル",
@@ -117,5 +121,15 @@
     "owner": "所有者",
     "anonymousReadOnly": "ログインせずにリンクを開いた人は常に読み取り専用です。",
     "userNotFound": "そのメールのAkademiyaアカウントが見つかりません。"
+  },
+  "notebook": {
+    "title": "ノートブック",
+    "addCode": "コードセル",
+    "addMarkdown": "Markdownセル",
+    "emptyMarkdown": "空のMarkdownセル(ダブルクリックで編集)",
+    "runAll": "すべて実行",
+    "clearOutputs": "出力をクリア",
+    "invalidFile": "有効なJupyterノートブック(.ipynb)ファイルではありません。",
+    "shortcuts": "Esc コマンドモード · Enter 編集 · Shift+Enter 実行して次へ · A/B セル追加 · DD 削除 · M Markdown · Y コード"
   }
 }

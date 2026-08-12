@@ -65,7 +65,11 @@
     "files": "文件",
     "newFile": "新建文件",
     "openLocal": "从本机打开",
-    "download": "下载"
+    "download": "下载",
+    "runAll": "全部运行",
+    "newPyFile": "新建 Python 文件",
+    "newNotebookFile": "新建笔记本",
+    "openFile": "打开文件"
   },
   "terminal": {
     "title": "终端",
@@ -117,5 +121,15 @@
     "owner": "所有者",
     "anonymousReadOnly": "未登录通过链接访问的人始终为只读。",
     "userNotFound": "找不到该邮箱对应的 Akademiya 账户。"
+  },
+  "notebook": {
+    "title": "笔记本",
+    "addCode": "代码单元格",
+    "addMarkdown": "Markdown 单元格",
+    "emptyMarkdown": "空的 Markdown 单元格(双击编辑)",
+    "runAll": "全部运行",
+    "clearOutputs": "清除输出",
+    "invalidFile": "这不是有效的 Jupyter 笔记本(.ipynb)文件。",
+    "shortcuts": "Esc 命令模式 · Enter 编辑 · Shift+Enter 运行并选择下一个 · A/B 添加单元格 · DD 删除 · M Markdown · Y 代码"
   }
 }
