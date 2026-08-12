@@ -207,6 +207,14 @@ export function useWorkspace({ persist = true }: Options = {}) {
     [patchDoc, state.activeId]
   )
 
+  /** 특정 탭의 이름을 바꾼다(활성 탭이 아니어도 된다 — 탭을 더블클릭해 고칠 수 있으므로) */
+  const renameDoc = useCallback(
+    (docId: string, name: string) => {
+      patchDoc(docId, { name })
+    },
+    [patchDoc]
+  )
+
   return {
     docs: state.docs,
     activeId: state.activeId,
@@ -218,5 +226,6 @@ export function useWorkspace({ persist = true }: Options = {}) {
     closeDoc,
     activate,
     renameActive,
+    renameDoc,
   }
 }

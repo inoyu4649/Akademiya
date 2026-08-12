@@ -123,11 +123,26 @@
       "FILE_TOO_LARGE": "The file is too large (max 5MB).",
       "TOO_MANY_FILES": "You have reached the file count limit.",
       "NAME_ALREADY_EXISTS": "A file with that name already exists.",
-      "NOT_FOUND": "File not found. The share may have been revoked."
+      "NOT_FOUND": "File not found. The share may have been revoked.",
+      "RENAME_FAILED": "Could not rename the file."
     },
     "closeTab": "Close {{name}}",
     "confirmClose": "\"{{name}}\" has unsaved changes. Close anyway?",
-    "tooManyTabs": "You can open up to {{max}} tabs. Please close one first."
+    "tooManyTabs": "You can open up to {{max}} tabs. Please close one first.",
+    "location": {
+      "cloud": "Akademiya Cloud file",
+      "link": "Shared with me",
+      "local": "Only in this browser"
+    },
+    "renameLabel": "File name",
+    "nameError": {
+      "EMPTY": "Please enter a name.",
+      "TOO_LONG": "That name is too long (max 180 characters).",
+      "FORBIDDEN_CHARS": "/ \\ : * ? \" < > | and control characters are not allowed.",
+      "EDGE_DOT_OR_SPACE": "The name cannot start or end with a space or a dot.",
+      "KIND_CHANGE": "You cannot rename between .py and .ipynb. Create a new file instead.",
+      "NOT_OWNER": "You cannot rename a file shared with you."
+    }
   },
   "share": {
     "title": "Share",

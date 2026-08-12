@@ -20,7 +20,9 @@ import { useAuth } from '../hooks/authContext'
 import { usePyodideRuntime } from '../runtime/usePyodideRuntime'
 import { useRunner } from '../runtime/useRunner'
 import { createNotebook, parseNotebook, serializeNotebook } from '../notebook/nbformat'
-import { readFile, readPublicFile } from '../api/cloud.api'
+import { readFile, readPublicFile, renameFile } from '../api/cloud.api'
+import { ApiError } from '../api/client'
+import { extensionOf, validateFileName } from '../utils/fileName'
 
 export default function IdePage() {
   const { t } = useTranslation()
@@ -211,6 +213,46 @@ export default function IdePage() {
     [signedIn]
   )
 
+  /**
+   * 탭 더블클릭으로 이름 바꾸기.
+   * 클라우드 파일이면 서버에도 반영한다. 응답을 기다리지 않고 화면부터 바꾸되,
+   * 실패하면 되돌리고 알린다 — 이름 바꾸기는 자주 하는 동작이라 왕복을 기다리게 하면 답답하다.
+   * @returns 거절 사유(i18n 키 뒷부분). 성공이면 null
+   */
+  const handleRename = useCallback(
+    (docId: string, rawName: string): string | null => {
+      const doc = ws.docs.find((d) => d.docId === docId)
+      if (!doc) return 'EMPTY'
+
+      const name = rawName.normalize('NFC')
+      const invalid = validateFileName(name)
+      if (invalid) return invalid
+
+      // ⚠️ .py ↔ .ipynb 를 오가는 이름 변경은 막는다. 확장자가 편집기 종류를 결정하는데
+      //    내용은 그대로라, 예컨대 .py 내용을 .ipynb로 만들면 노트북으로 열리지 않고
+      //    사용자는 파일이 깨진 것처럼 느낀다. 형식을 바꾸려면 새로 만들어 옮겨야 한다.
+      const wasNotebook = extensionOf(doc.name) === '.ipynb'
+      const willBeNotebook = extensionOf(name) === '.ipynb'
+      if (wasNotebook !== willBeNotebook) return 'KIND_CHANGE'
+
+      // 공유받은 파일의 이름은 원본 소유자의 것이라 바꾸지 않는다
+      if (doc.cloudId && doc.role !== 'owner') return 'NOT_OWNER'
+
+      const previous = doc.name
+      ws.renameDoc(docId, name)
+
+      if (doc.cloudId && doc.role === 'owner') {
+        void renameFile(doc.cloudId, name).catch((err) => {
+          ws.renameDoc(docId, previous)
+          const code = err instanceof ApiError ? err.code : 'RENAME_FAILED'
+          window.alert(t([`files.error.${code}`, 'files.error.RENAME_FAILED']))
+        })
+      }
+      return null
+    },
+    [ws, t]
+  )
+
   const handleCloseTab = useCallback(
     (docId: string) => {
       const doc = ws.docs.find((d) => d.docId === docId)
@@ -252,6 +294,7 @@ export default function IdePage() {
       onActivate={ws.activate}
       onClose={handleCloseTab}
       onNew={() => handleNew('py')}
+      onRename={handleRename}
     />
   )
 

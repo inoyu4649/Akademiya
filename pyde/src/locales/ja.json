@@ -123,11 +123,26 @@
       "FILE_TOO_LARGE": "ファイルが大きすぎます(最大5MB)。",
       "TOO_MANY_FILES": "ファイル数の上限を超えました。",
       "NAME_ALREADY_EXISTS": "同じ名前のファイルが既にあります。",
-      "NOT_FOUND": "ファイルが見つかりません。共有が解除された可能性があります。"
+      "NOT_FOUND": "ファイルが見つかりません。共有が解除された可能性があります。",
+      "RENAME_FAILED": "名前を変更できませんでした。"
     },
     "closeTab": "{{name}} を閉じる",
     "confirmClose": "「{{name}}」に保存されていない変更があります。閉じますか?",
-    "tooManyTabs": "タブは最大{{max}}個まで開けます。使わないタブを先に閉じてください。"
+    "tooManyTabs": "タブは最大{{max}}個まで開けます。使わないタブを先に閉じてください。",
+    "location": {
+      "cloud": "Akademiya Cloudのファイル",
+      "link": "共有されたファイル",
+      "local": "このブラウザだけにあるファイル"
+    },
+    "renameLabel": "ファイル名",
+    "nameError": {
+      "EMPTY": "名前を入力してください。",
+      "TOO_LONG": "名前が長すぎます(最大180文字)。",
+      "FORBIDDEN_CHARS": "/ \\ : * ? \" < > | と制御文字は使えません。",
+      "EDGE_DOT_OR_SPACE": "名前の前後に空白やピリオドは使えません。",
+      "KIND_CHANGE": ".pyと.ipynbの間で名前を変更することはできません。新規作成してください。",
+      "NOT_OWNER": "共有されたファイルの名前は変更できません。"
+    }
   },
   "share": {
     "title": "共有",

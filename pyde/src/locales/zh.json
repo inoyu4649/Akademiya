@@ -123,11 +123,26 @@
       "FILE_TOO_LARGE": "文件过大(最大 5MB)。",
       "TOO_MANY_FILES": "已超出文件数量上限。",
       "NAME_ALREADY_EXISTS": "已存在同名文件。",
-      "NOT_FOUND": "找不到文件,共享可能已被取消。"
+      "NOT_FOUND": "找不到文件,共享可能已被取消。",
+      "RENAME_FAILED": "重命名失败。"
     },
     "closeTab": "关闭 {{name}}",
     "confirmClose": "“{{name}}”有未保存的更改。仍要关闭吗?",
-    "tooManyTabs": "最多可打开 {{max}} 个标签页,请先关闭一个。"
+    "tooManyTabs": "最多可打开 {{max}} 个标签页,请先关闭一个。",
+    "location": {
+      "cloud": "Akademiya Cloud 文件",
+      "link": "共享给我的文件",
+      "local": "仅在此浏览器中的文件"
+    },
+    "renameLabel": "文件名",
+    "nameError": {
+      "EMPTY": "请输入名称。",
+      "TOO_LONG": "名称过长(最多 180 个字符)。",
+      "FORBIDDEN_CHARS": "不能使用 / \\ : * ? \" < > | 和控制字符。",
+      "EDGE_DOT_OR_SPACE": "名称前后不能有空格或句点。",
+      "KIND_CHANGE": "不能在 .py 和 .ipynb 之间重命名,请新建文件。",
+      "NOT_OWNER": "无法重命名共享给您的文件。"
+    }
   },
   "share": {
     "title": "共享",

@@ -1,5 +1,8 @@
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Doc } from '../../hooks/useWorkspace'
+import TabIcon from './TabIcon'
+import { locationOf } from './tabLocation'
 import styles from './TabBar.module.css'
 
 interface Props {
@@ -10,28 +13,88 @@ interface Props {
   onActivate: (docId: string) => void
   onClose: (docId: string) => void
   onNew: () => void
+  /** @returns 거절 사유(i18n 키 뒷부분). 성공이면 null */
+  onRename: (docId: string, name: string) => string | null
 }
 
-export default function TabBar({ docs, activeId, isDirty, onActivate, onClose, onNew }: Props) {
+export default function TabBar({
+  docs,
+  activeId,
+  isDirty,
+  onActivate,
+  onClose,
+  onNew,
+  onRename,
+}: Props) {
   const { t } = useTranslation()
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [draftName, setDraftName] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!renamingId) return
+    const input = inputRef.current
+    if (!input) return
+    input.focus()
+    // 확장자를 뺀 부분만 선택해 준다 — 보통 바꾸고 싶은 건 그쪽이다(VS Code와 동일)
+    const dot = input.value.lastIndexOf('.')
+    input.setSelectionRange(0, dot > 0 ? dot : input.value.length)
+  }, [renamingId])
+
+  const startRename = (doc: Doc) => {
+    setRenamingId(doc.docId)
+    setDraftName(doc.name)
+    setError(null)
+  }
+
+  const cancelRename = () => {
+    setRenamingId(null)
+    setError(null)
+  }
+
+  const commitRename = () => {
+    if (!renamingId) return
+    const current = docs.find((d) => d.docId === renamingId)
+    // 이름이 그대로면 조용히 닫는다
+    if (!current || draftName === current.name) {
+      cancelRename()
+      return
+    }
+    const failure = onRename(renamingId, draftName)
+    if (failure) {
+      setError(failure)
+      inputRef.current?.focus()
+      return
+    }
+    cancelRename()
+  }
 
   return (
     <div className={styles.bar} role="tablist" aria-label={t('files.title')}>
       {docs.map((doc) => {
         const active = doc.docId === activeId
         const dirty = isDirty(doc)
+        const location = locationOf(doc)
+        const renaming = renamingId === doc.docId
+
         return (
           <div
             key={doc.docId}
-            className={`${styles.tab} ${active ? styles.tabActive : ''}`}
+            className={`${styles.tab} ${active ? styles.tabActive : ''} ${renaming ? styles.tabRenaming : ''}`}
             role="tab"
             aria-selected={active}
             tabIndex={active ? 0 : -1}
-            onClick={() => onActivate(doc.docId)}
+            onClick={() => !renaming && onActivate(doc.docId)}
+            onDoubleClick={() => startRename(doc)}
             onKeyDown={(e) => {
+              if (renaming) return
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
                 onActivate(doc.docId)
+              } else if (e.key === 'F2') {
+                e.preventDefault()
+                startRename(doc)
               }
             }}
             // 가운데 버튼 클릭으로 닫기 — 브라우저 탭과 같은 관례
@@ -41,32 +104,63 @@ export default function TabBar({ docs, activeId, isDirty, onActivate, onClose, o
                 onClose(doc.docId)
               }
             }}
-            title={doc.name}
+            title={renaming ? undefined : `${doc.name} — ${t(`files.location.${location}`)}`}
           >
-            {doc.role === 'viewer' && (
-              <span className={styles.readOnlyMark} title={t('files.readOnly')}>
-                🔒
-              </span>
+            <TabIcon
+              location={location}
+              className={styles.locationIcon}
+              title={t(`files.location.${location}`)}
+            />
+
+            {renaming ? (
+              <input
+                ref={inputRef}
+                className={`${styles.renameInput} ${error ? styles.renameInputError : ''}`}
+                value={draftName}
+                onChange={(e) => {
+                  setDraftName(e.target.value)
+                  setError(null)
+                }}
+                onKeyDown={(e) => {
+                  // 이름 입력 중에는 탭 단축키가 끼어들면 안 된다
+                  e.stopPropagation()
+                  if (e.key === 'Enter') commitRename()
+                  else if (e.key === 'Escape') cancelRename()
+                }}
+                onBlur={commitRename}
+                onClick={(e) => e.stopPropagation()}
+                aria-label={t('files.renameLabel')}
+                title={error ? t(`files.nameError.${error}`) : undefined}
+                spellCheck={false}
+              />
+            ) : (
+              <span className={styles.tabName}>{doc.name}</span>
             )}
-            <span className={styles.tabName}>{doc.name}</span>
 
-            {dirty && <span className={styles.dirtyDot} title={t('files.unsaved')} />}
+            {!renaming && dirty && <span className={styles.dirtyDot} title={t('files.unsaved')} />}
 
-            <button
-              className={styles.closeBtn}
-              onClick={(e) => {
-                e.stopPropagation()
-                onClose(doc.docId)
-              }}
-              aria-label={t('files.closeTab', { name: doc.name })}
-            >
-              ✕
-            </button>
+            {!renaming && (
+              <button
+                className={styles.closeBtn}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClose(doc.docId)
+                }}
+                aria-label={t('files.closeTab', { name: doc.name })}
+              >
+                ✕
+              </button>
+            )}
           </div>
         )
       })}
 
-      <button className={styles.newTabBtn} onClick={onNew} aria-label={t('header.newFile')} title={t('header.newFile')}>
+      <button
+        className={styles.newTabBtn}
+        onClick={onNew}
+        aria-label={t('header.newFile')}
+        title={t('header.newFile')}
+      >
         +
       </button>
     </div>

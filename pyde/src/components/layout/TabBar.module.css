@@ -52,11 +52,45 @@
   text-align: left;
 }
 
-/* 읽기 전용(공유받은 파일)임을 아이콘으로 구분 */
-.readOnlyMark {
+/* 파일이 어디에 있는지(클라우드/공유/로컬) 알려주는 아이콘 */
+.locationIcon {
   flex-shrink: 0;
-  font-size: 10px;
-  opacity: 0.7;
+  opacity: 0.75;
+}
+
+.tabActive .locationIcon {
+  opacity: 1;
+}
+
+/* 이름 변경 중에는 탭이 입력창처럼 보이게 한다 */
+.tabRenaming {
+  background: var(--bg-base);
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.renameInput {
+  flex: 1;
+  min-width: 60px;
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: var(--bg-input);
+  border: 1px solid var(--accent-dark);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+}
+
+.renameInput:focus {
+  border-color: var(--accent);
+  box-shadow: none;
+}
+
+/* 규칙에 맞지 않는 이름 — 입력창을 붉게 두고 title로 이유를 알린다 */
+.renameInputError {
+  border-color: var(--danger);
+}
+.renameInputError:focus {
+  border-color: var(--danger);
 }
 
 /* 저장되지 않은 변경 — VS Code의 점. 여기서는 요구대로 빨간색 */
