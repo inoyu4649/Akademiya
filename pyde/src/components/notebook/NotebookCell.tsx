@@ -54,8 +54,8 @@ export default function NotebookCell({
     if (editing && selected) editorRef.current?.focus()
   }, [editing, selected])
 
-  // Monaco 인스턴스마다 ResizeObserver를 붙이면(automaticLayout) 셀이 많아질수록
-  // 무거워진다. 줄 수로 높이를 직접 계산해 레이아웃을 고정한다.
+  // 줄 수에 맞춰 셀 높이를 키운다(노트북은 셀마다 내용 길이가 제각각이다).
+  // ⚠️ 이 높이만 정해주고 automaticLayout을 끄면 안 된다 — 아래 옵션의 주석 참조.
   const height = useMemo(() => {
     const lines = Math.max(MIN_LINES, Math.min(MAX_LINES, cell.source.split('\n').length))
     return lines * LINE_HEIGHT + 16
@@ -120,7 +120,12 @@ export default function NotebookCell({
                 lineDecorationsWidth: 0,
                 lineNumbersMinChars: 0,
                 scrollBeyondLastLine: false,
-                automaticLayout: false,
+                // ⚠️ 반드시 켜 둔다. 껐더니 셀이 마운트되는 시점에 컨테이너 크기가 아직
+                //    0이면 Monaco가 그대로 0×0에 머물러, **클릭할 텍스트 영역 자체가 없어
+                //    편집 모드로 들어갈 수 없었다.** 마운트 타이밍에 따라 되기도 하고 안 되기도
+                //    하는 경쟁 조건이라 더 고약했다. 셀마다 ResizeObserver가 붙는 비용보다
+                //    "클릭해도 커서가 안 잡히는" 쪽이 비교할 수 없이 나쁘다.
+                automaticLayout: true,
                 overviewRulerLanes: 0,
                 renderLineHighlight: 'none',
                 tabSize: 4,
