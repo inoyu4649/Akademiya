@@ -15,12 +15,23 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  /* button 기본 여백을 지운다 — 전역 button 리셋은 border/background만 없애고
+     padding은 그대로 두므로 여기서 직접 0으로 맞춘다 */
+  padding: 0;
+  border-radius: var(--radius-sm);
+}
+.brand:hover .brandName {
+  color: var(--text-primary);
+}
+.brand:hover .logo {
+  opacity: 0.85;
 }
 
 .logo {
   width: 24px;
   height: 24px;
   object-fit: contain;
+  transition: opacity 0.15s;
 }
 
 .brandName {

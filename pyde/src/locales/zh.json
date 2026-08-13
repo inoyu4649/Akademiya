@@ -16,7 +16,8 @@
     "copy": "复制",
     "copied": "已复制",
     "error": "错误",
-    "language": "语言"
+    "language": "语言",
+    "reload": "刷新"
   },
   "auth": {
     "signIn": "使用 Akademiya 登录",
@@ -70,7 +71,8 @@
     "newPyFile": "新建 Python 文件",
     "newNotebookFile": "新建笔记本",
     "openFile": "打开文件",
-    "openFromCloud": "从 Akademiya Cloud 打开"
+    "openFromCloud": "从 Akademiya Cloud 打开",
+    "uploadData": "上传数据"
   },
   "terminal": {
     "title": "终端",
@@ -201,5 +203,24 @@
     "toc": "目录",
     "effective": "{{date}} 施行",
     "home": "前往 PyDe Web"
+  },
+  "data": {
+    "title": "上传数据",
+    "useLocal": "仅本次会话使用",
+    "useCloud": "保存到 Akademiya Cloud",
+    "fileInfo": "{{name}} · {{size}}",
+    "localHint": "仅在本次会话中可用——刷新后消失。可在代码中用 pd.read_csv(\"/data/文件名\") 读取。",
+    "cloudHint": "永久保存到 Akademiya Cloud 的 PyDe Web/data 文件夹,同时立即加载到当前会话。",
+    "signInRequired": "保存到云端需要登录。",
+    "localReady": "已准备好:{{path}}。用 pd.read_csv(\"{{path}}\") 读取。",
+    "cloudReady": "已保存到 Cloud 并加载到 {{path}}。",
+    "cloudSavedButFsFailed": "已保存到 Cloud,但加载到本次会话失败。",
+    "error": {
+      "FOLDER_QUOTA_EXCEEDED": "超过 PyDe Web 数据存储上限(10MB)。",
+      "QUOTA_EXCEEDED": "超过 Akademiya Cloud 存储上限。",
+      "FILE_TOO_LARGE": "文件过大(最大 5MB)。",
+      "TOO_MANY_FILES": "超过可保存的文件数量。",
+      "SAVE_FAILED": "保存失败。"
+    }
   }
 }

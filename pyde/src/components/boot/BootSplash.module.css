@@ -72,7 +72,8 @@
 
 /* 움직임에 민감한 사용자에겐 정지 화면을 준다 */
 @media (prefers-reduced-motion: reduce) {
-  .blob {
+  .blob,
+  .logo {
     animation: none;
   }
 }
@@ -88,11 +89,19 @@
   padding: 0 24px;
 }
 
+/* 로고 자체가 풍차(바람개비) 모양이라 계속 돈다 — 부팅이 오래 걸려도(첫 방문
+   50MB 다운로드) 화면이 멈춘 것처럼 보이지 않게 하는 효과도 겸한다. */
 .logo {
   width: 84px;
   height: 84px;
   object-fit: contain;
   filter: drop-shadow(0 6px 24px rgba(0, 0, 0, 0.5));
+  animation: spin 5s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 .title {

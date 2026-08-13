@@ -16,7 +16,8 @@
     "copy": "Copy",
     "copied": "Copied",
     "error": "Error",
-    "language": "Language"
+    "language": "Language",
+    "reload": "Reload"
   },
   "auth": {
     "signIn": "Sign in with Akademiya",
@@ -70,7 +71,8 @@
     "newPyFile": "New Python file",
     "newNotebookFile": "New notebook",
     "openFile": "Open file",
-    "openFromCloud": "Open from Akademiya Cloud"
+    "openFromCloud": "Open from Akademiya Cloud",
+    "uploadData": "Upload data"
   },
   "terminal": {
     "title": "Terminal",
@@ -201,5 +203,24 @@
     "toc": "Contents",
     "effective": "Effective {{date}}",
     "home": "Go to PyDe Web"
+  },
+  "data": {
+    "title": "Upload data",
+    "useLocal": "Use for this session only",
+    "useCloud": "Save to Akademiya Cloud",
+    "fileInfo": "{{name}} · {{size}}",
+    "localHint": "Available only in this session — gone on reload. Read it in code with pd.read_csv(\"/data/filename\").",
+    "cloudHint": "Saved permanently under PyDe Web/data in Akademiya Cloud, and also loaded into this session right away.",
+    "signInRequired": "Sign in to save to the cloud.",
+    "localReady": "Ready at {{path}}. Load it with pd.read_csv(\"{{path}}\").",
+    "cloudReady": "Saved to Cloud and loaded at {{path}}.",
+    "cloudSavedButFsFailed": "Saved to Cloud, but loading it into this session failed.",
+    "error": {
+      "FOLDER_QUOTA_EXCEEDED": "PyDe Web data storage (10MB) exceeded.",
+      "QUOTA_EXCEEDED": "Akademiya Cloud storage exceeded.",
+      "FILE_TOO_LARGE": "File is too large (5MB max).",
+      "TOO_MANY_FILES": "File count limit exceeded.",
+      "SAVE_FAILED": "Save failed."
+    }
   }
 }

@@ -21,6 +21,12 @@ export function usePyodideRuntime() {
   // 워커가 넘겨준 공유 인터럽트 버퍼. 실행 중인 워커는 메시지를 못 받으므로
   // 중지는 반드시 이 메모리에 직접 써야 한다.
   const interruptRef = useRef<Uint8Array | null>(null)
+  // writeDataFile의 요청↔응답 짝짓기. 실행(run)과 달리 매번 호출자가 결과를
+  // 기다려야 해서(성공/실패 모달 문구가 갈린다) Promise로 감싼다.
+  const dataFileReqId = useRef(0)
+  const dataFileCallbacks = useRef(
+    new Map<number, (res: { ok: true; path: string } | { ok: false; message: string }) => void>()
+  )
 
   const [status, setStatus] = useState<RuntimeStatus>('booting')
   const [progress, setProgress] = useState<BootProgress>({
@@ -69,6 +75,14 @@ export function usePyodideRuntime() {
               worker.postMessage({ type: 'font-fallback', buffer } satisfies WorkerIn, buffer ? [buffer] : [])
             })
           break
+        case 'data-file-ready':
+          dataFileCallbacks.current.get(msg.requestId)?.({ ok: true, path: msg.path })
+          dataFileCallbacks.current.delete(msg.requestId)
+          break
+        case 'data-file-error':
+          dataFileCallbacks.current.get(msg.requestId)?.({ ok: false, message: msg.message })
+          dataFileCallbacks.current.delete(msg.requestId)
+          break
         default:
           for (const listener of runListeners.current) listener(msg)
       }
@@ -109,5 +123,21 @@ export function usePyodideRuntime() {
     }
   }, [])
 
-  return { status, progress, logs, error, pythonVersion, run, interrupt, subscribe }
+  /**
+   * 업로드한 데이터 파일을 Pyodide 가상 파일시스템 `/data/<name>`에 써서, 실행 중인
+   * Python 코드가 바로 읽을 수 있게 한다. 이 훅을 쓰는 쪽(로컬 처리든 클라우드 저장이든)
+   * 모두 이 호출을 거쳐야 파일이 `pd.read_csv('/data/파일명')`처럼 즉시 보인다.
+   */
+  const writeDataFile = useCallback(
+    (name: string, content: string): Promise<{ ok: true; path: string } | { ok: false; message: string }> => {
+      return new Promise((resolve) => {
+        const requestId = ++dataFileReqId.current
+        dataFileCallbacks.current.set(requestId, resolve)
+        workerRef.current?.postMessage({ type: 'write-data-file', requestId, name, content } satisfies WorkerIn)
+      })
+    },
+    []
+  )
+
+  return { status, progress, logs, error, pythonVersion, run, interrupt, subscribe, writeDataFile }
 }

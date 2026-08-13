@@ -12,6 +12,7 @@ import CanvasPanel from '../components/canvas/CanvasPanel'
 import NotebookPane, { type NotebookApi } from '../components/notebook/NotebookPane'
 import FileBrowserModal from '../components/files/FileBrowserModal'
 import ConflictModal from '../components/files/ConflictModal'
+import DataUploadModal from '../components/files/DataUploadModal'
 import ShareModal from '../components/share/ShareModal'
 import { kindOf, DEFAULT_DRAFT, type Draft, type FileKind } from '../hooks/useLocalDraft'
 import { useWorkspace, MAX_OPEN_TABS, type Doc } from '../hooks/useWorkspace'
@@ -20,7 +21,7 @@ import { useAuth } from '../hooks/authContext'
 import { usePyodideRuntime } from '../runtime/usePyodideRuntime'
 import { useRunner } from '../runtime/useRunner'
 import { createNotebook, parseNotebook, serializeNotebook } from '../notebook/nbformat'
-import { readFile, readPublicFile, renameFile } from '../api/cloud.api'
+import { createFile, readFile, readPublicFile, renameFile, DATA_FOLDER } from '../api/cloud.api'
 import { ApiError } from '../api/client'
 import { extensionOf, validateFileName } from '../utils/fileName'
 
@@ -196,6 +197,63 @@ export default function IdePage() {
     [openDocument, t]
   )
 
+  // ── 데이터 업로드 (로컬 처리 / 클라우드 영구 저장 선택) ──────────────────────
+  const [pendingData, setPendingData] = useState<{ name: string; content: string } | null>(null)
+  const [dataBusy, setDataBusy] = useState(false)
+  const [dataError, setDataError] = useState<string | null>(null)
+
+  const handleUploadData = useCallback(async (file: File) => {
+    // 텍스트 형식(csv/tsv/json/txt)만 다룬다 — Cloud 본문 칸이 텍스트 저장용이라
+    // 이진 파일을 그대로 넣으면 깨진다(base64로 감싸는 건 이번 범위 밖).
+    const content = await file.text()
+    setDataError(null)
+    setPendingData({ name: file.name, content })
+  }, [])
+
+  const closeDataModal = useCallback(() => {
+    if (dataBusy) return // 처리 중엔 실수로 못 닫게 한다
+    setPendingData(null)
+    setDataError(null)
+  }, [dataBusy])
+
+  /** 두 경로(로컬/클라우드) 모두 이 훅으로 끝난다 — 워커의 /data/에 실제로 써야 코드에서 바로 읽힌다 */
+  const loadIntoRuntime = useCallback(
+    async (name: string, content: string) => {
+      const res = await runtime.writeDataFile(name, content)
+      return res
+    },
+    [runtime]
+  )
+
+  const applyDataLocal = useCallback(async () => {
+    if (!pendingData) return
+    setDataBusy(true)
+    const res = await loadIntoRuntime(pendingData.name, pendingData.content)
+    setDataBusy(false)
+    if (res.ok) {
+      window.alert(t('data.localReady', { path: res.path }))
+      setPendingData(null)
+    } else {
+      setDataError(res.message)
+    }
+  }, [pendingData, loadIntoRuntime, t])
+
+  const applyDataCloud = useCallback(async () => {
+    if (!pendingData || !signedIn) return
+    setDataBusy(true)
+    setDataError(null)
+    try {
+      await createFile(pendingData.name, pendingData.content, DATA_FOLDER)
+      const res = await loadIntoRuntime(pendingData.name, pendingData.content)
+      setDataBusy(false)
+      window.alert(res.ok ? t('data.cloudReady', { path: res.path }) : t('data.cloudSavedButFsFailed'))
+      setPendingData(null)
+    } catch (err) {
+      setDataBusy(false)
+      setDataError(err instanceof ApiError ? err.code : 'SAVE_FAILED')
+    }
+  }, [pendingData, signedIn, loadIntoRuntime, t])
+
   /** 읽기 전용으로 열린 파일을 내 계정 사본으로 만든다 */
   const handleMakeCopy = useCallback(() => {
     const base = draft.name.replace(/(\.[^.]+)$/, '')
@@ -274,6 +332,7 @@ export default function IdePage() {
       onDownload={handleDownload}
       onNew={handleNew}
       onOpenFile={handleOpenFile}
+      onUploadData={(file) => void handleUploadData(file)}
       signedIn={signedIn}
       saveStatus={cloud.status}
       savedAt={cloud.savedAt}
@@ -355,6 +414,19 @@ export default function IdePage() {
       )}
 
       {browsing && <FileBrowserModal onClose={() => setBrowsing(false)} onOpen={openDocument} />}
+
+      {pendingData && (
+        <DataUploadModal
+          fileName={pendingData.name}
+          sizeBytes={new Blob([pendingData.content]).size}
+          busy={dataBusy}
+          error={dataError}
+          signedIn={signedIn}
+          onClose={closeDataModal}
+          onUseLocal={() => void applyDataLocal()}
+          onUseCloud={() => void applyDataCloud()}
+        />
+      )}
 
       {sharing && draft.cloudId && (
         <ShareModal fileId={draft.cloudId} fileName={draft.name} onClose={() => setSharing(false)} />

@@ -16,6 +16,8 @@ interface Props {
   onDownload: () => void
   onNew: (kind: FileKind) => void
   onOpenFile: (file: File) => void
+  /** 데이터 파일(csv 등)을 골랐다 — 로컬/클라우드 선택 모달은 호출부(IdePage)가 띄운다 */
+  onUploadData: (file: File) => void
   // ── 클라우드 (로그인했을 때만 의미가 있다) ──
   signedIn: boolean
   saveStatus: SaveStatus
@@ -44,6 +46,7 @@ export default function EditorToolbar({
   onDownload,
   onNew,
   onOpenFile,
+  onUploadData,
   signedIn,
   saveStatus,
   savedAt,
@@ -58,6 +61,7 @@ export default function EditorToolbar({
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const dataInputRef = useRef<HTMLInputElement>(null)
 
   // 바깥을 누르면 메뉴를 닫는다
   useEffect(() => {
@@ -106,6 +110,15 @@ export default function EditorToolbar({
             >
               {t('header.openFile')}
             </button>
+            <button
+              className={styles.menuItem}
+              onClick={() => {
+                setMenuOpen(false)
+                dataInputRef.current?.click()
+              }}
+            >
+              {t('header.uploadData')}
+            </button>
             {signedIn && (
               <button
                 className={styles.menuItem}
@@ -131,6 +144,20 @@ export default function EditorToolbar({
           const file = e.target.files?.[0]
           if (file) onOpenFile(file)
           e.target.value = '' // 같은 파일을 다시 열 수 있게 초기화
+        }}
+      />
+
+      {/* 데이터 파일도 브라우저 안에서만 읽는다 — 곧바로 서버에 올라가지 않는다.
+          로컬 처리/클라우드 저장 선택은 IdePage의 모달이 담당한다. */}
+      <input
+        ref={dataInputRef}
+        type="file"
+        accept=".csv,.tsv,.json,.txt,text/csv,text/tab-separated-values,application/json,text/plain"
+        className={styles.hiddenInput}
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) onUploadData(file)
+          e.target.value = ''
         }}
       />
 

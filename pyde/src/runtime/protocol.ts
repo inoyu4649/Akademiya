@@ -63,6 +63,9 @@ export type WorkerOut =
   // CDN에서 한글 폰트를 못 받았다 — 같은 오리진 사본은 워커가 직접 받을 수 없으므로
   // (위의 CSP 참고) 메인 스레드에 대신 받아달라고 부탁한다.
   | { type: 'font-fallback-request' }
+  // 업로드한 데이터 파일을 Pyodide 가상 파일시스템에 다 썼다(성공/실패)
+  | { type: 'data-file-ready'; requestId: number; path: string }
+  | { type: 'data-file-error'; requestId: number; message: string }
 
 export type WorkerIn =
   | { type: 'boot' }
@@ -70,3 +73,5 @@ export type WorkerIn =
   | { type: 'interrupt' }
   /** font-fallback-request에 대한 응답. buffer가 null이면 그쪽도 실패했다는 뜻 */
   | { type: 'font-fallback'; buffer: ArrayBuffer | null }
+  /** 업로드한 데이터 파일을 /data/<name>에 써 달라는 요청 (data.ts의 writeDataFile 참고) */
+  | { type: 'write-data-file'; requestId: number; name: string; content: string }

@@ -211,6 +211,35 @@ async function usage(userId: number, folder?: string): Promise<{ files: number; 
 }
 
 /**
+ * usage()와 달리 정확히 일치하는 폴더뿐 아니라 그 **하위 폴더까지 합산**한다.
+ * 폴더 한도(FOLDER_QUOTAS)는 트리 전체에 걸려야 한다 — 예를 들어 'PyDe Web' 10MB 한도가
+ * 'PyDe Web/data'(업로드한 통계 데이터)로 우회되면 한도를 두는 의미가 없어진다.
+ */
+async function usageUnderTree(userId: number, prefix: string): Promise<{ files: number; bytes: number }> {
+  const [rows] = await pool.query(
+    `SELECT COUNT(*) AS files, COALESCE(SUM(size_bytes), 0) AS bytes
+       FROM cloud_files WHERE owner_id = ? AND (folder = ? OR folder LIKE CONCAT(?, '/%'))`,
+    [userId, prefix, prefix]
+  );
+  const r = (rows as Row[])[0];
+  return { files: Number(r.files), bytes: Number(r.bytes) };
+}
+
+/**
+ * folder(또는 그 상위 폴더)에 걸린 한도를 찾는다. 'PyDe Web/data'처럼 한도가 걸린
+ * 폴더의 하위 폴더도 같은 한도를 물려받는다 — 그래야 업로드한 데이터가
+ * 'PyDe Web' 10MB 한도를 하위 폴더로 우회하지 못한다.
+ * @returns [한도가 실제로 걸리는 폴더 이름(합산 기준), 바이트 한도] 또는 해당 없으면 null
+ */
+function findFolderQuota(folder: string): [string, number] | null {
+  if (folder in FOLDER_QUOTAS) return [folder, FOLDER_QUOTAS[folder]];
+  for (const [key, quota] of Object.entries(FOLDER_QUOTAS)) {
+    if (folder.startsWith(`${key}/`)) return [key, quota];
+  }
+  return null;
+}
+
+/**
  * 폴더 한도를 넘는지 본다. 넘으면 응답 본문에 쓸 오류 객체를, 아니면 null을 돌려준다.
  * @param delta 이번 저장으로 늘어나는 바이트(새 파일이면 파일 크기 전체)
  */
@@ -219,11 +248,12 @@ async function folderQuotaError(
   folder: string,
   delta: number
 ): Promise<{ error: string; folder: string; maxFolderBytes: number } | null> {
-  const quota = FOLDER_QUOTAS[folder];
-  if (quota === undefined || delta <= 0) return null;
-  const used = await usage(userId, folder);
+  const found = findFolderQuota(folder);
+  if (!found || delta <= 0) return null;
+  const [quotaFolder, quota] = found;
+  const used = await usageUnderTree(userId, quotaFolder);
   if (used.bytes + delta <= quota) return null;
-  return { error: "FOLDER_QUOTA_EXCEEDED", folder, maxFolderBytes: quota };
+  return { error: "FOLDER_QUOTA_EXCEEDED", folder: quotaFolder, maxFolderBytes: quota };
 }
 
 // ============================================================================
@@ -284,14 +314,18 @@ router.get("/files", async (req, res) => {
     filterFolder ? [userId, folder] : [userId]
   );
 
-  // 공유받은 파일 — 사용자 지정 + 조직 단위. 소유자 정보를 함께 내려 목록에서 구분한다.
+  // 공유받은 파일 — 사용자 지정 + 조직 단위. 소유자 정보와 함께, **어느 경로로 공유받았는지**도
+  // 내려 목록에서 뱃지로 구분한다(이메일 지정/조직 단위 — 사용자가 둘 다 궁금해했다).
+  // 이론상 같은 파일을 이메일로도, 조직으로도 동시에 공유받을 수 있어 둘 다 참일 수 있다.
   const [sharedRows] = await pool.query(
     `SELECT f.id, f.folder, f.name, f.size_bytes, f.revision, f.link_share,
             f.created_at, f.updated_at,
             u.display_name AS owner_name, u.email AS owner_email,
             -- ⚠️ MAX(enum)을 쓰면 안 된다. MySQL은 ENUM 집계를 인덱스 순서가 아니라
             --    문자열로 비교해서 'viewer' > 'editor'가 되어 권한이 낮게 뒤집힌다.
-            IF(MAX(s.role = 'editor') = 1, 'editor', 'viewer') AS role
+            IF(MAX(s.role = 'editor') = 1, 'editor', 'viewer') AS role,
+            MAX(s.subject_type = 'user') AS via_user,
+            MAX(s.subject_type = 'org')  AS via_org
        FROM cloud_file_shares s
        JOIN cloud_files f ON f.id = s.file_id
        JOIN users       u ON u.id = f.owner_id
@@ -311,13 +345,17 @@ router.get("/files", async (req, res) => {
       role: f.role as string,
       ownerName: f.owner_name as string,
       ownerEmail: f.owner_email as string,
+      viaEmail: !!f.via_user,
+      viaOrg: !!f.via_org,
     })),
     // ⚠️ usage는 folder 필터와 무관하게 **계정 전체**다(한도가 계정 단위라서).
     //    폴더만의 사용량·한도는 folderUsage/folderLimit로 따로 내린다.
     usage: await usage(userId),
     limits: { maxFileBytes: MAX_FILE_BYTES, maxTotalBytes: MAX_TOTAL_BYTES, maxFiles: MAX_FILES_PER_USER },
+    // ⚠️ 하위 폴더까지 합산한다(usageUnderTree) — 'PyDe Web/data'에 올린 업로드 데이터도
+    //    'PyDe Web' 폴더 한도에 포함되어야 한다.
     ...(filterFolder
-      ? { folderUsage: await usage(userId, folder), folderLimit: FOLDER_QUOTAS[folder] ?? null }
+      ? { folderUsage: await usageUnderTree(userId, folder), folderLimit: FOLDER_QUOTAS[folder] ?? null }
       : {}),
   });
 });
@@ -637,8 +675,9 @@ router.get("/usage", async (req, res) => {
   res.json({
     usage: await usage(userId),
     limits: { maxFileBytes: MAX_FILE_BYTES, maxTotalBytes: MAX_TOTAL_BYTES, maxFiles: MAX_FILES_PER_USER },
+    // ⚠️ 하위 폴더까지 합산한다 — 'PyDe Web/data'도 'PyDe Web' 한도에 포함되어야 한다.
     ...(req.query.folder !== undefined
-      ? { folderUsage: await usage(userId, folder), folderLimit: FOLDER_QUOTAS[folder] ?? null }
+      ? { folderUsage: await usageUnderTree(userId, folder), folderLimit: FOLDER_QUOTAS[folder] ?? null }
       : {}),
   });
 });

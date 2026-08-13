@@ -47,10 +47,18 @@ export default function AppHeader({ children }: Props) {
 
   return (
     <header className={styles.header}>
-      <div className={styles.brand}>
+      {/* 로고 클릭 = 새로고침. 클라이언트 라우팅이 아니라 진짜 새로고침을 요구받았으므로
+          Link가 아니라 location.reload()를 직접 부른다(저장 안 된 변경이 있으면 브라우저의
+          beforeunload 확인창이 먼저 뜬다 — useCloudSync가 이미 그 경고를 걸어 둔다). */}
+      <button
+        type="button"
+        className={styles.brand}
+        onClick={() => window.location.reload()}
+        title={t('common.reload')}
+      >
         <img className={styles.logo} src="/pyde_logo.png" alt="" />
         <span className={styles.brandName}>{t('app.name')}</span>
-      </div>
+      </button>
 
       {children ? (
         <>

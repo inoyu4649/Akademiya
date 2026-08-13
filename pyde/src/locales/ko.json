@@ -16,7 +16,8 @@
     "copy": "복사",
     "copied": "복사됨",
     "error": "오류",
-    "language": "언어"
+    "language": "언어",
+    "reload": "새로고침"
   },
   "auth": {
     "signIn": "Akademiya로 로그인",
@@ -70,7 +71,8 @@
     "newPyFile": "새 Python 파일",
     "newNotebookFile": "새 노트북",
     "openFile": "파일 열기",
-    "openFromCloud": "Akademiya Cloud에서 열기"
+    "openFromCloud": "Akademiya Cloud에서 열기",
+    "uploadData": "데이터 업로드"
   },
   "terminal": {
     "title": "터미널",
@@ -201,5 +203,24 @@
     "toc": "목차",
     "effective": "{{date}} 시행",
     "home": "PyDe Web으로"
+  },
+  "data": {
+    "title": "데이터 업로드",
+    "useLocal": "이번 세션에서만 사용",
+    "useCloud": "Akademiya Cloud에 저장",
+    "fileInfo": "{{name}} · {{size}}",
+    "localHint": "이번 세션에서만 사용 — 새로고침하면 사라집니다. 코드에서 pd.read_csv(\"/data/파일명\")처럼 바로 읽을 수 있습니다.",
+    "cloudHint": "Akademiya Cloud의 PyDe Web/data 폴더에 영구 저장하고, 동시에 지금 세션에도 바로 불러옵니다.",
+    "signInRequired": "클라우드 저장은 로그인이 필요합니다.",
+    "localReady": "{{path}}에 준비되었습니다. pd.read_csv(\"{{path}}\")처럼 불러오세요.",
+    "cloudReady": "Cloud에 저장하고 {{path}}에 불러왔습니다.",
+    "cloudSavedButFsFailed": "Cloud 저장은 됐지만 이번 세션에 불러오는 데 실패했습니다.",
+    "error": {
+      "FOLDER_QUOTA_EXCEEDED": "PyDe Web 데이터 저장 공간(10MB)을 초과합니다.",
+      "QUOTA_EXCEEDED": "Akademiya Cloud 저장 공간을 초과합니다.",
+      "FILE_TOO_LARGE": "파일이 너무 큽니다(최대 5MB).",
+      "TOO_MANY_FILES": "저장할 수 있는 파일 개수를 초과했습니다.",
+      "SAVE_FAILED": "저장에 실패했습니다."
+    }
   }
 }

@@ -510,5 +510,26 @@ self.onmessage = (event: MessageEvent<WorkerIn>) => {
       resolve?.(msg.buffer)
       break
     }
+    case 'write-data-file':
+      writeDataFile(msg.requestId, msg.name, msg.content)
+      break
+  }
+}
+
+/**
+ * 업로드한 데이터 파일을 Pyodide 가상 파일시스템 `/data/<name>`에 써서, 실행 중인
+ * Python 코드가 `pd.read_csv('/data/파일명')`처럼 바로 읽을 수 있게 한다.
+ * ⚠️ 이 파일은 워커 메모리 안에서만 존재한다(같은 오리진 fetch가 CSP로 막혀 있어
+ *    서버에서 직접 받아올 수 없다 — 파일 맨 위 CSP 설명 참고). 그래서 내용은 항상
+ *    메인 스레드가 File을 텍스트로 읽어 메시지로 보내준 것을 그대로 받아쓴다.
+ */
+function writeDataFile(requestId: number, name: string, content: string): void {
+  try {
+    if (!pyodide) throw new Error('Python 환경이 아직 준비되지 않았습니다.')
+    pyodide.FS.mkdirTree('/data')
+    pyodide.FS.writeFile(`/data/${name}`, new TextEncoder().encode(content))
+    post({ type: 'data-file-ready', requestId, path: `/data/${name}` })
+  } catch (err) {
+    post({ type: 'data-file-error', requestId, message: (err as Error).message ?? String(err) })
   }
 }

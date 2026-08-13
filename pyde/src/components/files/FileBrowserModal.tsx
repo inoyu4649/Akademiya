@@ -150,6 +150,9 @@ export default function FileBrowserModal({ onClose, onOpen }: Props) {
                         {file.ownerName} · {formatTime(file.updatedAt)}
                       </span>
                     </button>
+                    {/* 어느 경로로 받은 공유인지 — 이메일 지정과 조직 공유는 동시에도 가능하다 */}
+                    {file.viaEmail && <span className={styles.badge}>{t('share.byEmail')}</span>}
+                    {file.viaOrg && <span className={styles.badge}>{t('share.byOrg')}</span>}
                     <span className={styles.badge}>
                       {file.role === 'editor' ? t('share.roleEditor') : t('share.roleViewer')}
                     </span>

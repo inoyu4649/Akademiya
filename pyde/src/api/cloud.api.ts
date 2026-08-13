@@ -8,6 +8,9 @@ import { api } from './client'
  *    한다. 어긋나면 PyDe 폴더 한도(10MB)가 조용히 적용되지 않는다.
  */
 export const PYDE_FOLDER = 'PyDe Web'
+/** 업로드한 데이터 파일이 들어가는 하위 폴더. 백엔드 FOLDER_QUOTAS는 이 하위 폴더도
+ * 'PyDe Web' 10MB 한도에 포함해서 합산한다(하위 폴더까지 합산하는 usageUnderTree). */
+export const DATA_FOLDER = `${PYDE_FOLDER}/data`
 
 export type ShareRole = 'viewer' | 'editor'
 export type FileRole = 'owner' | ShareRole
@@ -28,6 +31,10 @@ export interface SharedFileMeta extends CloudFileMeta {
   role: ShareRole
   ownerName: string
   ownerEmail: string
+  /** 이메일로 지정해서 받은 공유인지 — 이론상 조직 공유와 동시에 참일 수 있다 */
+  viaEmail: boolean
+  /** 소속 조직 전체 공유로 받은 것인지 */
+  viaOrg: boolean
 }
 
 export interface FileListResponse {
@@ -75,10 +82,14 @@ export function listFiles(): Promise<FileListResponse> {
   return api<FileListResponse>(`/api/cloud/files?folder=${encodeURIComponent(PYDE_FOLDER)}`)
 }
 
-export function createFile(name: string, content: string): Promise<{ file: CloudFileMeta }> {
+export function createFile(
+  name: string,
+  content: string,
+  folder: string = PYDE_FOLDER
+): Promise<{ file: CloudFileMeta }> {
   return api('/api/cloud/files', {
     method: 'POST',
-    body: { name, folder: PYDE_FOLDER, content },
+    body: { name, folder, content },
   })
 }
 
