@@ -78,8 +78,8 @@ export function getUsage(): Promise<UsageResponse> {
   return api<UsageResponse>(`/api/cloud/usage?folder=${encodeURIComponent(PYDE_FOLDER)}`)
 }
 
-export function listFiles(): Promise<FileListResponse> {
-  return api<FileListResponse>(`/api/cloud/files?folder=${encodeURIComponent(PYDE_FOLDER)}`)
+export function listFiles(folder: string = PYDE_FOLDER): Promise<FileListResponse> {
+  return api<FileListResponse>(`/api/cloud/files?folder=${encodeURIComponent(folder)}`)
 }
 
 export function createFile(

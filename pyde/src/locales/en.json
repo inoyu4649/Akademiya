@@ -72,7 +72,7 @@
     "newNotebookFile": "New notebook",
     "openFile": "Open file",
     "openFromCloud": "Open from Akademiya Cloud",
-    "uploadData": "Upload data"
+    "uploadData": "Manage data"
   },
   "terminal": {
     "title": "Terminal",
@@ -221,6 +221,18 @@
       "FILE_TOO_LARGE": "File is too large (5MB max).",
       "TOO_MANY_FILES": "File count limit exceeded.",
       "SAVE_FAILED": "Save failed."
+    },
+    "manager": {
+      "title": "Manage data",
+      "upload": "+ Upload",
+      "session": "Available in this session",
+      "sessionEmpty": "No data uploaded in this session yet.",
+      "sessionHint": "Gone on reload. Read it in code with pd.read_csv(\"path\").",
+      "cloud": "Saved in Akademiya Cloud",
+      "cloudEmpty": "No data files saved yet.",
+      "cloudHint": "Click a file to load it into this session (/data/).",
+      "loaded": "In session",
+      "copyPath": "Copy path"
     }
   }
 }

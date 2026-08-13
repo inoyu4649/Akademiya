@@ -72,7 +72,7 @@
     "newNotebookFile": "新建笔记本",
     "openFile": "打开文件",
     "openFromCloud": "从 Akademiya Cloud 打开",
-    "uploadData": "上传数据"
+    "uploadData": "数据管理"
   },
   "terminal": {
     "title": "终端",
@@ -221,6 +221,18 @@
       "FILE_TOO_LARGE": "文件过大(最大 5MB)。",
       "TOO_MANY_FILES": "超过可保存的文件数量。",
       "SAVE_FAILED": "保存失败。"
+    },
+    "manager": {
+      "title": "数据管理",
+      "upload": "+ 上传",
+      "session": "本次会话可用的数据",
+      "sessionEmpty": "本次会话尚未上传数据。",
+      "sessionHint": "刷新后消失。可在代码中用 pd.read_csv(\"路径\") 读取。",
+      "cloud": "保存在 Akademiya Cloud 的数据",
+      "cloudEmpty": "还没有保存的数据文件。",
+      "cloudHint": "点击文件即可加载到本次会话(/data/)。",
+      "loaded": "已在会话中",
+      "copyPath": "复制路径"
     }
   }
 }

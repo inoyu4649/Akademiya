@@ -112,3 +112,9 @@
   font-size: 11.5px;
   color: var(--text-muted);
 }
+
+/* 파일 input을 <label class="btn">로 감싸 버튼처럼 보이게 할 때, input 자체는 숨긴다
+   (EditorToolbar.module.css의 같은 이름 클래스와 같은 용도 — 여긴 데이터 매니저 모달용) */
+.hiddenInput {
+  display: none;
+}

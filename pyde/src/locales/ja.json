@@ -72,7 +72,7 @@
     "newNotebookFile": "新しいノートブック",
     "openFile": "ファイルを開く",
     "openFromCloud": "Akademiya Cloudから開く",
-    "uploadData": "データをアップロード"
+    "uploadData": "データ管理"
   },
   "terminal": {
     "title": "ターミナル",
@@ -221,6 +221,18 @@
       "FILE_TOO_LARGE": "ファイルが大きすぎます(最大5MB)。",
       "TOO_MANY_FILES": "保存できるファイル数を超えました。",
       "SAVE_FAILED": "保存に失敗しました。"
+    },
+    "manager": {
+      "title": "データ管理",
+      "upload": "+ アップロード",
+      "session": "このセッションで使えるデータ",
+      "sessionEmpty": "このセッションにアップロードしたデータはありません。",
+      "sessionHint": "再読み込みで消えます。コードで pd.read_csv(\"パス\") のように読み込めます。",
+      "cloud": "Akademiya Cloudに保存されたデータ",
+      "cloudEmpty": "保存されたデータファイルはありません。",
+      "cloudHint": "ファイルをクリックするとこのセッション(/data/)に読み込みます。",
+      "loaded": "セッションにあり",
+      "copyPath": "パスをコピー"
     }
   }
 }

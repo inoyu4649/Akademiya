@@ -13,6 +13,7 @@ import NotebookPane, { type NotebookApi } from '../components/notebook/NotebookP
 import FileBrowserModal from '../components/files/FileBrowserModal'
 import ConflictModal from '../components/files/ConflictModal'
 import DataUploadModal from '../components/files/DataUploadModal'
+import DataManagerModal, { type SessionDataFile } from '../components/files/DataManagerModal'
 import ShareModal from '../components/share/ShareModal'
 import { kindOf, DEFAULT_DRAFT, type Draft, type FileKind } from '../hooks/useLocalDraft'
 import { useWorkspace, MAX_OPEN_TABS, type Doc } from '../hooks/useWorkspace'
@@ -21,7 +22,14 @@ import { useAuth } from '../hooks/authContext'
 import { usePyodideRuntime } from '../runtime/usePyodideRuntime'
 import { useRunner } from '../runtime/useRunner'
 import { createNotebook, parseNotebook, serializeNotebook } from '../notebook/nbformat'
-import { createFile, readFile, readPublicFile, renameFile, DATA_FOLDER } from '../api/cloud.api'
+import {
+  createFile,
+  readFile,
+  readPublicFile,
+  renameFile,
+  DATA_FOLDER,
+  type CloudFileMeta,
+} from '../api/cloud.api'
 import { ApiError } from '../api/client'
 import { extensionOf, validateFileName } from '../utils/fileName'
 
@@ -197,12 +205,25 @@ export default function IdePage() {
     [openDocument, t]
   )
 
-  // ── 데이터 업로드 (로컬 처리 / 클라우드 영구 저장 선택) ──────────────────────
+  // ── 데이터 관리 (경로를 한눈에 보여주는 모달 + 업로드 시 로컬/클라우드 선택) ──
+  // "데이터 업로드" 버튼을 누르면 파일 선택창이 아니라 이 모달이 먼저 뜬다 — 학생들이
+  // 이미 올려둔 데이터의 경로(/data/...)를 코드에 쓰려고 다시 열 때도 쓰는 화면이다.
+  const [dataManagerOpen, setDataManagerOpen] = useState(false)
+  // 이번 세션에 /data/로 실제로 준비된 파일들 — 새로고침하면 사라지는 휘발성 상태다.
+  // 워커 쪽에 "지금 뭐가 있는지" 물어보는 API가 없어서, 우리가 쓴 시점에 직접 기록해 둔다.
+  const [sessionDataFiles, setSessionDataFiles] = useState<SessionDataFile[]>([])
+  // 업로드/삭제 후 DataManagerModal의 클라우드 목록을 다시 불러오게 하는 트리거
+  const [dataReloadToken, setDataReloadToken] = useState(0)
+
   const [pendingData, setPendingData] = useState<{ name: string; content: string } | null>(null)
   const [dataBusy, setDataBusy] = useState(false)
   const [dataError, setDataError] = useState<string | null>(null)
 
-  const handleUploadData = useCallback(async (file: File) => {
+  const rememberSessionFile = useCallback((name: string, path: string) => {
+    setSessionDataFiles((prev) => [...prev.filter((f) => f.name !== name), { name, path }])
+  }, [])
+
+  const handlePickDataFile = useCallback(async (file: File) => {
     // 텍스트 형식(csv/tsv/json/txt)만 다룬다 — Cloud 본문 칸이 텍스트 저장용이라
     // 이진 파일을 그대로 넣으면 깨진다(base64로 감싸는 건 이번 범위 밖).
     const content = await file.text()
@@ -210,7 +231,7 @@ export default function IdePage() {
     setPendingData({ name: file.name, content })
   }, [])
 
-  const closeDataModal = useCallback(() => {
+  const closeDataUploadModal = useCallback(() => {
     if (dataBusy) return // 처리 중엔 실수로 못 닫게 한다
     setPendingData(null)
     setDataError(null)
@@ -231,12 +252,12 @@ export default function IdePage() {
     const res = await loadIntoRuntime(pendingData.name, pendingData.content)
     setDataBusy(false)
     if (res.ok) {
-      window.alert(t('data.localReady', { path: res.path }))
+      rememberSessionFile(pendingData.name, res.path)
       setPendingData(null)
     } else {
       setDataError(res.message)
     }
-  }, [pendingData, loadIntoRuntime, t])
+  }, [pendingData, loadIntoRuntime, rememberSessionFile])
 
   const applyDataCloud = useCallback(async () => {
     if (!pendingData || !signedIn) return
@@ -246,13 +267,30 @@ export default function IdePage() {
       await createFile(pendingData.name, pendingData.content, DATA_FOLDER)
       const res = await loadIntoRuntime(pendingData.name, pendingData.content)
       setDataBusy(false)
-      window.alert(res.ok ? t('data.cloudReady', { path: res.path }) : t('data.cloudSavedButFsFailed'))
+      if (res.ok) rememberSessionFile(pendingData.name, res.path)
+      else window.alert(t('data.cloudSavedButFsFailed'))
       setPendingData(null)
+      setDataReloadToken((v) => v + 1) // 매니저 모달의 클라우드 목록에 방금 저장한 파일이 보이게
     } catch (err) {
       setDataBusy(false)
       setDataError(err instanceof ApiError ? err.code : 'SAVE_FAILED')
     }
-  }, [pendingData, signedIn, loadIntoRuntime, t])
+  }, [pendingData, signedIn, loadIntoRuntime, rememberSessionFile, t])
+
+  /** 데이터 관리 모달에서 "저장된 데이터"를 클릭했을 때 — 이번 세션(/data/)으로 불러온다 */
+  const handleLoadCloudDataToSession = useCallback(
+    async (file: CloudFileMeta) => {
+      try {
+        const res = await readFile(file.id)
+        const written = await runtime.writeDataFile(file.name, res.content)
+        if (written.ok) rememberSessionFile(file.name, written.path)
+        else window.alert(written.message)
+      } catch (err) {
+        window.alert(t([`files.error.${err instanceof ApiError ? err.code : 'LOAD_FAILED'}`, 'common.error']))
+      }
+    },
+    [runtime, rememberSessionFile, t]
+  )
 
   /** 읽기 전용으로 열린 파일을 내 계정 사본으로 만든다 */
   const handleMakeCopy = useCallback(() => {
@@ -332,7 +370,7 @@ export default function IdePage() {
       onDownload={handleDownload}
       onNew={handleNew}
       onOpenFile={handleOpenFile}
-      onUploadData={(file) => void handleUploadData(file)}
+      onOpenDataManager={() => setDataManagerOpen(true)}
       signedIn={signedIn}
       saveStatus={cloud.status}
       savedAt={cloud.savedAt}
@@ -415,6 +453,19 @@ export default function IdePage() {
 
       {browsing && <FileBrowserModal onClose={() => setBrowsing(false)} onOpen={openDocument} />}
 
+      {dataManagerOpen && (
+        <DataManagerModal
+          onClose={() => setDataManagerOpen(false)}
+          signedIn={signedIn}
+          sessionFiles={sessionDataFiles}
+          onPickFile={(file) => void handlePickDataFile(file)}
+          onLoadToSession={handleLoadCloudDataToSession}
+          reloadToken={dataReloadToken}
+        />
+      )}
+
+      {/* 데이터 관리 모달 안에서 파일을 고르면 이 확인 모달이 그 위에 뜬다.
+          닫히면(성공/취소) 관리 모달로 돌아간다 — 위 dataManagerOpen을 여기서 건드리지 않는다. */}
       {pendingData && (
         <DataUploadModal
           fileName={pendingData.name}
@@ -422,7 +473,7 @@ export default function IdePage() {
           busy={dataBusy}
           error={dataError}
           signedIn={signedIn}
-          onClose={closeDataModal}
+          onClose={closeDataUploadModal}
           onUseLocal={() => void applyDataLocal()}
           onUseCloud={() => void applyDataCloud()}
         />
