@@ -175,10 +175,13 @@
     "title": "ノートブック",
     "addCode": "コードセル",
     "addMarkdown": "Markdownセル",
+    "moveUp": "セルを上へ移動",
+    "moveDown": "セルを下へ移動",
+    "deleteCell": "セルを削除",
     "emptyMarkdown": "空のMarkdownセル(ダブルクリックで編集)",
     "runAll": "すべて実行",
     "clearOutputs": "出力をクリア",
     "invalidFile": "有効なJupyterノートブック(.ipynb)ファイルではありません。",
-    "shortcuts": "Esc コマンドモード · Enter 編集 · Shift+Enter 実行して次へ · A/B セル追加 · DD 削除 · M Markdown · Y コード"
+    "shortcuts": "Esc コマンドモード · Enter 編集 · Shift+Enter 実行して次へ · A/B セル追加 · DD 削除 · Ctrl+Shift+↑/↓ 並べ替え · M Markdown · Y コード"
   }
 }

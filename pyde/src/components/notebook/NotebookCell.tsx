@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import Editor, { type OnMount } from '@monaco-editor/react'
+import Editor, { type BeforeMount, type OnMount } from '@monaco-editor/react'
 import type { editor as MonacoEditor } from 'monaco-editor'
 import type { NbCell } from '../../notebook/nbformat'
 import { renderMarkdown } from '../../notebook/markdown'
-import { PYDE_THEME } from '../editor/pydeTheme'
+import { definePydeTheme, PYDE_THEME } from '../editor/pydeTheme'
 import CellOutputs from './CellOutputs'
 import styles from './Notebook.module.css'
 
@@ -23,6 +23,26 @@ interface Props {
   onChange: (source: string) => void
   onRunAdvance: () => void
   onRunInPlace: () => void
+  onMoveUp: () => void
+  onMoveDown: () => void
+  onDelete: () => void
+  /** 첫 셀/마지막 셀, 그리고 마지막 남은 한 개는 각각 이동·삭제할 수 없다 */
+  canMoveUp: boolean
+  canMoveDown: boolean
+  canDelete: boolean
+}
+
+/** 셀 버튼용 아이콘.
+ *  이모지 대신 인라인 SVG를 쓴다 — 이모지는 OS마다 모양·크기가 달라 정렬이 깨지고
+ *  currentColor를 따라오지 않아 비활성 상태를 색으로 나타낼 수 없다(탭 아이콘과 같은 이유). */
+function Icon({ shape }: { shape: 'up' | 'down' | 'trash' }) {
+  return (
+    <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {shape === 'up' && <path d="M8 12.5V3.5M4 7l4-3.5L12 7" />}
+      {shape === 'down' && <path d="M8 3.5v9M4 9l4 3.5L12 9" />}
+      {shape === 'trash' && <path d="M3 4.5h10M6.5 4.5V3h3v1.5M5 4.5l.6 8.2a.8.8 0 0 0 .8.8h3.2a.8.8 0 0 0 .8-.8L11 4.5" />}
+    </svg>
+  )
 }
 
 const LINE_HEIGHT = 21
@@ -43,6 +63,12 @@ export default function NotebookCell({
   onChange,
   onRunAdvance,
   onRunInPlace,
+  onMoveUp,
+  onMoveDown,
+  onDelete,
+  canMoveUp,
+  canMoveDown,
+  canDelete,
 }: Props) {
   const { t } = useTranslation()
   const isCode = cell.cell_type === 'code'
@@ -62,6 +88,14 @@ export default function NotebookCell({
   }, [cell.source])
 
   const marker = running ? '[*]' : queued ? '[…]' : isCode ? `[${cell.execution_count ?? ' '}]` : ''
+
+  // ⚠️ 셀도 자기 테마를 직접 정의해야 한다. Monaco 테마는 전역이지만 **정의는 전역이 아니라
+  //    누군가 defineTheme을 호출해야 생긴다.** 노트북을 먼저 열면 CodeEditor(.py)가 한 번도
+  //    마운트되지 않아 'pyde-dark'가 없는 상태가 되고, Monaco는 모르는 테마 이름을 받으면
+  //    조용히 기본 'vs'(밝은 테마)로 떨어진다 → 셀 안이 하얗게 뜬다.
+  const handleBeforeMount: BeforeMount = (monaco) => {
+    definePydeTheme(monaco)
+  }
 
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
@@ -100,6 +134,47 @@ export default function NotebookCell({
         <span className={running ? styles.markerRunning : styles.marker}>{marker}</span>
       </div>
 
+      {/* 셀 도구 — 평소엔 흐리게 두고 hover·선택 시 또렷해진다(Jupyter의 셀 툴바 자리와 같다).
+          클릭이 셀로 새어 나가지 않게 막는다 — 지울 셀을 먼저 선택할 이유가 없다. */}
+      <div className={styles.cellActions}>
+        <button
+          className={styles.cellActionBtn}
+          disabled={!canMoveUp}
+          onClick={(e) => {
+            e.stopPropagation()
+            onMoveUp()
+          }}
+          title={t('notebook.moveUp')}
+          aria-label={t('notebook.moveUp')}
+        >
+          <Icon shape="up" />
+        </button>
+        <button
+          className={styles.cellActionBtn}
+          disabled={!canMoveDown}
+          onClick={(e) => {
+            e.stopPropagation()
+            onMoveDown()
+          }}
+          title={t('notebook.moveDown')}
+          aria-label={t('notebook.moveDown')}
+        >
+          <Icon shape="down" />
+        </button>
+        <button
+          className={`${styles.cellActionBtn} ${styles.cellActionDanger}`}
+          disabled={!canDelete}
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete()
+          }}
+          title={t('notebook.deleteCell')}
+          aria-label={t('notebook.deleteCell')}
+        >
+          <Icon shape="trash" />
+        </button>
+      </div>
+
       <div className={styles.cellBody}>
         {showEditor ? (
           <div className={styles.editorBox} style={{ height }}>
@@ -108,6 +183,7 @@ export default function NotebookCell({
               theme={PYDE_THEME}
               value={cell.source}
               onChange={(v) => onChange(v ?? '')}
+              beforeMount={handleBeforeMount}
               onMount={handleEditorMount}
               options={{
                 fontFamily: "'D2Coding', 'Cascadia Code', Consolas, monospace",

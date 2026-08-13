@@ -41,6 +41,8 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
   const [selectedId, setSelectedId] = useState<string>(() => notebook.cells[0]?.id ?? '')
   const [mode, setMode] = useState<CellMode>('command')
   const [runningCellId, setRunningCellId] = useState<string | null>(null)
+  /** 셀 id → key 세대. 순서를 바꾼 셀만 올라간다(아래 moveCell 주석 참조) */
+  const [keyEpochs, setKeyEpochs] = useState<Record<string, number>>({})
 
   const execCounter = useRef(0)
   const queue = useRef<string[]>([])
@@ -137,15 +139,40 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
     })
   }, [])
 
+  /**
+   * 셀 순서 바꾸기.
+   *
+   * ⚠️ 자리를 맞바꾼 두 셀의 **React key를 함께 갈아끼운다**(`cellKey` 참조).
+   *    key를 그대로 두면 React는 기존 fiber를 "이동"시키는데, StrictMode 개발 모드는
+   *    그때 이펙트를 한 번 정리했다가 다시 실행한다. @monaco-editor/react는 정리 단계에서
+   *    에디터를 dispose해 놓고 다시 만들지는 않아서, 이어지는 이펙트가 죽은 에디터에
+   *    setModel을 호출하며 **앱 전체가 하얗게 내려앉는다**(실제로 재현했다).
+   *    프로덕션 빌드에서는 StrictMode가 아무것도 하지 않아 재현되지 않지만, 개발 중에
+   *    셀을 옮길 때마다 앱이 죽으면 아무도 이 기능을 손보지 못한다.
+   *    key를 바꾸면 "이동"이 아니라 "지우고 새로 마운트"가 되어 두 경우 모두 안전하다.
+   *    (대가는 옮긴 두 셀의 실행 취소 이력뿐이다 — 셀을 옮겼으면 잃어도 되는 것이다)
+   */
   const moveCell = useCallback((id: string, delta: -1 | 1) => {
+    const cells = notebookRef.current.cells
+    const index = cells.findIndex((c) => c.id === id)
+    const target = index + delta
+    if (index < 0 || target < 0 || target >= cells.length) return
+    const swappedWith = cells[target].id
+
     setNotebook((nb) => {
-      const index = nb.cells.findIndex((c) => c.id === id)
-      const target = index + delta
-      if (index < 0 || target < 0 || target >= nb.cells.length) return nb
-      const cells = [...nb.cells]
-      ;[cells[index], cells[target]] = [cells[target], cells[index]]
-      return { ...nb, cells }
+      const i = nb.cells.findIndex((c) => c.id === id)
+      const t = i + delta
+      if (i < 0 || t < 0 || t >= nb.cells.length) return nb
+      const next = [...nb.cells]
+      ;[next[i], next[t]] = [next[t], next[i]]
+      return { ...nb, cells: next }
     })
+
+    setKeyEpochs((prev) => ({
+      ...prev,
+      [id]: (prev[id] ?? 0) + 1,
+      [swappedWith]: (prev[swappedWith] ?? 0) + 1,
+    }))
   }, [])
 
   const changeCellType = useCallback(
@@ -283,6 +310,7 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
     setSelectedId(next.cells[0]?.id ?? '')
     setMode('command')
     setRunningCellId(null)
+    setKeyEpochs({})
   }, [])
 
   const selectedIndex = useMemo(
@@ -304,6 +332,8 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
     notebook,
     selectedId,
     selectedIndex,
+    /** 목록 렌더링에 쓸 React key — 셀 id만 쓰면 안 된다(moveCell 주석 참조) */
+    cellKey: (id: string) => (keyEpochs[id] ? `${id}#${keyEpochs[id]}` : id),
     mode,
     runningCellId,
     isQueued: (id: string) => queue.current.includes(id),

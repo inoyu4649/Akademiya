@@ -175,10 +175,13 @@
     "title": "노트북",
     "addCode": "코드 셀",
     "addMarkdown": "마크다운 셀",
+    "moveUp": "셀 위로 이동",
+    "moveDown": "셀 아래로 이동",
+    "deleteCell": "셀 삭제",
     "emptyMarkdown": "비어 있는 마크다운 셀 (더블클릭해 편집)",
     "runAll": "모두 실행",
     "clearOutputs": "출력 지우기",
     "invalidFile": "올바른 Jupyter 노트북(.ipynb) 파일이 아닙니다.",
-    "shortcuts": "Esc 명령 모드 · Enter 편집 · Shift+Enter 실행 후 다음 · A/B 셀 추가 · DD 삭제 · M 마크다운 · Y 코드"
+    "shortcuts": "Esc 명령 모드 · Enter 편집 · Shift+Enter 실행 후 다음 · A/B 셀 추가 · DD 삭제 · Ctrl+Shift+↑/↓ 순서 바꾸기 · M 마크다운 · Y 코드"
   }
 }

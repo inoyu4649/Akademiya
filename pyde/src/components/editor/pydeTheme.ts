@@ -12,7 +12,17 @@ import type { Monaco } from '@monaco-editor/react'
  */
 export const PYDE_THEME = 'pyde-dark'
 
+/**
+ * 테마 자체는 Monaco 전역이지만 **정의는 누군가 이 함수를 불러야 생긴다.**
+ * 정의되지 않은 이름을 theme로 주면 Monaco는 조용히 기본 'vs'(밝은 테마)로 떨어져
+ * 에디터 안이 하얗게 뜬다 — 그래서 에디터를 붙이는 곳마다 beforeMount에서 부른다.
+ * 노트북은 셀마다 에디터가 하나씩이라 중복 호출이 잦으므로 한 번만 실제로 정의한다.
+ */
+const defined = new WeakSet<Monaco>()
+
 export function definePydeTheme(monaco: Monaco): void {
+  if (defined.has(monaco)) return
+  defined.add(monaco)
   monaco.editor.defineTheme(PYDE_THEME, {
     base: 'vs-dark',
     inherit: true,

@@ -175,10 +175,13 @@
     "title": "笔记本",
     "addCode": "代码单元格",
     "addMarkdown": "Markdown 单元格",
+    "moveUp": "上移单元格",
+    "moveDown": "下移单元格",
+    "deleteCell": "删除单元格",
     "emptyMarkdown": "空的 Markdown 单元格(双击编辑)",
     "runAll": "全部运行",
     "clearOutputs": "清除输出",
     "invalidFile": "这不是有效的 Jupyter 笔记本(.ipynb)文件。",
-    "shortcuts": "Esc 命令模式 · Enter 编辑 · Shift+Enter 运行并选择下一个 · A/B 添加单元格 · DD 删除 · M Markdown · Y 代码"
+    "shortcuts": "Esc 命令模式 · Enter 编辑 · Shift+Enter 运行并选择下一个 · A/B 添加单元格 · DD 删除 · Ctrl+Shift+↑/↓ 调整顺序 · M Markdown · Y 代码"
   }
 }

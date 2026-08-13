@@ -38,6 +38,14 @@ export default function NotebookView({ nb }: Props) {
       }
 
       const id = nb.selectedId
+
+      // Ctrl+Shift+↑/↓ 로 셀 순서 바꾸기 — 화살표만으로는 선택 이동이라 조합키를 쓴다
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        e.preventDefault()
+        nb.moveCell(id, e.key === 'ArrowUp' ? -1 : 1)
+        return
+      }
+
       switch (e.key) {
         case 'Enter':
           if (e.shiftKey) {
@@ -116,9 +124,10 @@ export default function NotebookView({ nb }: Props) {
       // 셀 안 Monaco에서 Esc를 눌렀을 때 포커스를 되돌릴 대상
       data-notebook-root=""
     >
-      {nb.notebook.cells.map((cell) => (
+      {nb.notebook.cells.map((cell, index) => (
         <NotebookCell
-          key={cell.id}
+          // ⚠️ cell.id가 아니라 nb.cellKey — 이유는 useNotebook의 moveCell 주석 참조
+          key={nb.cellKey(cell.id)}
           cell={cell}
           selected={cell.id === nb.selectedId}
           editing={nb.mode === 'edit' && cell.id === nb.selectedId}
@@ -137,6 +146,13 @@ export default function NotebookView({ nb }: Props) {
           onChange={(source) => nb.setCellSource(cell.id, source)}
           onRunAdvance={() => nb.runAndAdvance(cell.id)}
           onRunInPlace={() => nb.runCell(cell.id)}
+          onMoveUp={() => nb.moveCell(cell.id, -1)}
+          onMoveDown={() => nb.moveCell(cell.id, 1)}
+          onDelete={() => nb.deleteCell(cell.id)}
+          canMoveUp={index > 0}
+          canMoveDown={index < nb.notebook.cells.length - 1}
+          // 마지막 한 개는 지울 수 없다 — 빈 노트북은 편집할 곳 자체가 없어진다
+          canDelete={nb.notebook.cells.length > 1}
         />
       ))}
 

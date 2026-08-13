@@ -8,6 +8,7 @@
 
 /* ── 셀 ─────────────────────────────────────────────────────────────────── */
 .cell {
+  position: relative;
   display: flex;
   gap: 8px;
   padding: 4px 6px 4px 0;
@@ -53,6 +54,58 @@
 .cellBody {
   flex: 1;
   min-width: 0;
+}
+
+/* ── 셀 도구(순서 바꾸기·삭제) ─────────────────────────────────────────────
+   Jupyter처럼 셀 오른쪽 위에 겹쳐 띄운다. 자리를 따로 차지하지 않으므로
+   좁은 화면에서도 편집 영역이 줄지 않는다.
+   평소엔 숨기되 pointer-events까지 꺼서 아래 코드의 클릭을 가로채지 않게 한다.
+   (focus-within을 넣어 둔 건 키보드 Tab으로도 닿을 수 있게 하기 위해서다) */
+.cellActions {
+  position: absolute;
+  top: 1px;
+  right: 6px;
+  z-index: 2;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-sidebar);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+
+.cell:hover .cellActions,
+.cellSelected .cellActions,
+.cellActions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.cellActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+
+.cellActionBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.cellActionDanger:hover:not(:disabled) {
+  color: var(--danger);
+}
+
+.cellActionBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 .editorBox {

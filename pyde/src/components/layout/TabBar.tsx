@@ -92,89 +92,94 @@ export default function TabBar({
   }
 
   return (
-    <div className={styles.bar} role="tablist" aria-label={t('files.title')}>
-      {docs.map((doc) => {
-        const active = doc.docId === activeId
-        const dirty = isDirty(doc)
-        const location = locationOf(doc)
-        const renaming = renamingId === doc.docId
+    // ⚠️ 가로 스크롤은 안쪽 .scroller가 맡는다. 예전처럼 이 바깥 요소에 overflow를 걸면
+    //    (overflow-x:auto면 overflow-y:visible이 hidden으로 강제된다) 아래로 펼쳐지는
+    //    + 메뉴가 탭 줄 높이에서 잘려 **버튼을 눌러도 아무 일도 안 일어나는 것처럼 보인다.**
+    <div className={styles.bar}>
+      <div className={styles.scroller} role="tablist" aria-label={t('files.title')}>
+        {docs.map((doc) => {
+          const active = doc.docId === activeId
+          const dirty = isDirty(doc)
+          const location = locationOf(doc)
+          const renaming = renamingId === doc.docId
 
-        return (
-          <div
-            key={doc.docId}
-            className={`${styles.tab} ${active ? styles.tabActive : ''} ${renaming ? styles.tabRenaming : ''}`}
-            role="tab"
-            aria-selected={active}
-            tabIndex={active ? 0 : -1}
-            onClick={() => !renaming && onActivate(doc.docId)}
-            onDoubleClick={() => startRename(doc)}
-            onKeyDown={(e) => {
-              if (renaming) return
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                onActivate(doc.docId)
-              } else if (e.key === 'F2') {
-                e.preventDefault()
-                startRename(doc)
-              }
-            }}
-            // 가운데 버튼 클릭으로 닫기 — 브라우저 탭과 같은 관례
-            onAuxClick={(e) => {
-              if (e.button === 1) {
-                e.preventDefault()
-                onClose(doc.docId)
-              }
-            }}
-            title={renaming ? undefined : `${doc.name} — ${t(`files.location.${location}`)}`}
-          >
-            <TabIcon
-              location={location}
-              className={styles.locationIcon}
-              title={t(`files.location.${location}`)}
-            />
-
-            {renaming ? (
-              <input
-                ref={inputRef}
-                className={`${styles.renameInput} ${error ? styles.renameInputError : ''}`}
-                value={draftName}
-                onChange={(e) => {
-                  setDraftName(e.target.value)
-                  setError(null)
-                }}
-                onKeyDown={(e) => {
-                  // 이름 입력 중에는 탭 단축키가 끼어들면 안 된다
-                  e.stopPropagation()
-                  if (e.key === 'Enter') commitRename()
-                  else if (e.key === 'Escape') cancelRename()
-                }}
-                onBlur={commitRename}
-                onClick={(e) => e.stopPropagation()}
-                aria-label={t('files.renameLabel')}
-                title={error ? t(`files.nameError.${error}`) : undefined}
-                spellCheck={false}
-              />
-            ) : (
-              <span className={styles.tabName}>{doc.name}</span>
-            )}
-
-            {!renaming && dirty && <span className={styles.dirtyDot} title={t('files.unsaved')} />}
-
-            {!renaming && (
-              <button
-                className={styles.closeBtn}
-                onClick={(e) => {
-                  e.stopPropagation()
+          return (
+            <div
+              key={doc.docId}
+              className={`${styles.tab} ${active ? styles.tabActive : ''} ${renaming ? styles.tabRenaming : ''}`}
+              role="tab"
+              aria-selected={active}
+              tabIndex={active ? 0 : -1}
+              onClick={() => !renaming && onActivate(doc.docId)}
+              onDoubleClick={() => startRename(doc)}
+              onKeyDown={(e) => {
+                if (renaming) return
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onActivate(doc.docId)
+                } else if (e.key === 'F2') {
+                  e.preventDefault()
+                  startRename(doc)
+                }
+              }}
+              // 가운데 버튼 클릭으로 닫기 — 브라우저 탭과 같은 관례
+              onAuxClick={(e) => {
+                if (e.button === 1) {
+                  e.preventDefault()
                   onClose(doc.docId)
-                }}
-                aria-label={t('files.closeTab', { name: doc.name })}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        )
-      })}
+                }
+              }}
+              title={renaming ? undefined : `${doc.name} — ${t(`files.location.${location}`)}`}
+            >
+              <TabIcon
+                location={location}
+                className={styles.locationIcon}
+                title={t(`files.location.${location}`)}
+              />
+
+              {renaming ? (
+                <input
+                  ref={inputRef}
+                  className={`${styles.renameInput} ${error ? styles.renameInputError : ''}`}
+                  value={draftName}
+                  onChange={(e) => {
+                    setDraftName(e.target.value)
+                    setError(null)
+                  }}
+                  onKeyDown={(e) => {
+                    // 이름 입력 중에는 탭 단축키가 끼어들면 안 된다
+                    e.stopPropagation()
+                    if (e.key === 'Enter') commitRename()
+                    else if (e.key === 'Escape') cancelRename()
+                  }}
+                  onBlur={commitRename}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label={t('files.renameLabel')}
+                  title={error ? t(`files.nameError.${error}`) : undefined}
+                  spellCheck={false}
+                />
+              ) : (
+                <span className={styles.tabName}>{doc.name}</span>
+              )}
+
+              {!renaming && dirty && <span className={styles.dirtyDot} title={t('files.unsaved')} />}
+
+              {!renaming && (
+                <button
+                  className={styles.closeBtn}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onClose(doc.docId)
+                  }}
+                  aria-label={t('files.closeTab', { name: doc.name })}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
 
       <div className={styles.newTabWrap} ref={newMenuRef}>
         <button

@@ -175,10 +175,13 @@
     "title": "Notebook",
     "addCode": "Code cell",
     "addMarkdown": "Markdown cell",
+    "moveUp": "Move cell up",
+    "moveDown": "Move cell down",
+    "deleteCell": "Delete cell",
     "emptyMarkdown": "Empty markdown cell (double-click to edit)",
     "runAll": "Run all",
     "clearOutputs": "Clear outputs",
     "invalidFile": "That is not a valid Jupyter notebook (.ipynb) file.",
-    "shortcuts": "Esc command mode · Enter edit · Shift+Enter run and select below · A/B add cell · DD delete · M markdown · Y code"
+    "shortcuts": "Esc command mode · Enter edit · Shift+Enter run and select below · A/B add cell · DD delete · Ctrl+Shift+↑/↓ reorder · M markdown · Y code"
   }
 }

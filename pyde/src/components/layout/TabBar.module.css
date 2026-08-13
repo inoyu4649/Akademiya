@@ -1,3 +1,6 @@
+/* ⚠️ 이 바깥 요소에는 overflow를 걸지 않는다. 걸면 아래로 펼쳐지는 + 메뉴가
+   탭 줄 높이(32px)에서 잘려 화면에 나오지 않는다 — 버튼이 고장 난 것처럼 보인다.
+   가로 스크롤은 안쪽 .scroller가 맡는다. */
 .bar {
   grid-area: tabs;
   display: flex;
@@ -5,12 +8,21 @@
   height: var(--tabbar-height);
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+.scroller {
+  display: flex;
+  align-items: stretch;
+  /* 탭이 적을 땐 제 폭만 차지해 + 버튼이 마지막 탭 바로 뒤에 붙고,
+     넘칠 땐 줄어들면서 안에서 스크롤된다 */
+  flex: 0 1 auto;
+  min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  user-select: none;
   scrollbar-width: none;
 }
-.bar::-webkit-scrollbar {
+.scroller::-webkit-scrollbar {
   height: 0;
 }
 
@@ -157,7 +169,8 @@
 .newMenu {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
+  /* 탭이 많으면 + 버튼이 창 오른쪽 끝에 붙는다 — 왼쪽 기준으로 펼치면 메뉴가 화면 밖으로 나간다 */
+  right: 0;
   z-index: 60;
   min-width: 172px;
   padding: 4px;
