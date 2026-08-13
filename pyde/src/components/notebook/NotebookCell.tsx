@@ -100,6 +100,14 @@ export default function NotebookCell({
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
 
+    // ⚠️ 마크다운 셀의 에디터는 편집 모드로 들어갈 때만 마운트된다(showEditor = isCode || editing).
+    //    위쪽의 포커스 useEffect([editing, selected])는 이 마운트보다 먼저 실행될 수 있는데
+    //    (Monaco가 CDN에서 비동기로 로드되므로), 그 시점엔 editorRef.current가 아직 null이라
+    //    focus() 호출이 조용히 스킵된다. 그러면 셀이 "편집 모드"로는 보이지만 실제로는 아무
+    //    포커스도 없어 타이핑이 전부 씹힌다(마크다운 제목 # 이 하나도 안 써지는 것처럼 보였다).
+    //    마운트가 끝난 이 시점에도 여전히 편집 대상이면 여기서 한 번 더 맞춰준다.
+    if (editing && selected) editor.focus()
+
     // ⚠️ 편집/명령 모드는 "에디터에 포커스가 있는가"로 판정한다.
     //    클릭만으로 커서를 넣었을 때도 편집 모드가 되어야 한다. 안 그러면 사용자가
     //    타이핑한 a·b·d 같은 글자를 노트북이 셀 추가/삭제 단축키로 가로챈다.

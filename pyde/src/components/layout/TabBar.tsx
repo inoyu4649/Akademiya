@@ -33,8 +33,28 @@ export default function TabBar({
   const [draftName, setDraftName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [newMenuOpen, setNewMenuOpen] = useState(false)
+  // 메뉴를 버튼 오른쪽 정렬로 열지 왼쪽 정렬로 열지 — 버튼 위치에 따라 매번 다시 정한다
+  // (아래 openNewMenu 참고)
+  const [menuAlign, setMenuAlign] = useState<'left' | 'right'>('right')
   const inputRef = useRef<HTMLInputElement>(null)
   const newMenuRef = useRef<HTMLDivElement>(null)
+  // .newMenu의 min-width와 반드시 같은 값 — 정렬 판정에 이 너비를 쓴다
+  const MENU_WIDTH = 172
+
+  /**
+   * + 메뉴를 연다. 정렬(왼쪽/오른쪽)을 버튼의 화면상 위치를 보고 그때그때 정한다.
+   *
+   * ⚠️ 예전엔 항상 right:0(버튼 오른쪽 끝에 메뉴 오른쪽 끝을 맞춤)이었다. 탭이 많아 버튼이
+   *    화면 오른쪽 끝에 있을 땐 맞는데, 탭이 하나뿐이라 버튼이 화면 왼쪽에 있을 때는
+   *    172px짜리 메뉴가 왼쪽으로 화면 밖까지 밀려났다(실측: left -28px). 반대로 항상
+   *    left:0으로 고정하면 탭이 많을 때 오른쪽으로 밀려난다 — 그래서 열 때마다 버튼의
+   *    실제 위치를 재서 화면 안에 들어가는 쪽을 고른다.
+   */
+  const openNewMenu = () => {
+    const rect = newMenuRef.current?.getBoundingClientRect()
+    if (rect) setMenuAlign(rect.right - MENU_WIDTH < 8 ? 'left' : 'right')
+    setNewMenuOpen((v) => !v)
+  }
 
   // 바깥을 누르거나 Esc를 누르면 새 파일 메뉴를 닫는다
   useEffect(() => {
@@ -184,7 +204,7 @@ export default function TabBar({
       <div className={styles.newTabWrap} ref={newMenuRef}>
         <button
           className={`${styles.newTabBtn} ${newMenuOpen ? styles.newTabBtnOpen : ''}`}
-          onClick={() => setNewMenuOpen((v) => !v)}
+          onClick={openNewMenu}
           aria-label={t('header.newFile')}
           aria-expanded={newMenuOpen}
           aria-haspopup="menu"
@@ -194,7 +214,10 @@ export default function TabBar({
         </button>
 
         {newMenuOpen && (
-          <div className={styles.newMenu} role="menu">
+          <div
+            className={`${styles.newMenu} ${menuAlign === 'left' ? styles.newMenuLeft : styles.newMenuRight}`}
+            role="menu"
+          >
             <button
               className={styles.newMenuItem}
               role="menuitem"

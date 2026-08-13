@@ -9,6 +9,13 @@
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
   user-select: none;
+  /* ⚠️ 반드시 필요하다. CSS Grid 아이템은 overflow를 스스로 잡지 않으면 기본 min-width가
+     "내용의 min-content 크기"가 되어, 탭이 많아지면 이 요소가 grid 트랙을 그만큼 넓혀
+     버린다 — 안쪽 .scroller가 아니라 **페이지 전체**가 가로로 스크롤되는 사고가 났었다
+     (IdeLayout.module.css가 명시한 "페이지 전체는 절대 스크롤되지 않는다" 원칙 위반).
+     .bar 자체는 overflow를 갖지 않지만 min-width:0으로 grid가 내용 크기를 무시하게
+     만들면, 안쪽 .scroller의 overflow-x:auto가 실제로 동작한다. */
+  min-width: 0;
 }
 
 .scroller {
@@ -166,11 +173,12 @@
   color: var(--text-primary);
 }
 
+/* 정렬은 TabBar.tsx가 버튼의 실제 화면 위치를 재서 매번 고른다(openNewMenu 참고).
+   탭이 많아 버튼이 오른쪽 끝에 있으면 .newMenuRight, 탭이 적어 버튼이 왼쪽에
+   있으면 .newMenuLeft — 어느 한쪽으로 고정하면 반대 경우에 화면 밖으로 나간다. */
 .newMenu {
   position: absolute;
   top: calc(100% + 4px);
-  /* 탭이 많으면 + 버튼이 창 오른쪽 끝에 붙는다 — 왼쪽 기준으로 펼치면 메뉴가 화면 밖으로 나간다 */
-  right: 0;
   z-index: 60;
   min-width: 172px;
   padding: 4px;
@@ -178,6 +186,12 @@
   border-radius: var(--radius-md);
   background: var(--bg-sidebar);
   box-shadow: var(--shadow-md);
+}
+.newMenuRight {
+  right: 0;
+}
+.newMenuLeft {
+  left: 0;
 }
 
 .newMenuItem {
