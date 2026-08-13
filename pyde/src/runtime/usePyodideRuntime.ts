@@ -3,6 +3,7 @@
 // 루프 하나가 수천 줄을 찍어도 리렌더가 그만큼 일어나면 UI가 멈추기 때문이다.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { BootLogLine, BootProgress, WorkerIn, WorkerOut } from './protocol'
+import { KOREAN_FONT_FALLBACK_URL } from './pyodideConfig'
 
 export type RuntimeStatus = 'booting' | 'ready' | 'failed'
 
@@ -56,6 +57,17 @@ export function usePyodideRuntime() {
         case 'boot-failed':
           setError(msg.message)
           setStatus('failed')
+          break
+        case 'font-fallback-request':
+          // 워커는 CSP상 같은 오리진에 요청을 보낼 수 없다(protocol.ts 주석 참고).
+          // 학교망에서 CDN이 막힌 경우를 위해 메인 스레드가 서버 사본을 대신 받아 넘긴다.
+          void fetch(KOREAN_FONT_FALLBACK_URL)
+            .then((res) => (res.ok ? res.arrayBuffer() : null))
+            .catch(() => null)
+            .then((buffer) => {
+              // 4MB를 복사하지 않고 소유권째 넘긴다(메인 스레드는 이 버퍼를 쓰지 않는다)
+              worker.postMessage({ type: 'font-fallback', buffer } satisfies WorkerIn, buffer ? [buffer] : [])
+            })
           break
         default:
           for (const listener of runListeners.current) listener(msg)

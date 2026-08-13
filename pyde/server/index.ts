@@ -102,8 +102,55 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
 })
 
 app.use(cookieParser())
-// 파일 본문(최대 5MB)이 오가므로 기본 100KB로는 부족하다. Cloud API 한도(5MB)에 여유를 둔다.
-app.use(express.json({ limit: '6mb' }))
+
+// ── 요청 본문 크기 ───────────────────────────────────────────────────────────
+// ⚠️ 큰 한도를 전역에 걸면 안 된다. 파일 본문이 오가는 곳은 /api/cloud 하나뿐인데
+//    전역으로 6MB를 열어두면 **로그인하지 않은 아무나** 아무 엔드포인트에나 6MB를
+//    던져 서버에 파싱을 시킬 수 있다. 큰 본문은 그 경로에만 허용한다.
+const CLOUD_BODY_LIMIT = '6mb' // Cloud API의 파일당 한도(5MB)에 여유를 둔 값
+app.use('/api/cloud', express.json({ limit: CLOUD_BODY_LIMIT }))
+app.use(express.json({ limit: '32kb' }))
+
+// ── Rate limit (최소 구현) ───────────────────────────────────────────────────
+//  왜 직접 짜나: PyDe 서버는 컨테이너 한 개짜리 단일 프로세스라 메모리 카운터로 충분하고,
+//  이 하나 때문에 의존성을 늘리고 싶지 않다(번들이 아니라 서버 의존성이라 egress와는
+//  무관하지만, 서버 코드는 작게 유지한다).
+//
+//  ⚠️ 상한을 넉넉히 잡는 이유: 학교는 교내 와이파이/NAT로 한 반(~35명)부터 전교생까지
+//     같은 공인 IP를 쓴다. IP 기준 상한이 낮으면 정상 이용자가 무더기로 막힌다
+//     (설문 공개응답 리미터를 10 → 300으로 올렸던 것과 같은 이유).
+interface Bucket {
+  count: number
+  resetAt: number
+}
+
+function rateLimit(windowMs: number, max: number) {
+  const buckets = new Map<string, Bucket>()
+  return function (req: Request, res: Response, next: NextFunction): void {
+    const now = Date.now()
+    // 값이 없거나 신뢰할 수 없으면 하나의 버킷으로 몰아 넣는다(빈 키로 우회 불가)
+    const key = req.ip ?? 'unknown'
+    const bucket = buckets.get(key)
+    if (!bucket || bucket.resetAt <= now) {
+      buckets.set(key, { count: 1, resetAt: now + windowMs })
+    } else if (++bucket.count > max) {
+      res.status(429).json({ error: 'TOO_MANY_REQUESTS' })
+      return
+    }
+    // 만료된 버킷 청소 — 요청이 뜸하면 맵이 자라기만 하는 것을 막는다
+    if (buckets.size > 5000) {
+      for (const [k, b] of buckets) if (b.resetAt <= now) buckets.delete(k)
+    }
+    next()
+  }
+}
+
+// 공유 링크 열람은 **로그인 없이** 백엔드까지 도달하는 유일한 경로다.
+// 백엔드 쪽 리미터는 PyDe 컨테이너 IP 하나로 보여 전 사용자가 한 버킷을 나눠 쓰므로,
+// 진짜 클라이언트 IP를 볼 수 있는 여기서 거는 것이 실효가 있다.
+const shareLimiter = rateLimit(15 * 60 * 1000, 300)
+// 로그인 시작은 상태 쿠키를 굽고 리다이렉트만 하지만, 무제한이면 리다이렉트 증폭에 쓰인다
+const loginLimiter = rateLimit(15 * 60 * 1000, 120)
 
 // ── CSRF 방어 ────────────────────────────────────────────────────────────────
 // 세션 쿠키가 SameSite=Lax라 교차 사이트 POST에는 쿠키가 실리지 않지만, 브라우저
@@ -173,7 +220,7 @@ async function accessTokenFor(req: Request, res: Response): Promise<string | nul
 // ============================================================================
 
 // ── GET /auth/login — Akademiya 로그인 화면으로 보낸다 ───────────────────────
-app.get('/auth/login', (req: Request, res: Response) => {
+app.get('/auth/login', loginLimiter, (req: Request, res: Response) => {
   const pkce = createPkce()
   // ⚠️ code_verifier는 브라우저 JS가 읽을 수 없는 봉인 쿠키에만 둔다.
   //    (사용자 Python 코드가 도는 앱이라 sessionStorage는 신뢰하지 않는다)
@@ -336,7 +383,7 @@ app.use('/api/cloud', async (req: Request, res: Response) => {
 })
 
 // ── GET /api/share/:token — 링크 공개 파일 (로그인 불필요) ───────────────────
-app.get('/api/share/:token', async (req: Request, res: Response) => {
+app.get('/api/share/:token', shareLimiter, async (req: Request, res: Response) => {
   const token = String(req.params.token ?? '')
   if (!/^[A-Za-z0-9_-]{20,64}$/.test(token)) {
     res.status(404).json({ error: 'NOT_FOUND' })
@@ -364,6 +411,28 @@ app.get('/api/health', (_req: Request, res: Response) => {
 // ============================================================================
 const distPath = join(__dirname, '..', 'dist')
 if (existsSync(distPath)) {
+  // ── Pyodide 워커 전용 CSP ──────────────────────────────────────────────────
+  //  이 앱의 핵심 보안 경계다. 사용자가 작성한 Python은 워커 안에서 돌고, Pyodide는
+  //  설계상 `import js`로 워커의 JS 전역을 그대로 내준다. 워커는 같은 오리진이므로
+  //  **`js.fetch('/api/cloud/files')` 한 줄로 세션 쿠키가 실린 요청이 나간다.**
+  //  즉 악의적인 노트북을 공유받아 실행하면 그 사람의 클라우드 파일이 통째로
+  //  읽히거나 지워질 수 있다(실제로 재현해 확인했다).
+  //
+  //  워커 스크립트 응답에 붙인 CSP는 그 워커의 전역 스코프에 적용된다(문서 정책에
+  //  더해져 각각 강제된다). connect-src에서 'self'를 빼면 워커의 fetch/XHR/WebSocket이
+  //  우리 오리진에 닿지 못한다 — 워커가 실제로 네트워크로 필요한 곳은 jsDelivr뿐이다.
+  //  ⚠️ 그래서 워커 안에서 같은 오리진 자원(폰트 폴백)을 직접 받으면 안 된다.
+  //     메인 스레드에 요청해 받아오도록 되어 있다(runtime/pyodide.worker.ts).
+  //  ⚠️ connect-src만 좁힌다. default-src까지 잠그면 Pyodide가 내부적으로 쓰는 경로
+  //     하나만 빠뜨려도 앱이 부팅조차 못 한다 — 실효는 connect-src에서 나온다.
+  const WORKER_CSP = 'connect-src https://cdn.jsdelivr.net'
+  app.use('/assets', (req: Request, res: Response, next: NextFunction) => {
+    if (/^\/pyodide\.worker-[\w-]+\.js$/.test(req.path)) {
+      res.setHeader('Content-Security-Policy', WORKER_CSP)
+    }
+    next()
+  })
+
   // Vite 산출물은 파일명에 콘텐츠 해시가 있어 장기 불변 캐싱이 안전하다.
   app.use(
     '/assets',

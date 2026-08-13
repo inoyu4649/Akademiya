@@ -14,7 +14,7 @@
 //     resolveAccess()를 거치며, 이 함수가 null을 반환하면 존재 여부조차 알려주지
 //     않기 위해 항상 404로 응답한다(403과 404를 구분하면 파일 존재가 노출된다).
 // ============================================================================
-import { Router, type IRouter, type Request } from "express";
+import express, { Router, type IRouter, type Request } from "express";
 import rateLimit from "express-rate-limit";
 import crypto from "crypto";
 import { pool } from "../db/pool.js";
@@ -49,6 +49,12 @@ const cloudLimiter = rateLimit({
 
 // 링크 공개 파일의 익명 열람 — 학교 한 반이 동시에 링크를 열어도 막히지 않도록 여유 있게
 // (설문 공개 응답 리미터를 300으로 올렸던 사례와 같은 이유)
+//
+// ⚠️ 이건 IP 기준이라 **PyDe를 거쳐 들어오는 트래픽에는 사실상 무력하다** — 그쪽은 전부
+//    PyDe 컨테이너 IP 하나로 보이기 때문이다(위 cloudLimiter 주석과 같은 문제).
+//    실효 있는 방어는 진짜 클라이언트 IP를 보는 PyDe 서버 쪽 리미터가 담당한다
+//    (pyde/server/index.ts의 shareLimiter). 여기 있는 건 백엔드를 직접 두드리는
+//    경우를 위한 최후 방어선이다.
 const publicLinkLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 600,
@@ -225,7 +231,10 @@ router.get("/public/:token", publicLinkLimiter, async (req, res) => {
 // ============================================================================
 //  이하 전부 인증 필요 ('cloud' scope)
 // ============================================================================
-router.use(requireApiActor("cloud"), cloudLimiter);
+//  ⚠️ 본문 파서를 **인증·리미터 뒤에** 둔다. 이 경로는 전역 rate limiter에서 제외돼
+//     있으므로(index.ts 주석 참고), 파서가 앞에 있으면 로그인하지 않은 아무나 6MB
+//     본문을 무제한으로 던져 파싱시킬 수 있다. 위의 /public/:token은 GET이라 본문이 없다.
+router.use(requireApiActor("cloud"), cloudLimiter, express.json({ limit: "6mb" }));
 
 // ── GET /api/cloud/files — 내 파일 + 공유받은 파일 목록 (본문 제외) ──────────
 router.get("/files", async (req, res) => {
@@ -520,8 +529,15 @@ router.delete("/files/:id/shares/:shareId", async (req, res) => {
   const file = await requireOwnedFile(req);
   if (!file) { res.status(404).json({ error: "NOT_FOUND" }); return; }
 
+  // 숫자가 아니면 여기서 걸러낸다 — NaN을 그대로 넘기면 SQL이 깨져 500이 난다
+  const shareId = Number(req.params.shareId);
+  if (!Number.isInteger(shareId) || shareId <= 0) {
+    res.status(400).json({ error: "INVALID_SHARE_ID" });
+    return;
+  }
+
   await pool.query("DELETE FROM cloud_file_shares WHERE id = ? AND file_id = ?", [
-    Number(req.params.shareId),
+    shareId,
     file.id,
   ]);
   res.json({ message: "removed" });

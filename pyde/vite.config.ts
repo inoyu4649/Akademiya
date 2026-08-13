@@ -1,8 +1,28 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+/**
+ * 개발 서버에서도 Pyodide 워커에 전용 CSP를 붙인다.
+ * 프로덕션에서는 Express가 같은 헤더를 붙인다(server/index.ts의 WORKER_CSP 주석 참고).
+ * 개발에서만 빠져 있으면 "로컬에선 되는데 배포하면 막히는" 반대 상황이 생기고,
+ * 무엇보다 이 경계가 깨졌는지 개발 중에 확인할 수 없게 된다.
+ */
+function pyodideWorkerCsp() {
+  return {
+    name: 'pyde-pyodide-worker-csp',
+    configureServer(server: { middlewares: { use: (fn: (req: { url?: string }, res: { setHeader: (k: string, v: string) => void }, next: () => void) => void) => void } }) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url?.includes('/runtime/pyodide.worker')) {
+          res.setHeader('Content-Security-Policy', 'connect-src https://cdn.jsdelivr.net')
+        }
+        next()
+      })
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), pyodideWorkerCsp()],
   server: {
     port: 5175,
     proxy: {

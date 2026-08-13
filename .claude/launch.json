@@ -46,6 +46,18 @@
       "port": 5175
     },
     {
+      "name": "pyde-prod",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "pyde",
+        "run",
+        "server"
+      ],
+      "port": 3002,
+      "autoPort": true
+    },
+    {
       "name": "pyde-preview",
       "runtimeExecutable": "npm",
       "runtimeArgs": [

@@ -4,13 +4,22 @@
 //  사용자 Python 코드가 실행되는 **유일한** 장소. 메인 스레드에서 돌리면 무거운
 //  계산 한 번에 IDE 전체가 얼어붙으므로 런타임 전체를 여기 가둔다.
 //
-//  이 워커에는 의도적으로 없는 것들:
-//    · DOM 접근 · 세션 쿠키 · Cloud API 호출 코드
-//  사용자 코드가 무엇을 하든 브라우저 샌드박스 + 워커 경계 밖으로 나가지 못한다.
+//  ⚠️ 보안 경계에 대해 — 예전 주석은 "이 워커엔 Cloud API 호출 코드가 없으니 안전하다"고
+//     적혀 있었는데 **틀린 말이었다.** Pyodide는 설계상 `import js`로 워커의 JS 전역을
+//     그대로 내준다. 즉 우리가 코드를 안 써도 사용자 Python이 직접
+//     `js.fetch('/api/cloud/files')`를 부를 수 있고, 워커는 같은 오리진이라 그 요청에
+//     세션 쿠키가 실린다(재현 확인). 악의적인 노트북을 공유받아 실행하는 것만으로
+//     클라우드 파일이 털릴 수 있었다.
+//
+//     실제 경계는 **이 워커 스크립트 응답에 붙는 CSP**다: `connect-src`가 jsDelivr만
+//     허용하므로 워커에서 우리 오리진으로 나가는 fetch/XHR/WebSocket이 전부 막힌다.
+//     (프로덕션은 server/index.ts, 개발은 vite.config.ts가 헤더를 붙인다)
+//
+//     ⚠️ 따라서 **이 파일에 같은 오리진 fetch를 추가하면 안 된다.** 필요하면
+//        protocol.ts의 메시지로 메인 스레드에 대신 받아달라고 요청할 것(폰트 폴백 참고).
 // ============================================================================
 import {
   KOREAN_FONT_CDN_URL,
-  KOREAN_FONT_FALLBACK_URL,
   KOREAN_FONT_FAMILY,
   PRELOAD_PACKAGES,
   PYODIDE_BASE_URL,
@@ -163,10 +172,16 @@ async function prefetchAll(tasks: FetchTask[], stage: BootStage, determinate: bo
   )
 }
 
+/** 메인 스레드에 부탁한 폰트 폴백의 응답을 기다리는 자리 */
+let pendingFontFallback: ((buffer: ArrayBuffer | null) => void) | null = null
+
 /**
  * Matplotlib용 한글 TTF를 가져온다.
  * CDN을 먼저 시도하는 건 순전히 서버 egress 때문이다(4.2MB × 접속자 수).
  * 학교망에서 CDN이 막히면 앱 전체가 못 쓰게 되면 안 되므로 서버 사본으로 폴백한다.
+ *
+ * ⚠️ 서버 사본은 같은 오리진이라 **워커가 직접 받을 수 없다**(파일 첫머리의 CSP 설명).
+ *    메인 스레드에 대신 받아달라고 요청한다.
  */
 async function fetchFont(): Promise<ArrayBuffer> {
   try {
@@ -175,9 +190,19 @@ async function fetchFont(): Promise<ArrayBuffer> {
     return await res.arrayBuffer()
   } catch (err) {
     log(`CDN 폰트 실패(${(err as Error).message}) — 서버 사본으로 대체합니다`, 'warn')
-    const res = await fetch(KOREAN_FONT_FALLBACK_URL)
-    if (!res.ok) throw new Error(`폰트를 불러오지 못했습니다 (HTTP ${res.status})`)
-    return await res.arrayBuffer()
+    const buffer = await new Promise<ArrayBuffer | null>((resolve) => {
+      pendingFontFallback = resolve
+      post({ type: 'font-fallback-request' })
+      // 응답이 영영 안 오면 부팅이 여기서 멈춘다 — 폰트 하나 때문에 그럴 수는 없다
+      setTimeout(() => {
+        if (pendingFontFallback === resolve) {
+          pendingFontFallback = null
+          resolve(null)
+        }
+      }, 30_000)
+    })
+    if (!buffer) throw new Error('폰트를 불러오지 못했습니다')
+    return buffer
   }
 }
 
@@ -479,5 +504,11 @@ self.onmessage = (event: MessageEvent<WorkerIn>) => {
       // 실질적인 중지는 메인 스레드가 공유 버퍼에 직접 쓰는 쪽이 담당한다.
       if (interruptBuffer) interruptBuffer[0] = 2
       break
+    case 'font-fallback': {
+      const resolve = pendingFontFallback
+      pendingFontFallback = null
+      resolve?.(msg.buffer)
+      break
+    }
   }
 }

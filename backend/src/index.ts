@@ -119,7 +119,11 @@ const authLimiter = rateLimit({
 // Akademiya Cloud는 파일 본문(개당 최대 5MB)을 통째로 주고받으므로 전역 2MB 파서보다
 // 먼저, 자체 한도로 마운트한다. body-parser는 이미 파싱된 요청을 건너뛰므로
 // 아래 전역 파서와 충돌하지 않는다.
-app.use("/api/cloud", express.json({ limit: "6mb" }), cloudRouter);
+//
+// ⚠️ 6MB 파서는 여기가 아니라 **cloud 라우터 안에서 인증 뒤에** 붙인다(routes/cloud.ts).
+//    여기에 붙이면 이 경로는 전역 rate limiter에서 제외돼 있으므로,
+//    **로그인하지 않은 아무나 6MB 본문을 무제한으로 던져** 파싱시킬 수 있다.
+app.use("/api/cloud", cloudRouter);
 
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());

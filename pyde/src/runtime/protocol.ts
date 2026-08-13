@@ -2,8 +2,12 @@
 //  메인 스레드 ↔ Pyodide 워커 메시지 프로토콜
 // ============================================================================
 //  Python 실행이 UI를 멈추지 않게 하려고 런타임 전체를 Web Worker에 둔다.
-//  워커는 사용자 코드를 실행하는 유일한 장소이자 보안 경계이기도 하다 —
-//  워커에는 DOM도, 세션 쿠키를 읽을 방법도, 서버 API 접근 코드도 없다.
+//
+//  ⚠️ 워커는 "코드가 없어서" 안전한 것이 아니다. Pyodide는 설계상 `import js`로 워커의
+//     JS 전역을 그대로 내주므로, 사용자 코드는 워커에서 할 수 있는 것을 전부 할 수 있다.
+//     실제 경계는 **워커 스크립트에 붙인 CSP(connect-src: jsDelivr만)** 다.
+//     그래서 워커가 같은 오리진에서 무언가를 받아야 하면 직접 fetch하지 말고 이 프로토콜로
+//     메인 스레드에 요청해야 한다(font-fallback 참고).
 
 /** 부팅 단계 — i18n의 boot.stage.* 키와 이름을 맞춘다 */
 export type BootStage =
@@ -56,8 +60,13 @@ export type WorkerOut =
   | { type: 'artifact'; runId: number; artifact: RunArtifact }
   | { type: 'run-done'; runId: number; elapsedMs: number; result: string | null }
   | { type: 'run-error'; runId: number; elapsedMs: number; traceback: string; friendly: string }
+  // CDN에서 한글 폰트를 못 받았다 — 같은 오리진 사본은 워커가 직접 받을 수 없으므로
+  // (위의 CSP 참고) 메인 스레드에 대신 받아달라고 부탁한다.
+  | { type: 'font-fallback-request' }
 
 export type WorkerIn =
   | { type: 'boot' }
   | { type: 'run'; runId: number; code: string }
   | { type: 'interrupt' }
+  /** font-fallback-request에 대한 응답. buffer가 null이면 그쪽도 실패했다는 뜻 */
+  | { type: 'font-fallback'; buffer: ArrayBuffer | null }
