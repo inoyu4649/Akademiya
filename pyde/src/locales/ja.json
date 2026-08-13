@@ -183,5 +183,23 @@
     "clearOutputs": "出力をクリア",
     "invalidFile": "有効なJupyterノートブック(.ipynb)ファイルではありません。",
     "shortcuts": "Esc コマンドモード · Enter 編集 · Shift+Enter 実行して次へ · A/B セル追加 · DD 削除 · Ctrl+Shift+↑/↓ 並べ替え · M Markdown · Y コード"
+  },
+  "usage": {
+    "title": "PyDe Cloud 使用量",
+    "pyde": "PyDe Web",
+    "account": "Akademiya Cloud 全体",
+    "fileCount": "ファイル {{count}}件",
+    "fileCountOf": "ファイル {{count}} / {{max}}件",
+    "loading": "使用量を読み込み中…",
+    "loadFailed": "使用量を読み込めませんでした。",
+    "note": "PyDeはAkademiya Cloud全体の使用量のうち一部のみ利用できます。"
+  },
+  "policy": {
+    "privacyShort": "プライバシーポリシー",
+    "termsShort": "利用規約",
+    "back": "← 戻る",
+    "toc": "目次",
+    "effective": "{{date}} 施行",
+    "home": "PyDe Webへ"
   }
 }

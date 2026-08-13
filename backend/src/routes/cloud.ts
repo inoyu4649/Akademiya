@@ -28,8 +28,20 @@ type Row = Record<string, unknown>;
 // 대상이 교육용 소스 파일이라는 전제. .ipynb는 출력 이미지가 base64로 박혀 커질 수
 // 있어 개당 한도를 넉넉히 5MB로 두되, 계정 총량으로 남용을 막는다.
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
-const MAX_TOTAL_BYTES = 100 * 1024 * 1024;
+const MAX_TOTAL_BYTES = 50 * 1024 * 1024;
 const MAX_FILES_PER_USER = 300;
+
+/**
+ * 폴더별 한도.
+ *
+ * Akademiya Cloud는 계정 단위 범용 저장소이고, PyDe Web 같은 연동 앱은 자기 폴더
+ * 아래에만 파일을 만든다. 앱 하나가 계정 용량을 독차지하면 정작 본인이 다른 용도로
+ * 쓸 자리가 없어지므로, 앱 폴더에는 계정 한도(50MB)와 별개로 더 좁은 상한을 둔다.
+ * 여기 없는 폴더는 계정 한도만 적용된다.
+ */
+const FOLDER_QUOTAS: Record<string, number> = {
+  "PyDe Web": 10 * 1024 * 1024,
+};
 const NAME_MAX = 180;
 const FOLDER_MAX = 180;
 
@@ -188,13 +200,30 @@ function fileMeta(f: Row) {
   };
 }
 
-async function usage(userId: number): Promise<{ files: number; bytes: number }> {
+async function usage(userId: number, folder?: string): Promise<{ files: number; bytes: number }> {
   const [rows] = await pool.query(
-    "SELECT COUNT(*) AS files, COALESCE(SUM(size_bytes), 0) AS bytes FROM cloud_files WHERE owner_id = ?",
-    [userId]
+    `SELECT COUNT(*) AS files, COALESCE(SUM(size_bytes), 0) AS bytes
+       FROM cloud_files WHERE owner_id = ?${folder === undefined ? "" : " AND folder = ?"}`,
+    folder === undefined ? [userId] : [userId, folder]
   );
   const r = (rows as Row[])[0];
   return { files: Number(r.files), bytes: Number(r.bytes) };
+}
+
+/**
+ * 폴더 한도를 넘는지 본다. 넘으면 응답 본문에 쓸 오류 객체를, 아니면 null을 돌려준다.
+ * @param delta 이번 저장으로 늘어나는 바이트(새 파일이면 파일 크기 전체)
+ */
+async function folderQuotaError(
+  userId: number,
+  folder: string,
+  delta: number
+): Promise<{ error: string; folder: string; maxFolderBytes: number } | null> {
+  const quota = FOLDER_QUOTAS[folder];
+  if (quota === undefined || delta <= 0) return null;
+  const used = await usage(userId, folder);
+  if (used.bytes + delta <= quota) return null;
+  return { error: "FOLDER_QUOTA_EXCEEDED", folder, maxFolderBytes: quota };
 }
 
 // ============================================================================
@@ -283,8 +312,13 @@ router.get("/files", async (req, res) => {
       ownerName: f.owner_name as string,
       ownerEmail: f.owner_email as string,
     })),
+    // ⚠️ usage는 folder 필터와 무관하게 **계정 전체**다(한도가 계정 단위라서).
+    //    폴더만의 사용량·한도는 folderUsage/folderLimit로 따로 내린다.
     usage: await usage(userId),
     limits: { maxFileBytes: MAX_FILE_BYTES, maxTotalBytes: MAX_TOTAL_BYTES, maxFiles: MAX_FILES_PER_USER },
+    ...(filterFolder
+      ? { folderUsage: await usage(userId, folder), folderLimit: FOLDER_QUOTAS[folder] ?? null }
+      : {}),
   });
 });
 
@@ -305,6 +339,9 @@ router.post("/files", async (req, res) => {
   const used = await usage(userId);
   if (used.files >= MAX_FILES_PER_USER) { res.status(413).json({ error: "TOO_MANY_FILES", maxFiles: MAX_FILES_PER_USER }); return; }
   if (used.bytes + size > MAX_TOTAL_BYTES) { res.status(413).json({ error: "QUOTA_EXCEEDED", maxTotalBytes: MAX_TOTAL_BYTES }); return; }
+
+  const folderError = await folderQuotaError(userId, folder, size);
+  if (folderError) { res.status(413).json(folderError); return; }
 
   try {
     const [result] = await pool.query(
@@ -363,6 +400,8 @@ router.put("/files/:id", async (req, res) => {
       res.status(413).json({ error: "QUOTA_EXCEEDED", maxTotalBytes: MAX_TOTAL_BYTES });
       return;
     }
+    const folderError = await folderQuotaError(ownerId, access.file.folder as string, delta);
+    if (folderError) { res.status(413).json(folderError); return; }
   }
 
   // revision을 보내지 않으면 강제 덮어쓰기(사용자가 충돌 경고에서 "덮어쓰기"를 고른 경우)
@@ -406,6 +445,11 @@ router.patch("/files/:id", async (req, res) => {
   if (req.body.folder !== undefined) {
     const folder = normalizeFolder(req.body.folder);
     if (folder === null) { res.status(400).json({ error: "INVALID_FOLDER" }); return; }
+    // 한도가 걸린 폴더로 옮기는 것도 그 폴더에 쓰는 것과 같다
+    if (folder !== access.file.folder) {
+      const folderError = await folderQuotaError(userId, folder, access.file.size_bytes as number);
+      if (folderError) { res.status(413).json(folderError); return; }
+    }
     updates.push("folder = ?"); params.push(folder);
   }
   if (!updates.length) { res.status(400).json({ error: "NOTHING_TO_UPDATE" }); return; }
@@ -582,10 +626,20 @@ router.get("/orgs", async (req, res) => {
 });
 
 // ── GET /api/cloud/usage ─────────────────────────────────────────────────────
+// ?folder=... 를 주면 그 폴더의 사용량·한도도 함께 내려준다(연동 앱의 사용량 표시용)
 router.get("/usage", async (req, res) => {
+  const userId = req.actor!.userId;
+  const folder = normalizeFolder(req.query.folder);
+  if (folder === null) {
+    res.status(400).json({ error: "INVALID_FOLDER" });
+    return;
+  }
   res.json({
-    usage: await usage(req.actor!.userId),
+    usage: await usage(userId),
     limits: { maxFileBytes: MAX_FILE_BYTES, maxTotalBytes: MAX_TOTAL_BYTES, maxFiles: MAX_FILES_PER_USER },
+    ...(req.query.folder !== undefined
+      ? { folderUsage: await usage(userId, folder), folderLimit: FOLDER_QUOTAS[folder] ?? null }
+      : {}),
   });
 });
 

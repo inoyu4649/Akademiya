@@ -71,11 +71,43 @@
 }
 
 .user {
+  /* 사용량 패널이 이 안에서 아래로 펼쳐진다 */
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 4px 8px;
   border-radius: var(--radius-sm);
+}
+
+.profileBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+.profileBtn:hover {
+  background: var(--bg-hover);
+}
+
+/* 처리방침·약관 링크 — 있어야 하지만 작업을 방해하면 안 되므로 가장 낮은 시각 무게 */
+.policyLinks {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.policyLink {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.policyLink:hover {
+  color: var(--text-secondary);
+  text-decoration: underline;
 }
 
 .avatar {
@@ -156,5 +188,11 @@
   .brandName,
   .userName {
     display: none;
+  }
+  /* ⚠️ 처리방침 링크는 좁은 화면에서도 숨기지 않는다 — 「개인정보 처리방침 작성지침」이
+     첫 화면에서 바로 찾을 수 있을 것을 요구한다. 대신 더 작게 줄인다. */
+  .policyLinks {
+    font-size: 10px;
+    gap: 4px;
   }
 }

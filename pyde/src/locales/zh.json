@@ -183,5 +183,23 @@
     "clearOutputs": "清除输出",
     "invalidFile": "这不是有效的 Jupyter 笔记本(.ipynb)文件。",
     "shortcuts": "Esc 命令模式 · Enter 编辑 · Shift+Enter 运行并选择下一个 · A/B 添加单元格 · DD 删除 · Ctrl+Shift+↑/↓ 调整顺序 · M Markdown · Y 代码"
+  },
+  "usage": {
+    "title": "PyDe Cloud 使用量",
+    "pyde": "PyDe Web",
+    "account": "Akademiya Cloud 总计",
+    "fileCount": "{{count}} 个文件",
+    "fileCountOf": "{{count}} / {{max}} 个文件",
+    "loading": "正在加载使用量…",
+    "loadFailed": "无法加载使用量。",
+    "note": "PyDe 只能使用 Akademiya Cloud 总容量中的一部分。"
+  },
+  "policy": {
+    "privacyShort": "隐私政策",
+    "termsShort": "使用条款",
+    "back": "← 返回",
+    "toc": "目录",
+    "effective": "{{date}} 施行",
+    "home": "前往 PyDe Web"
   }
 }

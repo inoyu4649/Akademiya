@@ -1,6 +1,9 @@
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/authContext'
 import { SUPPORTED_LANGS, setLanguage, type SupportedLang } from '../../i18n'
+import UsagePanel from './UsagePanel'
 import styles from './AppHeader.module.css'
 
 const LANG_LABELS: Record<SupportedLang, string> = {
@@ -18,6 +21,25 @@ interface Props {
 export default function AppHeader({ children }: Props) {
   const { t, i18n } = useTranslation()
   const { user, signIn, signOut } = useAuth()
+  const [usageOpen, setUsageOpen] = useState(false)
+  const userRef = useRef<HTMLDivElement>(null)
+
+  // 바깥을 누르거나 Esc를 누르면 닫는다(탭 바의 + 메뉴와 같은 규칙)
+  useEffect(() => {
+    if (!usageOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (!userRef.current?.contains(e.target as Node)) setUsageOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setUsageOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [usageOpen])
 
   const currentLang = (SUPPORTED_LANGS as readonly string[]).includes(i18n.language)
     ? (i18n.language as SupportedLang)
@@ -40,6 +62,18 @@ export default function AppHeader({ children }: Props) {
       <div className={styles.spacer} />
 
       <div className={styles.right}>
+        {/* 개인정보 처리방침은 「개인정보 처리방침 작성지침」상 로그인 여부와 관계없이
+            첫 화면에서 바로 찾을 수 있어야 한다 — 그래서 헤더에 상시 노출한다. */}
+        <nav className={styles.policyLinks}>
+          <Link className={styles.policyLink} to="/privacy">
+            {t('policy.privacyShort')}
+          </Link>
+          <span aria-hidden="true">·</span>
+          <Link className={styles.policyLink} to="/terms">
+            {t('policy.termsShort')}
+          </Link>
+        </nav>
+
         <select
           className={styles.langSelect}
           value={currentLang}
@@ -54,17 +88,35 @@ export default function AppHeader({ children }: Props) {
         </select>
 
         {user === undefined ? null : user ? (
-          <div className={styles.user}>
-            {/* 아바타는 Akademiya가 공개 서빙하는 URL이라 인증 없이 로드된다 */}
-            <img
-              className={styles.avatar}
-              src={user.picture ?? 'https://akademiya.kr/default-avatar.svg'}
-              alt=""
-            />
-            <span className={styles.userName}>{user.name || user.email}</span>
-            <button className={`btn btnGhost ${styles.signInBtn}`} onClick={() => void signOut()}>
+          <div className={styles.user} ref={userRef}>
+            {/* 프로필을 누르면 PyDe Cloud 사용량이 열린다 */}
+            <button
+              className={styles.profileBtn}
+              onClick={() => setUsageOpen((v) => !v)}
+              aria-expanded={usageOpen}
+              aria-haspopup="dialog"
+              title={t('usage.title')}
+            >
+              {/* 아바타는 Akademiya가 공개 서빙하는 URL이라 인증 없이 로드된다 */}
+              <img
+                className={styles.avatar}
+                src={user.picture ?? 'https://akademiya.kr/default-avatar.svg'}
+                alt=""
+              />
+              <span className={styles.userName}>{user.name || user.email}</span>
+            </button>
+            <button
+              className={`btn btnGhost ${styles.signInBtn}`}
+              onClick={() => {
+                // 다음에 다시 로그인했을 때 패널이 열린 채로 뜨지 않도록 여기서 닫는다
+                setUsageOpen(false)
+                void signOut()
+              }}
+            >
               {t('auth.signOut')}
             </button>
+
+            {usageOpen && <UsagePanel />}
           </div>
         ) : (
           <>

@@ -4,6 +4,8 @@ import { api } from './client'
  * PyDe의 작업물이 들어가는 Akademiya Cloud 폴더.
  * ⚠️ Cloud는 PyDe 전용이 아니라 계정 단위 범용 저장소다(추후 독립 서비스로 확장 가능).
  *    그래서 우리 파일은 반드시 이 폴더 아래에만 만든다 — 루트를 어지럽히지 않는다.
+ * ⚠️ 이 문자열은 백엔드 `routes/cloud.ts`의 `FOLDER_QUOTAS` 키와 **글자 그대로 같아야**
+ *    한다. 어긋나면 PyDe 폴더 한도(10MB)가 조용히 적용되지 않는다.
  */
 export const PYDE_FOLDER = 'PyDe Web'
 
@@ -52,6 +54,21 @@ export interface PublicFileResponse {
   content: string
   role: 'viewer'
   editableWhenSignedIn: boolean
+}
+
+export interface UsageResponse {
+  /** ⚠️ Akademiya Cloud **계정 전체** 사용량. 한도가 계정 단위라서 이 값이 기준이다 */
+  usage: { files: number; bytes: number }
+  limits: { maxFileBytes: number; maxTotalBytes: number; maxFiles: number }
+  /** PyDe 폴더만의 사용량 */
+  folderUsage: { files: number; bytes: number }
+  /** PyDe 폴더에 걸린 상한. null이면 계정 한도만 적용된다 */
+  folderLimit: number | null
+}
+
+/** PyDe 폴더 사용량 + 계정 전체 사용량을 한 번에 받는다 */
+export function getUsage(): Promise<UsageResponse> {
+  return api<UsageResponse>(`/api/cloud/usage?folder=${encodeURIComponent(PYDE_FOLDER)}`)
 }
 
 export function listFiles(): Promise<FileListResponse> {

@@ -1,0 +1,91 @@
+.panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 70;
+  width: 268px;
+  padding: 12px 14px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-sidebar);
+  box-shadow: var(--shadow-md);
+  cursor: default;
+}
+
+.title {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.row + .row {
+  margin-top: 12px;
+}
+
+.rowHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.rowLabel {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.rowValue {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.meter {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.meterFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+
+/* 90%를 넘으면 색으로 알린다 — 숫자만으로는 한도가 가까운 걸 잘 못 알아챈다 */
+.meterFull {
+  background: var(--warning);
+}
+
+.rowSub {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* 사용자가 요구한 안내 문구 자리 — 작게, 그러나 읽을 수는 있게 */
+.note {
+  margin: 12px 0 0;
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.loading,
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.error {
+  color: var(--warning);
+}

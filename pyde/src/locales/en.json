@@ -183,5 +183,23 @@
     "clearOutputs": "Clear outputs",
     "invalidFile": "That is not a valid Jupyter notebook (.ipynb) file.",
     "shortcuts": "Esc command mode · Enter edit · Shift+Enter run and select below · A/B add cell · DD delete · Ctrl+Shift+↑/↓ reorder · M markdown · Y code"
+  },
+  "usage": {
+    "title": "PyDe Cloud usage",
+    "pyde": "PyDe Web",
+    "account": "Akademiya Cloud total",
+    "fileCount": "{{count}} files",
+    "fileCountOf": "{{count}} / {{max}} files",
+    "loading": "Loading usage…",
+    "loadFailed": "Could not load usage.",
+    "note": "PyDe can use only a portion of your total Akademiya Cloud storage."
+  },
+  "policy": {
+    "privacyShort": "Privacy Policy",
+    "termsShort": "Terms of Use",
+    "back": "← Back",
+    "toc": "Contents",
+    "effective": "Effective {{date}}",
+    "home": "Go to PyDe Web"
   }
 }
