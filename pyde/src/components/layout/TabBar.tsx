@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { FileKind } from '../../hooks/useLocalDraft'
 import type { Doc } from '../../hooks/useWorkspace'
 import TabIcon from './TabIcon'
 import { locationOf } from './tabLocation'
@@ -12,7 +13,8 @@ interface Props {
   isDirty: (doc: Doc) => boolean
   onActivate: (docId: string) => void
   onClose: (docId: string) => void
-  onNew: () => void
+  /** + 버튼에서 만들 파일 종류를 고른다 */
+  onNew: (kind: FileKind) => void
   /** @returns 거절 사유(i18n 키 뒷부분). 성공이면 null */
   onRename: (docId: string, name: string) => string | null
 }
@@ -30,7 +32,26 @@ export default function TabBar({
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [draftName, setDraftName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [newMenuOpen, setNewMenuOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const newMenuRef = useRef<HTMLDivElement>(null)
+
+  // 바깥을 누르거나 Esc를 누르면 새 파일 메뉴를 닫는다
+  useEffect(() => {
+    if (!newMenuOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (!newMenuRef.current?.contains(e.target as Node)) setNewMenuOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setNewMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [newMenuOpen])
 
   useEffect(() => {
     if (!renamingId) return
@@ -155,14 +176,45 @@ export default function TabBar({
         )
       })}
 
-      <button
-        className={styles.newTabBtn}
-        onClick={onNew}
-        aria-label={t('header.newFile')}
-        title={t('header.newFile')}
-      >
-        +
-      </button>
+      <div className={styles.newTabWrap} ref={newMenuRef}>
+        <button
+          className={`${styles.newTabBtn} ${newMenuOpen ? styles.newTabBtnOpen : ''}`}
+          onClick={() => setNewMenuOpen((v) => !v)}
+          aria-label={t('header.newFile')}
+          aria-expanded={newMenuOpen}
+          aria-haspopup="menu"
+          title={t('header.newFile')}
+        >
+          +
+        </button>
+
+        {newMenuOpen && (
+          <div className={styles.newMenu} role="menu">
+            <button
+              className={styles.newMenuItem}
+              role="menuitem"
+              onClick={() => {
+                setNewMenuOpen(false)
+                onNew('py')
+              }}
+            >
+              {t('header.newPyFile')}
+              <span className={styles.newMenuExt}>.py</span>
+            </button>
+            <button
+              className={styles.newMenuItem}
+              role="menuitem"
+              onClick={() => {
+                setNewMenuOpen(false)
+                onNew('ipynb')
+              }}
+            >
+              {t('header.newNotebookFile')}
+              <span className={styles.newMenuExt}>.ipynb</span>
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

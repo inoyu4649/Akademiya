@@ -132,8 +132,14 @@
   display: none;
 }
 
-.newTabBtn {
+/* 새 파일 버튼 — 눌러서 종류(.py / .ipynb)를 고른다 */
+.newTabWrap {
+  position: relative;
   flex-shrink: 0;
+  display: flex;
+}
+
+.newTabBtn {
   width: 34px;
   display: inline-flex;
   align-items: center;
@@ -142,7 +148,47 @@
   font-size: 16px;
   line-height: 1;
 }
-.newTabBtn:hover {
+.newTabBtn:hover,
+.newTabBtnOpen {
   background: var(--bg-hover);
   color: var(--text-primary);
+}
+
+.newMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 60;
+  min-width: 172px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-sidebar);
+  box-shadow: var(--shadow-md);
+}
+
+.newMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font-size: 12.5px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.newMenuItem:hover {
+  background: var(--bg-hover);
+}
+
+/* 확장자 배지로 두 항목을 한눈에 구분 */
+.newMenuExt {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
 }

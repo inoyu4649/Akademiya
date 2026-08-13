@@ -293,7 +293,7 @@ export default function IdePage() {
       isDirty={isDirty}
       onActivate={ws.activate}
       onClose={handleCloseTab}
-      onNew={() => handleNew('py')}
+      onNew={handleNew}
       onRename={handleRename}
     />
   )
