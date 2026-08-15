@@ -4,8 +4,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { BootLogLine, BootProgress, WorkerIn, WorkerOut } from './protocol'
 import { KOREAN_FONT_FALLBACK_URL } from './pyodideConfig'
+import { isMobileDevice } from '../utils/device'
 
-export type RuntimeStatus = 'booting' | 'ready' | 'failed'
+export type RuntimeStatus = 'booting' | 'ready' | 'failed' | 'mobileBlocked'
 
 export type RunEvent = Extract<
   WorkerOut,
@@ -40,6 +41,12 @@ export function usePyodideRuntime() {
   const [pythonVersion, setPythonVersion] = useState<string | null>(null)
 
   useEffect(() => {
+    // 워커를 띄우기도 전에 걸러낸다 — 수십 MB 다운로드가 시작되지 않게 하는 게 핵심.
+    if (isMobileDevice()) {
+      setStatus('mobileBlocked')
+      return
+    }
+
     const worker = new Worker(new URL('./pyodide.worker.ts', import.meta.url), { type: 'module' })
     workerRef.current = worker
 

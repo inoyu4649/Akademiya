@@ -55,7 +55,11 @@
       "done": "准备完成"
     },
     "cached": "使用浏览器缓存",
-    "versionMismatch": "有新版本,正在重新下载。"
+    "versionMismatch": "有新版本,正在重新下载。",
+    "mobileBlocked": {
+      "title": "请使用电脑或平板访问",
+      "subtitle": "PyDe Web 需要较宽的代码编辑器界面和较大的运行环境,暂不支持手机。请使用桌面电脑、笔记本电脑或平板电脑的浏览器打开。"
+    }
   },
   "header": {
     "run": "运行",

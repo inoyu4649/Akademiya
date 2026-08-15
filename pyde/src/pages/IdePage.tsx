@@ -402,6 +402,7 @@ export default function IdePage() {
           progress={runtime.progress}
           logs={runtime.logs}
           error={runtime.error}
+          mobileBlocked={runtime.status === 'mobileBlocked'}
           onRetry={() => window.location.reload()}
         />
       )}

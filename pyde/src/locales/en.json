@@ -55,7 +55,11 @@
       "done": "Ready"
     },
     "cached": "Using browser cache",
-    "versionMismatch": "A newer version is available — downloading again."
+    "versionMismatch": "A newer version is available — downloading again.",
+    "mobileBlocked": {
+      "title": "Please use a PC or tablet",
+      "subtitle": "PyDe Web needs a wide code editor and a heavy runtime to run, so it isn't supported on phones. Please open it in a browser on a desktop, laptop, or tablet."
+    }
   },
   "header": {
     "run": "Run",

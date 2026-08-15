@@ -7,6 +7,7 @@ interface Props {
   progress: BootProgress
   logs: BootLogLine[]
   error: string | null
+  mobileBlocked: boolean
   onRetry: () => void
 }
 
@@ -14,7 +15,7 @@ function formatMB(bytes: number): string {
   return (bytes / 1024 / 1024).toFixed(1)
 }
 
-export default function BootSplash({ progress, logs, error, onRetry }: Props) {
+export default function BootSplash({ progress, logs, error, mobileBlocked, onRetry }: Props) {
   const { t } = useTranslation()
   const [showDetails, setShowDetails] = useState(false)
   const logBoxRef = useRef<HTMLDivElement>(null)
@@ -44,8 +45,12 @@ export default function BootSplash({ progress, logs, error, onRetry }: Props) {
 
       <div className={styles.center}>
         <img className={styles.logo} src="/pyde_logo.png" alt="" />
-        <div className={styles.title}>{error ? t('boot.failed') : t('boot.title')}</div>
-        {error ? (
+        <div className={styles.title}>
+          {mobileBlocked ? t('boot.mobileBlocked.title') : error ? t('boot.failed') : t('boot.title')}
+        </div>
+        {mobileBlocked ? (
+          <div className={styles.subtitle}>{t('boot.mobileBlocked.subtitle')}</div>
+        ) : error ? (
           <div className={styles.errorBox}>
             <div className={styles.errorDetail}>{error}</div>
             <button className="btn btnPrimary" onClick={onRetry}>
@@ -57,7 +62,9 @@ export default function BootSplash({ progress, logs, error, onRetry }: Props) {
         )}
       </div>
 
-      {/* 실패했을 때도 로그는 계속 볼 수 있어야 한다 — 원인이 거기 적혀 있다 */}
+      {/* 모바일 차단 화면은 다운로드/로그 자체가 없다 — 애초에 워커를 띄우지 않았다 */}
+      {mobileBlocked ? null : (
+      /* 실패했을 때도 로그는 계속 볼 수 있어야 한다 — 원인이 거기 적혀 있다 */
       <div className={styles.bottom}>
         {!error && (
           <>
@@ -112,6 +119,7 @@ export default function BootSplash({ progress, logs, error, onRetry }: Props) {
           </div>
         )}
       </div>
+      )}
     </div>
   )
 }
