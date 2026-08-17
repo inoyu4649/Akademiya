@@ -213,8 +213,7 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
               </div>
               <button className="akademiya-login-btn" onClick={handleAkademiyaLogin}>
                 <img
-                  src="https://akademiya.kr/brand/akademiya-icon-32.png"
-                  srcSet="https://akademiya.kr/brand/akademiya-icon-64.png 2x"
+                  src="https://developers.google.com/static/identity/images/g-logo.png"
                   width="20" height="20" alt=""
                 />
                 <span>{t('auth.ak.loginBtn')}</span>
