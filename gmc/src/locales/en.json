@@ -4,7 +4,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS Auto-Application",
-    "version": "v3.0.6",
+    "version": "v3.0.7",
     "contact": "Contact: 022207@hafs.hs.kr",
     "madeWith": "Made with Claude Code",
     "loading": "Verifying session...",
@@ -36,7 +36,7 @@
   },
   "nav": {
     "home": "Home",
-    "apply": "Apply PASS",
+    "apply": "Manual PASS Apply",
     "history": "History",
     "dashboard": "Dashboard",
     "adminGroup": "Admin Tools",

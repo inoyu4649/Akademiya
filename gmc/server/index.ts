@@ -581,8 +581,10 @@ setInterval(async () => {
   const suspendPeriod = await getActiveSuspendPeriodForDate(today);
   const isSuspendStart = suspendPeriod !== null && suspendPeriod.start_date === today;
 
+  // 중단 기간(방학 등) 중에는 이미 suspend_start 안내를 한 번 보냈으므로,
+  // 그 기간 내 금/토/일/공휴일마다 holiday_start를 중복으로 또 보내면 안 된다.
   let isFirstHolidayDay = false;
-  if (!isSuspendStart) {
+  if (!suspendPeriod) {
     const todayDay = now.getDay();
     const todayIsHoliday = todayDay === 5 || todayDay === 6 || todayDay === 0 || isHolidayCached(today);
     if (todayIsHoliday) {

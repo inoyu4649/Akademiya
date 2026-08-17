@@ -4,7 +4,7 @@
   "app": {
     "title": "GMCAuto",
     "subtitle": "GMC PASS 自动申请程序",
-    "version": "v3.0.6",
+    "version": "v3.0.7",
     "contact": "联系方式: 022207@hafs.hs.kr",
     "madeWith": "由 Claude Code 制作",
     "loading": "正在验证登录信息...",
@@ -36,7 +36,7 @@
   },
   "nav": {
     "home": "首页",
-    "apply": "申请 PASS",
+    "apply": "手动申请 PASS",
     "history": "申请记录",
     "dashboard": "管理面板",
     "adminGroup": "管理员工具",
