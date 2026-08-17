@@ -83,8 +83,10 @@ const AKADEMIYA_OAUTH_SCOPE = 'openid profile email';
 const GMC_PUBLIC_API_KEY = process.env.GMC_PUBLIC_API_KEY || '';
 
 // ── GMCAuto API 키 (개발자 모드) ────────────────────────────────────────
-// 신청 여부(bool)는 항상 포함되는 필수 스코프. 예약 시간(schedule_time)은 발급자 role 1
-// 이상, 신청 내역 전체(full_history)는 role 2 이상에서만 체크박스로 켤 수 있다. 발급 이후
+// 자동 신청 등록 여부(hasApplied)·오늘 성공 여부(isSucceededToday)는 항상 포함되는
+// 필수 정보(스코프 없이 role 0부터). 예약 시간(reservedTime)과 특정 날짜 성공 여부
+// (isSucceeded, ?date= 필요)는 schedule_time 스코프로 함께 묶여 발급자 role 1 이상,
+// 신청 내역 전체(full_history)는 role 2 이상에서만 체크박스로 켤 수 있다. 발급 이후
 // 발급자 role이 강등돼도 공개 API 응답 시점에 다시 캡하므로(getApiKeyByKeyId의 owner_role
 // 참조) 오래된 키가 과도한 권한을 유지하는 일은 없다.
 type ApiKeyScope = 'schedule_time' | 'full_history';
@@ -1654,9 +1656,11 @@ app.delete('/api/developer/keys/:id', async (req: Request, res: Response) => {
   return res.json({ success: true });
 });
 
-// ========== GMCAuto 공개 API v1 ==========
+// ========== GMCAuto 공개 API v1 (스키마 버전 1.1) ==========
 // 다른 서비스(Akademiya 등)가 학교 홈페이지를 직접 조회해 동시접속 차단을 유발하지 않도록,
-// 서버-서버 전용으로 신청 여부/예약 시간/신청 내역을 제공한다. 세션이 아닌 API Key로 인증.
+// 서버-서버 전용으로 자동 신청 등록 여부/예약 시간/성공 여부/신청 내역을 제공한다.
+// 세션이 아닌 API Key로 인증. URL은 /v1 그대로 유지하고, 응답 스키마만 1.1로 올렸다
+// (기존 API 사용처가 없어 breaking change로 처리 — hasApplied 의미 변경).
 app.get('/api/public/v1/status/:studentNo', async (req: Request, res: Response) => {
   const apiKey = req.header('X-Api-Key') || '';
   const studentNo = req.params.studentNo as string;
@@ -1683,14 +1687,27 @@ app.get('/api/public/v1/status/:studentNo', async (req: Request, res: Response) 
     await bumpApiKeyUsage(record.id);
   }
 
+  const dateParam = typeof req.query.date === 'string' ? req.query.date : null;
+  if (dateParam && !/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+    return res.status(400).json({ success: false, message: 'date는 YYYY-MM-DD 형식이어야 합니다.' });
+  }
+
   try {
+    const recurring = await getRecurringByStudent(studentNo);
+    const hasApplied = !!recurring;
+
     const todayRow = await getMySchedule(studentNo, todayStr());
-    const hasApplied = !!(todayRow?.executed && todayRow.result_ok);
+    const isSucceededToday = !!(todayRow?.executed && todayRow.result_ok);
 
     let reservedTime: string | null = null;
     if (scopes.includes('schedule_time')) {
-      const recurring = await getRecurringByStudent(studentNo);
       reservedTime = recurring?.time ?? null;
+    }
+
+    let isSucceeded: boolean | null = null;
+    if (dateParam && scopes.includes('schedule_time')) {
+      const dateRow = await getMySchedule(studentNo, dateParam);
+      isSucceeded = !!(dateRow?.executed && dateRow.result_ok);
     }
 
     let history: { applyDate: string; scheduleTime: string; timeCode: string; success: boolean; message: string | null }[] = [];
@@ -1705,7 +1722,7 @@ app.get('/api/public/v1/status/:studentNo', async (req: Request, res: Response) 
       }));
     }
 
-    return res.json({ success: true, data: { studentNo, hasApplied, reservedTime, history } });
+    return res.json({ success: true, data: { studentNo, hasApplied, isSucceededToday, isSucceeded, reservedTime, history } });
   } catch (err) {
     console.error('[공개 API]', (err as Error).message);
     return res.status(500).json({ success: false, message: `서버 오류: ${(err as Error).message}` });

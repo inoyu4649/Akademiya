@@ -6,10 +6,10 @@ import styles from './Developer.module.css'
 // ── 코드 예제 (엔드포인트/헤더/JSON 필드명은 언어에 관계없이 동일하므로 번역하지 않음) ──
 const AUTH_EXAMPLE = `X-Api-Key: {keyId}.{secret}`
 
-const ENDPOINT_EXAMPLE = `GET https://gmc.akademiya.kr/api/public/v1/status/{studentNo}
+const ENDPOINT_EXAMPLE = `GET https://gmc.akademiya.kr/api/public/v1/status/{studentNo}[?date=YYYY-MM-DD]
 X-Api-Key: {keyId}.{secret}`
 
-const RESPONSE_EXAMPLE = `GET /api/public/v1/status/20301
+const RESPONSE_EXAMPLE = `GET /api/public/v1/status/20301?date=2026-07-10
 X-Api-Key: 1a2b3c4d....ef56
 
 → 200 OK
@@ -18,6 +18,8 @@ X-Api-Key: 1a2b3c4d....ef56
   "data": {
     "studentNo": "20301",
     "hasApplied": true,
+    "isSucceededToday": true,
+    "isSucceeded": true,
     "reservedTime": "13:20",
     "history": [
       {
@@ -65,12 +67,15 @@ export default function ApiKeyGuidePage() {
           <p className={styles.guideParagraph}>
             GMCAuto 공개 API는 Akademiya 등 다른 서비스가 학교 홈페이지에 직접 동시 접속해 차단을 유발하지 않도록,
             GMCAuto가 이미 확보한 신청 데이터를 서버-서버 전용으로 제공하는 API입니다.
+            (엔드포인트 URL은 <code>/v1</code>을 유지하며, 현재 응답 스키마 버전은 <strong>1.1</strong>입니다.)
           </p>
           <p className={styles.guideParagraph}>
             세션 쿠키가 아닌 API Key 헤더로 인증하며, 학번 하나를 기준으로 다음 정보를 조회할 수 있습니다.
           </p>
           <ul className={styles.guideList}>
-            <li>오늘 신청 성공 여부(<code>hasApplied</code>) — 항상 포함</li>
+            <li>자동 신청 등록 여부(<code>hasApplied</code>) — 항상 포함</li>
+            <li>오늘 신청 성공 여부(<code>isSucceededToday</code>) — 항상 포함</li>
+            <li>특정 날짜 신청 성공 여부(<code>isSucceeded</code>, <code>?date=</code> 파라미터 필요) — 선택 스코프</li>
             <li>반복 등록된 예약 시간(<code>reservedTime</code>) — 선택 스코프</li>
             <li>최근 신청 내역 20건(<code>history</code>) — 선택 스코프</li>
           </ul>
@@ -99,14 +104,15 @@ export default function ApiKeyGuidePage() {
           <pre className={styles.codeBlock}>{ENDPOINT_EXAMPLE}</pre>
           <p className={styles.guideParagraph}>
             <code>studentNo</code>는 GMCAuto에 등록된 학번 문자열입니다. 등록된 적 없는 학번을 조회해도 오류가 아니라
-            "신청 내역 없음" 상태(<code>hasApplied: false</code> 등)로 응답합니다.
+            "신청 내역 없음" 상태(<code>hasApplied: false</code> 등)로 응답합니다. 특정 날짜의 성공 여부가 필요하면
+            <code>?date=YYYY-MM-DD</code> 쿼리 파라미터를 추가하세요(<code>isSucceeded</code> 필드에 반영됩니다).
           </p>
         </Section>
 
         <Section title="스코프와 권한">
           <p className={styles.guideParagraph}>
-            키를 발급할 때 아래 선택 스코프 중 필요한 항목만 켤 수 있습니다. <code>hasApplied</code>는 스코프와 무관하게
-            항상 포함되는 필수 정보입니다.
+            키를 발급할 때 아래 선택 스코프 중 필요한 항목만 켤 수 있습니다. <code>hasApplied</code>/<code>isSucceededToday</code>는
+            스코프와 무관하게 항상 포함되는 필수 정보입니다.
           </p>
           <div className={styles.guideTableWrap}>
             <table className={styles.guideTable}>
@@ -120,12 +126,22 @@ export default function ApiKeyGuidePage() {
               <tbody>
                 <tr>
                   <td>(없음, 항상 포함)</td>
-                  <td><code>hasApplied</code> — 오늘 신청 성공 여부</td>
+                  <td><code>hasApplied</code> — 자동 신청 등록 여부</td>
+                  <td>제한 없음</td>
+                </tr>
+                <tr>
+                  <td>(없음, 항상 포함)</td>
+                  <td><code>isSucceededToday</code> — 오늘 신청 성공 여부</td>
                   <td>제한 없음</td>
                 </tr>
                 <tr>
                   <td><code>schedule_time</code></td>
                   <td><code>reservedTime</code> — 반복 등록된 예약 시간</td>
+                  <td>role 1 이상 ("통계 보기" 이상)</td>
+                </tr>
+                <tr>
+                  <td><code>schedule_time</code></td>
+                  <td><code>isSucceeded</code> — 지정한 날짜(<code>?date=</code>)의 신청 성공 여부</td>
                   <td>role 1 이상 ("통계 보기" 이상)</td>
                 </tr>
                 <tr>
@@ -147,8 +163,9 @@ export default function ApiKeyGuidePage() {
           <pre className={styles.codeBlock}>{RESPONSE_EXAMPLE}</pre>
           <p className={styles.guideParagraph}>
             키에 <code>schedule_time</code>/<code>full_history</code> 스코프가 없으면 해당 필드는 각각 <code>null</code>,
-            <code>[]</code>로 내려옵니다. 이 값은 "권한이 없어서 비어 있는 것"과 "실제로 예약/이력이 없는 것"을 구분하지 않으므로,
-            스코프가 없는 필드는 애초에 응답에서 사용하지 않도록 클라이언트를 구성하세요.
+            <code>[]</code>로 내려옵니다. <code>isSucceeded</code>는 <code>?date=</code>를 주지 않았거나 <code>schedule_time</code>
+            스코프가 없으면 <code>null</code>입니다. 이 값들은 "권한이 없어서 비어 있는 것"과 "실제로 예약/이력/성공 기록이 없는 것"을
+            구분하지 않으므로, 스코프가 없는 필드는 애초에 응답에서 사용하지 않도록 클라이언트를 구성하세요.
           </p>
         </Section>
 
@@ -162,6 +179,10 @@ export default function ApiKeyGuidePage() {
                 </tr>
               </thead>
               <tbody>
+                <tr>
+                  <td><code>400</code></td>
+                  <td><code>date</code> 쿼리 파라미터 형식이 <code>YYYY-MM-DD</code>가 아닙니다.</td>
+                </tr>
                 <tr>
                   <td><code>401</code></td>
                   <td><code>X-Api-Key</code> 헤더가 없거나, 형식(<code>keyId.secret</code>)이 잘못되었거나, 키가 유효하지 않습니다.</td>
@@ -192,7 +213,7 @@ export default function ApiKeyGuidePage() {
           <ul className={styles.guideList}>
             <li>이 API는 서버-서버 전용입니다. 브라우저에서 직접 호출하거나 프런트엔드 코드에 키를 노출하지 마세요.</li>
             <li>호출할 때마다 키의 누적 호출 수(<code>request_count</code>)가 기록되며, 개발자 도구 화면에서 확인할 수 있습니다. 현재 별도의 초당/분당 호출 제한(rate limit)은 적용되어 있지 않지만, 과도한 트래픽이나 비정상적인 사용 패턴이 확인되면 키가 정지될 수 있습니다.</li>
-            <li><code>hasApplied</code>는 오늘 날짜 기준 신청 성공 여부만 나타냅니다. 과거 날짜의 성공 여부가 필요하면 <code>full_history</code> 스코프의 <code>history</code> 배열을 사용하세요.</li>
+            <li><strong>(1.1 변경)</strong> <code>hasApplied</code>의 의미가 "오늘 신청 성공 여부"에서 "자동 신청이 등록되어 있는지 여부"로 바뀌었습니다. 오늘 신청 성공 여부는 <code>isSucceededToday</code>를 사용하세요. 특정 날짜의 성공 여부는 <code>?date=</code>와 <code>isSucceeded</code>(role 1 이상 필요), 혹은 <code>full_history</code> 스코프의 <code>history</code> 배열을 사용하세요.</li>
           </ul>
         </Section>
       </div>
