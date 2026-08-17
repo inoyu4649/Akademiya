@@ -19,7 +19,7 @@
     "sessionExpired": "Your session has expired. Please sign in again.",
     "viaAkademiya": "Via Akademiya (GMCAuto 3's parent service)",
     "ak": {
-      "desc": "Sign in with Akademiya account",
+      "desc": "Sign in with School Google Account",
       "descSub": "After linking your going.hafs.hs.kr credentials once, you will be signed in automatically.",
       "descSub2": "Existing GMCAuto users will retain their scheduled times automatically when linking via student number.",
       "loginBtn": "Sign in with School Google Account",

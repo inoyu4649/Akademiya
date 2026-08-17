@@ -19,9 +19,9 @@
     "sessionExpired": "会话已过期，已自动退出登录。请重新登录。",
     "viaAkademiya": "通过 Akademiya（GMCAuto 3 的上级服务）",
     "ak": {
-      "desc": "使用 Akademiya 账户登录",
+      "desc": "使用学校 Google 账户登录",
       "descSub": "关联 going.hafs.hs.kr 凭据一次后，将自动登录。",
-      "descSub2": "已有 GMCAuto 账户的用户在通过 Akademiya 关联时，输入学号即可自动保留申请时间。",
+      "descSub2": "已有 GMCAuto 账户的用户在关联学校 Google 账户时，输入学号即可自动保留申请时间。",
       "loginBtn": "使用学校 Google 账户登录",
       "verifying": "正在等待 Going HAFS 响应...",
       "verifyFailed": "代码验证失败，请重试。",

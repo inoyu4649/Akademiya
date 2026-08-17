@@ -27,9 +27,9 @@
     "sessionExpired": "세션이 만료되어 자동 로그아웃되었습니다. 다시 로그인해주세요.",
     "viaAkademiya": "Akademiya(GMCAuto 3의 상위 서비스) 경유",
     "ak": {
-      "desc": "Akademiya 계정으로 로그인",
+      "desc": "학교 Google 계정으로 로그인",
       "descSub": "최초 1회 going.hafs.hs.kr 비밀번호 연동 후 자동 로그인됩니다.",
-      "descSub2": "기존 GMCAuto 계정 사용자는 Akademiya 연동 시 학번 입력으로 자동으로 신청 시간이 유지됩니다.",
+      "descSub2": "기존 GMCAuto 계정 사용자는 학교 Google 계정 연동 시 학번 입력으로 자동으로 신청 시간이 유지됩니다.",
       "loginBtn": "학교 Google 계정으로 로그인",
       "verifying": "Going HAFS 응답 대기 중...",
       "verifyFailed": "코드 검증 실패. 다시 시도해주세요.",

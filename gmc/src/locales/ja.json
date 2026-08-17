@@ -19,9 +19,9 @@
     "sessionExpired": "セッションが期限切れになりました。再ログインしてください。",
     "viaAkademiya": "Akademiya（GMCAuto 3 の上位サービス）経由",
     "ak": {
-      "desc": "Akademiya アカウントでログイン",
+      "desc": "学校の Google アカウントでログイン",
       "descSub": "going.hafs.hs.kr の認証情報を一度連携すると、次回から自動ログインされます。",
-      "descSub2": "既存の GMCAuto アカウントをお持ちの方は、Akademiya 連携時に学籍番号を入力すると申請時間が自動的に引き継がれます。",
+      "descSub2": "既存の GMCAuto アカウントをお持ちの方は、学校の Google アカウント連携時に学籍番号を入力すると申請時間が自動的に引き継がれます。",
       "loginBtn": "学校の Google アカウントでログイン",
       "verifying": "Going HAFS の応答を待っています...",
       "verifyFailed": "コード認証に失敗しました。もう一度お試しください。",
