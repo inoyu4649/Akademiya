@@ -31,7 +31,6 @@
       "descSub": "최초 1회 going.hafs.hs.kr 비밀번호 연동 후 자동 로그인됩니다.",
       "descSub2": "기존 GMCAuto 계정 사용자는 Akademiya 연동 시 학번 입력으로 자동으로 신청 시간이 유지됩니다.",
       "loginBtn": "학교 Google 계정으로 로그인",
-      "hafsOnly": "Akademiya에 HAFS 조직으로 가입된 계정만 사용 가능합니다.",
       "verifying": "Going HAFS 응답 대기 중...",
       "verifyFailed": "코드 검증 실패. 다시 시도해주세요.",
       "relink": "저장된 비밀번호로 로그인에 실패했습니다. 비밀번호를 다시 입력해주세요.",

@@ -221,9 +221,6 @@ export default function LoginPage({ onLogin, sessionExpired, theme, toggleTheme 
               <p style={{ textAlign: 'center', marginTop: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
                 {t('auth.viaAkademiya')}
               </p>
-              <p style={{ textAlign: 'center', marginTop: '4px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                {t('auth.ak.hafsOnly')}
-              </p>
             </>
           )}
 

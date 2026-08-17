@@ -23,7 +23,6 @@
       "descSub": "关联 going.hafs.hs.kr 凭据一次后，将自动登录。",
       "descSub2": "已有 GMCAuto 账户的用户在通过 Akademiya 关联时，输入学号即可自动保留申请时间。",
       "loginBtn": "使用学校 Google 账户登录",
-      "hafsOnly": "仅限已加入 Akademiya HAFS 组织的账户使用。",
       "verifying": "正在等待 Going HAFS 响应...",
       "verifyFailed": "代码验证失败，请重试。",
       "relink": "使用保存的密码自动登录失败，请重新输入密码。",
