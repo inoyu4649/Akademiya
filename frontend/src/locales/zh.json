@@ -155,6 +155,10 @@
       "title": "Akademiya 账户中心",
       "desc": "一目了然地管理与 Akademiya 关联的所有服务"
     },
+    "pydeWeb": {
+      "title": "PyDe Web",
+      "desc": "无需安装，在浏览器中即可学习的 Python 教育用在线 IDE"
+    },
     "gmcAuto": {
       "title": "GMCAuto 3",
       "badge": "仅限 HAFS 账号",

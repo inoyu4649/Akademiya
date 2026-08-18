@@ -7,6 +7,7 @@ import { useAuthStore } from "../../store/auth.store";
 // 빌드 시 파일명에 콘텐츠 해시가 붙어, 이미지를 교체하면 URL도 바뀌므로
 // 브라우저·CDN 캐시에 옛 이미지가 남는 일이 없다.
 import gmcLogo from "../../assets/logo_gmc.png";
+import pydeLogo from "../../assets/logo_pyde.png";
 import imsiQuizLogo from "../../assets/imsiquiz_logo.png";
 import hyProjectLogo from "../../assets/hyproj_logo.png";
 import styles from "./DashboardPage.module.css";
@@ -123,6 +124,13 @@ export default function DashboardPage() {
           icon={<IconAccount />}
           title={t("dashboard.account.title")}
           desc={t("dashboard.account.desc")}
+        />
+
+        <ServiceCard
+          href="https://pyde.akademiya.kr"
+          icon={<img src={pydeLogo} alt="" className={styles.iconImg} />}
+          title={t("dashboard.pydeWeb.title")}
+          desc={t("dashboard.pydeWeb.desc")}
         />
 
         {isHafsOrgMember && (

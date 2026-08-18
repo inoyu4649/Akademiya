@@ -155,6 +155,10 @@
       "title": "Akademiya Account Center",
       "desc": "Manage every service connected to Akademiya, all in one view"
     },
+    "pydeWeb": {
+      "title": "PyDe Web",
+      "desc": "Learn Python right in your browser — an educational online IDE, no install required"
+    },
     "gmcAuto": {
       "title": "GMCAuto 3",
       "badge": "HAFS accounts only",

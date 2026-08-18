@@ -155,6 +155,10 @@
       "title": "Akademiya 계정 센터",
       "desc": "Akademiya와 연결된 서비스들을 한눈에 관리하기"
     },
+    "pydeWeb": {
+      "title": "PyDe Web",
+      "desc": "설치 없이 브라우저에서 바로 배우는 파이썬, 교육용 온라인 IDE"
+    },
     "gmcAuto": {
       "title": "GMCAuto 3",
       "badge": "HAFS 계정 전용",
