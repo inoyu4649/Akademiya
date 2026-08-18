@@ -4,6 +4,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import AppHeader from '../components/layout/AppHeader'
 import EditorToolbar from '../components/layout/EditorToolbar'
 import IdeLayout from '../components/layout/IdeLayout'
+import PolicyFooter from '../components/layout/PolicyFooter'
 import TabBar from '../components/layout/TabBar'
 import BootSplash from '../components/boot/BootSplash'
 import CodeEditor from '../components/editor/CodeEditor'
@@ -31,6 +32,7 @@ import {
   type CloudFileMeta,
 } from '../api/cloud.api'
 import { ApiError } from '../api/client'
+import { IS_MOBILE } from '../utils/device'
 import { extensionOf, validateFileName } from '../utils/fileName'
 
 export default function IdePage() {
@@ -383,6 +385,9 @@ export default function IdePage() {
     />
   )
 
+  // 처리방침·약관은 데스크톱에서는 헤더에 있다 — 휴대폰에서만 맨 아래 줄로 내린다
+  const footer = IS_MOBILE ? <PolicyFooter /> : undefined
+
   const tabs = (
     <TabBar
       docs={ws.docs}
@@ -402,7 +407,8 @@ export default function IdePage() {
           progress={runtime.progress}
           logs={runtime.logs}
           error={runtime.error}
-          mobileBlocked={runtime.status === 'mobileBlocked'}
+          mobileDataNotice={runtime.status === 'mobileDataNotice'}
+          onAcknowledgeMobileData={runtime.acknowledgeMobileData}
           onRetry={() => window.location.reload()}
         />
       )}
@@ -425,6 +431,7 @@ export default function IdePage() {
               onRunningChange={setNbRunning}
             />
           }
+          footer={footer}
         />
       ) : (
         <IdeLayout
@@ -443,12 +450,16 @@ export default function IdePage() {
           canvas={<CanvasPanel artifacts={runner.artifacts} />}
           terminal={
             <TerminalPanel
-              lines={runner.lines}
+              onOutput={runner.onOutput}
               status={runner.status}
               elapsedMs={runner.elapsedMs}
+              waitingForInput={runner.waitingForInput}
+              onSendStdin={runner.sendStdin}
+              onStop={handleStop}
               onClear={runner.clear}
             />
           }
+          footer={footer}
         />
       )}
 

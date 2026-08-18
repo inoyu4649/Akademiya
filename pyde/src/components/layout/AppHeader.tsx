@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/authContext'
+import { IS_MOBILE } from '../../utils/device'
 import { SUPPORTED_LANGS, setLanguage, type SupportedLang } from '../../i18n'
 import UsagePanel from './UsagePanel'
 import styles from './AppHeader.module.css'
@@ -71,16 +72,20 @@ export default function AppHeader({ children }: Props) {
 
       <div className={styles.right}>
         {/* 개인정보 처리방침은 「개인정보 처리방침 작성지침」상 로그인 여부와 관계없이
-            첫 화면에서 바로 찾을 수 있어야 한다 — 그래서 헤더에 상시 노출한다. */}
-        <nav className={styles.policyLinks}>
-          <Link className={styles.policyLink} to="/privacy">
-            {t('policy.privacyShort')}
-          </Link>
-          <span aria-hidden="true">·</span>
-          <Link className={styles.policyLink} to="/terms">
-            {t('policy.termsShort')}
-          </Link>
-        </nav>
+            첫 화면에서 바로 찾을 수 있어야 한다 — 그래서 헤더에 상시 노출한다.
+            ⚠️ 휴대폰에서만 예외로 여기서 빼는데, 없애는 게 아니라 PolicyFooter로 옮기는 것이다
+               (좁은 헤더에 다 밀어 넣으면 줄이 무너진다). 첫 화면 노출 요건은 그대로 지켜진다. */}
+        {!IS_MOBILE && (
+          <nav className={styles.policyLinks}>
+            <Link className={styles.policyLink} to="/privacy">
+              {t('policy.privacyShort')}
+            </Link>
+            <span aria-hidden="true">·</span>
+            <Link className={styles.policyLink} to="/terms">
+              {t('policy.termsShort')}
+            </Link>
+          </nav>
+        )}
 
         <select
           className={styles.langSelect}

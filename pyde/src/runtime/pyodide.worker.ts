@@ -34,8 +34,9 @@ interface PyodideInterface {
     names: string[],
     options?: { messageCallback?: (msg: string) => void; errorCallback?: (msg: string) => void }
   ): Promise<void>
-  setStdout(opts: { batched: (s: string) => void }): void
-  setStderr(opts: { batched: (s: string) => void }): void
+  setStdout(opts: { write: (buffer: Uint8Array) => number }): void
+  setStderr(opts: { write: (buffer: Uint8Array) => number }): void
+  setStdin(opts: { stdin: () => string | null }): void
   setInterruptBuffer(buffer: Uint8Array): void
   FS: {
     mkdirTree(path: string): void
@@ -212,6 +213,45 @@ async function fetchFont(): Promise<ArrayBuffer> {
 let pyodide: PyodideInterface | null = null
 let interruptBuffer: Uint8Array | null = null
 
+// ── stdout / stderr ────────────────────────────────────────────────────────
+// ⚠️ 스트리밍 디코더를 스트림마다 하나씩 들고 있어야 한다. Python이 flush하는 지점은
+//    문자 경계와 무관해서, 한글(UTF-8 3바이트)이 청크 사이에서 잘릴 수 있다.
+//    `{ stream: true }`가 남은 바이트를 물고 있다가 다음 청크에 이어 붙여준다.
+const stdoutDecoder = new TextDecoder('utf-8')
+const stderrDecoder = new TextDecoder('utf-8')
+
+function pipe(type: 'stdout' | 'stderr', decoder: TextDecoder, buffer: Uint8Array): number {
+  const text = decoder.decode(buffer, { stream: true })
+  // 청크가 통째로 미완성 문자였으면 빈 문자열이 나온다 — 굳이 보내지 않는다
+  if (text) post({ type, runId: currentRunId, text })
+  return buffer.length
+}
+
+// ── input() 동기 대기 ──────────────────────────────────────────────────────
+// Pyodide의 setStdin({stdin})은 값을 "동기적으로" 반환해야 한다 — Python이
+// input()을 호출하는 그 순간 워커 스레드 자체가 결과를 기다려야 하기 때문이다.
+// 메인 스레드는 요청이 와도 즉시 답을 줄 수 없으므로(사용자가 타이핑해야 함),
+// interruptBuffer와 같은 패턴으로 SharedArrayBuffer + Atomics.wait를 쓴다.
+// control[0]: 0=대기 중, 1=데이터 있음, 2=EOF/취소. control[1]: data에 쓴 바이트 길이.
+const STDIN_MAX_BYTES = 65536
+let stdinControl: Int32Array | null = null
+let stdinData: Uint8Array | null = null
+
+function stdinRead(): string | null {
+  if (!stdinControl || !stdinData) return null // SAB 미지원 환경 — input()은 즉시 EOF로 실패한다
+  // 대기 상태로 리셋한 "다음"에 요청 메시지를 보내야 한다. 순서가 바뀌면 메인 스레드가
+  // 응답을 그새 써버려도 우리가 그걸 0으로 덮어써 영원히 못 깨어나는 레이스가 생긴다.
+  Atomics.store(stdinControl, 0, 0)
+  post({ type: 'stdin-request', runId: currentRunId })
+  // 워커 스레드를 통째로 블로킹한다(워커라서 허용된다). 메인 스레드가 그 사이에 이미
+  // 값을 써 뒀다면 Atomics.wait이 'not-equal'로 즉시 반환하므로 놓치는 경우는 없다.
+  Atomics.wait(stdinControl, 0, 0)
+  if (Atomics.load(stdinControl, 0) !== 1) return null // 2 = EOF/취소(Stop 등) → input()이 EOFError
+  const len = Atomics.load(stdinControl, 1)
+  // Python의 readline은 줄바꿈으로 끝나는 한 줄을 기대한다
+  return new TextDecoder().decode(stdinData.slice(0, len)) + '\n'
+}
+
 async function boot(): Promise<void> {
   try {
     // ── 캐시 확인 + 패키지 목록 결정 ──────────────────────────────────────
@@ -291,12 +331,28 @@ async function boot(): Promise<void> {
       interruptBuffer = new Uint8Array(sab)
       pyodide.setInterruptBuffer(interruptBuffer)
       post({ type: 'interrupt-buffer', buffer: sab })
+
+      // input() 동기 대기용 버퍼도 같은 조건(cross-origin isolation)에서만 만들 수 있다.
+      const controlSab = new SharedArrayBuffer(8) // Int32 2개: [상태, 길이]
+      const dataSab = new SharedArrayBuffer(STDIN_MAX_BYTES)
+      stdinControl = new Int32Array(controlSab)
+      stdinData = new Uint8Array(dataSab)
+      post({ type: 'stdin-buffers', control: controlSab, data: dataSab })
     } else {
-      log('SharedArrayBuffer를 쓸 수 없어 실행 중지 기능이 비활성화됩니다', 'warn')
+      log('SharedArrayBuffer를 쓸 수 없어 실행 중지·input() 기능이 비활성화됩니다', 'warn')
     }
 
-    pyodide.setStdout({ batched: (text) => post({ type: 'stdout', runId: currentRunId, text }) })
-    pyodide.setStderr({ batched: (text) => post({ type: 'stderr', runId: currentRunId, text }) })
+    // ⚠️ `batched`가 아니라 `write`를 쓴다. batched는 Pyodide가 JS 쪽에서 `\n`을 만날
+    //    때까지 문자열을 붙들고 있어서, **줄바꿈 없이 끝나는 출력이 화면에 영영 안 나온다.**
+    //    `input("이름: ")`의 프롬프트가 정확히 그런 경우라 입력을 기다리는데 뭘 묻는지
+    //    안 보였고, 그 다음 실행의 print가 프롬프트와 한 줄로 붙어 나왔다(실측으로 확인).
+    //    write는 Python이 flush할 때마다 원본 바이트를 그대로 준다 — 터미널이 원하는 형태다.
+    pyodide.setStdout({ write: (buffer) => pipe('stdout', stdoutDecoder, buffer) })
+    pyodide.setStderr({ write: (buffer) => pipe('stderr', stderrDecoder, buffer) })
+    // isatty를 켜지 않는다 — CPython의 input()은 stdin이 tty가 아니면 프롬프트를 sys.stdout에
+    // 쓰고 flush한 뒤 readline을 부른다(우리 파이프를 그대로 탄다). tty로 속이면 C 레벨
+    // PyOS_Readline 경로로 빠져 이 핸들러를 건너뛸 수 있다.
+    pyodide.setStdin({ stdin: stdinRead })
 
     // ── 패키지 적재 + 예열 ─────────────────────────────────────────────────
     indeterminate('warmup')
@@ -448,6 +504,7 @@ async function run(runId: number, code: string): Promise<void> {
 
   currentRunId = runId
   if (interruptBuffer) interruptBuffer[0] = 0 // 이전 실행의 중지 신호 초기화
+  if (stdinControl) Atomics.store(stdinControl, 0, 0) // 이전 실행이 남긴 EOF/취소 신호도 함께 초기화
 
   const started = performance.now()
   try {

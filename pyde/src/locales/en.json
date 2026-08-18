@@ -56,9 +56,10 @@
     },
     "cached": "Using browser cache",
     "versionMismatch": "A newer version is available — downloading again.",
-    "mobileBlocked": {
-      "title": "Please use a PC or tablet",
-      "subtitle": "PyDe Web needs a wide code editor and a heavy runtime to run, so it isn't supported on phones. Please open it in a browser on a desktop, laptop, or tablet."
+    "mobileDataNotice": {
+      "title": "Mobile data notice",
+      "subtitle": "Setting up the Python environment downloads about 50MB the first time. This may use mobile data, so we recommend connecting to Wi-Fi first. (Later visits are much faster thanks to caching.)",
+      "continue": "Got it, continue"
     }
   },
   "header": {

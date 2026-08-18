@@ -64,6 +64,34 @@
   background: var(--bg-sidebar);
 }
 
+/* ── 맨 아래 한 줄(휴대폰의 처리방침·약관) ──────────────────────────────────
+   footer가 실제로 주입됐을 때만 행을 추가한다. 위 기본 규칙의 grid-template-*를
+   통째로 다시 쓰는 방식이라, 행 정의를 고칠 때는 두 곳을 함께 맞춰야 한다. */
+.withFooter {
+  --policy-footer-height: 30px;
+}
+
+.layout.withFooter {
+  grid-template-areas:
+    'header header'
+    'tabs tabs'
+    'editor canvas'
+    'terminal terminal'
+    'footer footer';
+  grid-template-rows:
+    var(--header-height) var(--tabbar-height) 1fr var(--terminal-height, 220px)
+    var(--policy-footer-height);
+}
+
+.layoutFull.withFooter {
+  grid-template-areas:
+    'header'
+    'tabs'
+    'editor'
+    'footer';
+  grid-template-rows: var(--header-height) var(--tabbar-height) 1fr var(--policy-footer-height);
+}
+
 /* 좁은 화면에서는 캔버스를 접고 세로로 쌓는다 */
 @media (max-width: 900px) {
   .layout {
@@ -76,12 +104,38 @@
     grid-template-columns: 1fr;
     grid-template-rows: var(--header-height) var(--tabbar-height) 1fr auto var(--terminal-height, 200px);
   }
+  .layout.withFooter {
+    grid-template-areas:
+      'header'
+      'tabs'
+      'editor'
+      'canvas'
+      'terminal'
+      'footer';
+    grid-template-columns: 1fr;
+    grid-template-rows:
+      var(--header-height) var(--tabbar-height) 1fr auto var(--terminal-height, 200px)
+      var(--policy-footer-height);
+  }
   .editor {
     border-right: none;
   }
   .canvas {
     border-top: 1px solid var(--border);
     max-height: 40vh;
+  }
+}
+
+/* 휴대폰 — 세로 공간이 절대적으로 부족하다. 캔버스·터미널을 더 줄여 편집기를 지킨다 */
+@media (max-width: 640px) {
+  .layout,
+  .layout.withFooter {
+    grid-template-rows:
+      var(--header-height) var(--tabbar-height) 1fr auto var(--terminal-height, 160px)
+      var(--policy-footer-height);
+  }
+  .canvas {
+    max-height: 30vh;
   }
 }
 

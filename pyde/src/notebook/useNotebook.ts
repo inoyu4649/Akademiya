@@ -29,6 +29,8 @@ interface Runtime {
   run: (code: string) => number
   interrupt: () => void
   subscribe: (listener: (e: RunEvent) => void) => () => void
+  /** input() 대기를 즉시 EOF로 끊는다 — 노트북 셀에는 입력 UI가 없어서 언제나 이걸로 처리한다 */
+  cancelStdin: () => void
 }
 
 /** 직렬화 비용이 있으므로 타이핑이 잠깐 멈췄을 때만 상위로 알린다 */
@@ -235,6 +237,11 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
           break
         case 'artifact':
           appendOutput(cellId, imageOutput(e.artifact.data))
+          break
+        case 'stdin-request':
+          // 노트북 셀에는 아직 입력 UI가 없다 — 무한정 블로킹되지 않도록 즉시 EOF로
+          // 끊는다. input()은 EOFError를 던지고 그 셀은 평소처럼 오류로 표시된다.
+          runtime.cancelStdin()
           break
         case 'run-done': {
           const count = ++execCounter.current

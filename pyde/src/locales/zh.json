@@ -56,9 +56,10 @@
     },
     "cached": "使用浏览器缓存",
     "versionMismatch": "有新版本,正在重新下载。",
-    "mobileBlocked": {
-      "title": "请使用电脑或平板访问",
-      "subtitle": "PyDe Web 需要较宽的代码编辑器界面和较大的运行环境,暂不支持手机。请使用桌面电脑、笔记本电脑或平板电脑的浏览器打开。"
+    "mobileDataNotice": {
+      "title": "移动数据使用提示",
+      "subtitle": "首次准备 Python 运行环境需要下载约 50MB。这可能会消耗您的移动数据流量,建议先连接 Wi-Fi 后再使用。(下次访问会因缓存而快得多)",
+      "continue": "知道了,继续"
     }
   },
   "header": {

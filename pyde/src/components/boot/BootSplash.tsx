@@ -7,7 +7,9 @@ interface Props {
   progress: BootProgress
   logs: BootLogLine[]
   error: string | null
-  mobileBlocked: boolean
+  /** 휴대폰 첫 접속 — 데이터 사용량 안내를 확인해야 부팅(다운로드)이 시작된다 */
+  mobileDataNotice: boolean
+  onAcknowledgeMobileData: () => void
   onRetry: () => void
 }
 
@@ -15,7 +17,14 @@ function formatMB(bytes: number): string {
   return (bytes / 1024 / 1024).toFixed(1)
 }
 
-export default function BootSplash({ progress, logs, error, mobileBlocked, onRetry }: Props) {
+export default function BootSplash({
+  progress,
+  logs,
+  error,
+  mobileDataNotice,
+  onAcknowledgeMobileData,
+  onRetry,
+}: Props) {
   const { t } = useTranslation()
   const [showDetails, setShowDetails] = useState(false)
   const logBoxRef = useRef<HTMLDivElement>(null)
@@ -46,10 +55,15 @@ export default function BootSplash({ progress, logs, error, mobileBlocked, onRet
       <div className={styles.center}>
         <img className={styles.logo} src="/pyde_logo.png" alt="" />
         <div className={styles.title}>
-          {mobileBlocked ? t('boot.mobileBlocked.title') : error ? t('boot.failed') : t('boot.title')}
+          {mobileDataNotice ? t('boot.mobileDataNotice.title') : error ? t('boot.failed') : t('boot.title')}
         </div>
-        {mobileBlocked ? (
-          <div className={styles.subtitle}>{t('boot.mobileBlocked.subtitle')}</div>
+        {mobileDataNotice ? (
+          <div className={styles.errorBox}>
+            <div className={styles.subtitle}>{t('boot.mobileDataNotice.subtitle')}</div>
+            <button className="btn btnPrimary" onClick={onAcknowledgeMobileData}>
+              {t('boot.mobileDataNotice.continue')}
+            </button>
+          </div>
         ) : error ? (
           <div className={styles.errorBox}>
             <div className={styles.errorDetail}>{error}</div>
@@ -62,8 +76,8 @@ export default function BootSplash({ progress, logs, error, mobileBlocked, onRet
         )}
       </div>
 
-      {/* 모바일 차단 화면은 다운로드/로그 자체가 없다 — 애초에 워커를 띄우지 않았다 */}
-      {mobileBlocked ? null : (
+      {/* 안내를 확인하기 전에는 다운로드/로그 자체가 없다 — 아직 워커를 띄우지 않았다 */}
+      {mobileDataNotice ? null : (
       /* 실패했을 때도 로그는 계속 볼 수 있어야 한다 — 원인이 거기 적혀 있다 */
       <div className={styles.bottom}>
         {!error && (

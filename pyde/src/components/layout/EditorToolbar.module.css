@@ -66,6 +66,7 @@
   color: var(--text-on-accent);
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
 }
 .runBtn:hover:not(:disabled) {
   background: var(--accent-hover);
@@ -85,6 +86,7 @@
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
 }
 .stopBtn:hover {
   filter: brightness(1.1);
@@ -105,6 +107,8 @@
   font-size: 12px;
   color: var(--text-secondary);
   border: 1px solid var(--border);
+  /* 라벨이 두 줄로 접히면 툴바 높이가 들쭉날쭉해진다("다운 로드"처럼) */
+  white-space: nowrap;
 }
 .iconBtn:hover:not(:disabled) {
   background: var(--bg-hover);
@@ -132,5 +136,17 @@
   .shortcut,
   .fileName {
     display: none;
+  }
+
+  /* 라벨이 빠지고 아이콘만 남으므로 정사각형 터치 타깃으로 만든다.
+     44px는 손가락으로 정확히 누를 수 있는 최소 크기(모바일 접근성 관례). */
+  .iconBtn,
+  .runBtn,
+  .stopBtn {
+    justify-content: center;
+    gap: 0;
+    width: 38px;
+    height: 34px;
+    padding: 0;
   }
 }

@@ -1,0 +1,26 @@
+/* 터미널 바로 아래 한 줄 — 있어야 하지만 작업을 방해하면 안 되므로 가장 낮은 시각 무게
+   (AppHeader의 .policyLinks와 같은 톤을 유지한다) */
+.footer {
+  grid-area: footer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--policy-footer-height);
+  padding: 0 12px;
+  background: var(--bg-sidebar);
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.link {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.link:hover {
+  color: var(--text-secondary);
+  text-decoration: underline;
+}

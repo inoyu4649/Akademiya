@@ -66,6 +66,12 @@ export type WorkerOut =
   // 업로드한 데이터 파일을 Pyodide 가상 파일시스템에 다 썼다(성공/실패)
   | { type: 'data-file-ready'; requestId: number; path: string }
   | { type: 'data-file-error'; requestId: number; message: string }
+  // input() 동기 대기용 공유 버퍼 — interrupt-buffer와 같은 이유(부팅 시 1회, cross-origin
+  // isolation 가능할 때만). control[0]=상태, control[1]=길이. data는 인코딩된 입력 바이트.
+  | { type: 'stdin-buffers'; control: SharedArrayBuffer; data: SharedArrayBuffer }
+  // 실행 중인 Python이 input()을 호출해 한 줄을 기다리고 있다 — 메인 스레드는 이걸 받으면
+  // 터미널을 입력 모드로 바꾸고, 사용자가 Enter를 치면 공유 버퍼에 써서 워커를 깨운다.
+  | { type: 'stdin-request'; runId: number }
 
 export type WorkerIn =
   | { type: 'boot' }

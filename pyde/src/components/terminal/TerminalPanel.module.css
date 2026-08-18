@@ -121,53 +121,45 @@
   color: var(--text-primary);
 }
 
-/* ── 출력 본문 ──────────────────────────────────────────────────────────── */
-.body {
+/* ── 입력 대기 배지 ─────────────────────────────────────────────────────── */
+.inputBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  border: 1px solid rgba(19, 229, 106, 0.35);
+  background: rgba(19, 229, 106, 0.08);
+}
+
+.inputDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* ── 출력 본문(xterm.js가 여기 마운트된다) ─────────────────────────────── */
+.termWrap {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  padding: 8px 12px 12px;
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  line-height: 1.65;
+  position: relative;
+  padding: 6px 4px 0;
+  overflow: hidden;
 }
 
-.empty {
-  color: var(--text-muted);
-  font-size: 12px;
+.termHost {
+  height: 100%;
+  width: 100%;
 }
 
-.line {
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.out {
-  color: var(--text-primary);
-}
-
-/* stderr는 오류가 아닐 수도 있다(경고·진행 표시) — 붉은색 대신 주황 계열 */
-.err {
-  color: var(--warning);
-}
-
-.sys {
-  color: var(--text-muted);
-}
-
-/* 마지막 식의 값 — REPL처럼 구분해서 보여준다 */
-.result {
-  color: var(--accent);
-}
-
-/* traceback 블록: 교육용이라 눈에 띄되 읽기 편해야 한다 */
-.traceback {
-  margin-top: 6px;
-  padding: 8px 10px;
-  border-left: 3px solid var(--danger);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  background: rgba(244, 67, 54, 0.08);
-  color: #ffb4ae;
-  white-space: pre-wrap;
-  word-break: break-word;
+/* xterm.js가 CDN에서 도착할 때까지의 자리표시자 */
+.loading {
+  position: absolute;
+  inset: 6px 4px 0;
+  background: var(--bg-sidebar);
 }

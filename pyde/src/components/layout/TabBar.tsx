@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { FileKind } from '../../hooks/useLocalDraft'
 import type { Doc } from '../../hooks/useWorkspace'
+import { IS_MOBILE } from '../../utils/device'
 import TabIcon from './TabIcon'
 import { locationOf } from './tabLocation'
 import styles from './TabBar.module.css'
@@ -201,6 +202,8 @@ export default function TabBar({
         })}
       </div>
 
+      {/* 휴대폰에서는 새 파일을 만들 수 없다 — 공유받은 파일을 열어 실행하는 용도만 남긴다 */}
+      {!IS_MOBILE && (
       <div className={styles.newTabWrap} ref={newMenuRef}>
         <button
           className={`${styles.newTabBtn} ${newMenuOpen ? styles.newTabBtnOpen : ''}`}
@@ -243,6 +246,7 @@ export default function TabBar({
           </div>
         )}
       </div>
+      )}
     </div>
   )
 }

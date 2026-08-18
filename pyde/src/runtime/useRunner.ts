@@ -1,125 +1,90 @@
-// 워커에서 날아오는 실행 이벤트를 터미널이 그릴 수 있는 형태로 모으는 훅.
+// 워커에서 날아오는 실행 이벤트를 터미널(xterm)이 그릴 수 있는 형태로 모으는 훅.
 //
-// ⚠️ 출력 한 줄마다 setState를 하면 `for i in range(100000): print(i)` 한 방에
-//    UI가 멈춘다(런타임을 워커로 뺀 의미가 없어진다). 들어오는 줄은 ref 버퍼에
-//    쌓아두고 주기적으로 한 번씩만 상태에 반영한다.
-//
-// ⚠️ 이때 requestAnimationFrame을 쓰면 안 된다. 탭이 백그라운드로 가거나 창이
-//    가려져 화면을 그리지 않으면 rAF가 **아예 발화하지 않아서** 출력이 영영 버퍼에
-//    갇힌다(실제로 터미널이 "실행 완료"인데 한 줄도 안 보이는 증상으로 드러났다).
-//    setTimeout은 백그라운드에서 1초로 느려질 뿐 계속 돌아가므로 출력이 유실되지 않는다.
+// ⚠️ 출력을 React 상태 배열로 쌓지 않는다. xterm.js는 자기 안에서 렌더링을 처리하므로
+//    (React 재렌더와 무관) 청크가 도착하는 즉시 구독자(TerminalPanel)에게 콜백으로
+//    흘려보내기만 하면 된다 — 예전엔 `for i in range(100000): print(i)` 같은 코드가
+//    setState 폭주로 UI를 멈추게 해서 직접 배치·스로틀링을 했지만, xterm에 직접 write()할
+//    때는 그 문제 자체가 없다(xterm 내부가 이미 효율적으로 처리한다).
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RunArtifact } from './protocol'
 import type { RunEvent } from './usePyodideRuntime'
 
 export type RunStatus = 'idle' | 'running' | 'done' | 'error' | 'stopped'
 
-export type LineKind = 'out' | 'err' | 'sys' | 'result' | 'traceback'
-
-export interface TerminalLine {
-  id: number
-  kind: LineKind
-  text: string
-}
-
-/** 터미널에 남겨두는 최대 줄 수 — 넘으면 오래된 것부터 버린다(메모리 방어) */
-const MAX_LINES = 5000
-
-/** 출력 반영 주기. 너무 짧으면 리렌더가 잦고, 길면 실행이 멈춘 것처럼 보인다 */
-const FLUSH_INTERVAL_MS = 50
+export type OutputKind = 'out' | 'err' | 'result' | 'traceback'
+export type OutputListener = (kind: OutputKind, text: string) => void
 
 interface Runtime {
   run: (code: string) => number
   interrupt: () => void
   subscribe: (listener: (e: RunEvent) => void) => () => void
+  sendStdin: (text: string) => void
 }
 
 export function useRunner(runtime: Runtime) {
-  const [lines, setLines] = useState<TerminalLine[]>([])
   const [artifacts, setArtifacts] = useState<RunArtifact[]>([])
   const [status, setStatus] = useState<RunStatus>('idle')
   const [elapsedMs, setElapsedMs] = useState<number | null>(null)
+  /** Python이 input()에서 한 줄을 기다리는 중인지 — 터미널이 입력 모드로 바뀌어야 한다 */
+  const [waitingForInput, setWaitingForInput] = useState(false)
 
-  const pending = useRef<TerminalLine[]>([])
-  const flushTimer = useRef<number | null>(null)
-  const lineId = useRef(0)
+  const outputListeners = useRef(new Set<OutputListener>())
   const activeRunId = useRef<number | null>(null)
   // 사용자가 중지 버튼을 눌렀는지 — KeyboardInterrupt가 '오류'가 아니라 '중지'로
   // 보여야 하는데, traceback만으로는 사용자가 코드에서 직접 발생시킨 것과 구분이 안 된다.
   const stopRequested = useRef(false)
 
-  const flush = useCallback(() => {
-    if (flushTimer.current !== null) {
-      window.clearTimeout(flushTimer.current)
-      flushTimer.current = null
-    }
-    if (!pending.current.length) return
-    const batch = pending.current
-    pending.current = []
-    setLines((prev) => {
-      const next = prev.concat(batch)
-      return next.length > MAX_LINES ? next.slice(next.length - MAX_LINES) : next
-    })
+  const emitOutput = useCallback((kind: OutputKind, text: string) => {
+    for (const listener of outputListeners.current) listener(kind, text)
   }, [])
 
-  const push = useCallback(
-    (kind: LineKind, text: string) => {
-      // print()는 줄바꿈까지 함께 오므로 줄 단위로 쪼갠다(마지막 빈 조각은 버림)
-      const parts = text.split('\n')
-      if (parts.length > 1 && parts[parts.length - 1] === '') parts.pop()
-      for (const part of parts) {
-        pending.current.push({ id: lineId.current++, kind, text: part })
-      }
-      // 백그라운드 탭에서 타이머가 1초로 느려져도 버퍼가 무한히 자라지 않게 상한을 둔다.
-      // 어차피 화면에는 최근 MAX_LINES 줄만 남으므로 오래된 것부터 버려도 손실이 없다.
-      if (pending.current.length > MAX_LINES) {
-        pending.current = pending.current.slice(pending.current.length - MAX_LINES)
-      }
-      if (flushTimer.current === null) {
-        flushTimer.current = window.setTimeout(flush, FLUSH_INTERVAL_MS)
-      }
-    },
-    [flush]
-  )
+  /** TerminalPanel이 마운트 시 등록 — 이후 이 실행(들)의 출력을 실시간으로 받는다 */
+  const onOutput = useCallback((listener: OutputListener) => {
+    outputListeners.current.add(listener)
+    return () => {
+      outputListeners.current.delete(listener)
+    }
+  }, [])
 
   useEffect(() => {
     const unsubscribe = runtime.subscribe((e) => {
-      // 이전 실행의 뒤늦은 출력이 새 실행에 섞이지 않게 막는다
-      if (activeRunId.current !== null && e.runId !== activeRunId.current) return
+      // 이전 실행의 뒤늦은 출력이 새 실행에 섞이지 않게 막는다.
+      // ⚠️ activeRunId가 null인 경우(=이 훅으로 실행한 적이 없음)도 반드시 걸러야 한다.
+      //    노트북 셀 실행도 같은 워커·같은 구독을 타므로, 그냥 통과시키면 노트북 출력이
+      //    터미널 상태(입력 대기 배지·실행 상태)를 건드린다.
+      if (activeRunId.current === null || e.runId !== activeRunId.current) return
 
       switch (e.type) {
         case 'stdout':
-          push('out', e.text)
+          emitOutput('out', e.text)
           break
         case 'stderr':
-          push('err', e.text)
+          emitOutput('err', e.text)
           break
         case 'artifact':
           setArtifacts((prev) => [...prev, e.artifact])
           break
+        case 'stdin-request':
+          setWaitingForInput(true)
+          break
         case 'run-done':
-          if (e.result !== null) push('result', e.result)
+          if (e.result !== null) emitOutput('result', e.result)
           setElapsedMs(e.elapsedMs)
           setStatus('done')
+          setWaitingForInput(false)
           activeRunId.current = null
-          // 실행이 끝났으면 남은 출력을 곧바로 게워낸다 — "완료됐는데 출력이 없다"로
-          // 보이면 안 된다(다음 타이머를 기다리지 않는다)
-          flush()
           break
         case 'run-error':
-          push('traceback', e.friendly)
+          emitOutput('traceback', e.friendly)
           setElapsedMs(e.elapsedMs)
           setStatus(stopRequested.current ? 'stopped' : 'error')
+          setWaitingForInput(false)
           activeRunId.current = null
-          flush()
           break
       }
     })
-    return () => {
-      unsubscribe()
-      if (flushTimer.current !== null) window.clearTimeout(flushTimer.current)
-    }
-  }, [runtime, push, flush])
+    return unsubscribe
+  }, [runtime, emitOutput])
 
   const run = useCallback(
     (code: string) => {
@@ -127,6 +92,7 @@ export function useRunner(runtime: Runtime) {
       // 화면에 남은 그림이 방금 결과인지 헷갈리면 안 된다.
       setArtifacts([])
       setElapsedMs(null)
+      setWaitingForInput(false)
       stopRequested.current = false
       setStatus('running')
       activeRunId.current = runtime.run(code)
@@ -139,17 +105,20 @@ export function useRunner(runtime: Runtime) {
     runtime.interrupt()
   }, [runtime])
 
+  /** 터미널에서 사용자가 Enter를 눌렀을 때 — 로컬 에코는 TerminalPanel이 이미 했다 */
+  const sendStdin = useCallback(
+    (text: string) => {
+      setWaitingForInput(false)
+      runtime.sendStdin(text)
+    },
+    [runtime]
+  )
+
   const clear = useCallback(() => {
-    if (flushTimer.current !== null) {
-      window.clearTimeout(flushTimer.current)
-      flushTimer.current = null
-    }
-    pending.current = []
-    setLines([])
     setArtifacts([])
     setElapsedMs(null)
     setStatus('idle')
   }, [])
 
-  return { lines, artifacts, status, elapsedMs, run, stop, clear }
+  return { artifacts, status, elapsedMs, waitingForInput, onOutput, run, stop, sendStdin, clear }
 }

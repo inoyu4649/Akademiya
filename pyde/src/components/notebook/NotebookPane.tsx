@@ -9,6 +9,7 @@ interface Runtime {
   run: (code: string) => number
   interrupt: () => void
   subscribe: (listener: (e: RunEvent) => void) => () => void
+  cancelStdin: () => void
 }
 
 interface Props {

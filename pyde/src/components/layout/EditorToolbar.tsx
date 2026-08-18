@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { FileKind } from '../../hooks/useLocalDraft'
 import type { SaveStatus } from '../../hooks/useCloudSync'
+import { IS_MOBILE } from '../../utils/device'
+import ToolbarIcon from './ToolbarIcon'
 import styles from './EditorToolbar.module.css'
 
 interface Props {
@@ -74,64 +76,82 @@ export default function EditorToolbar({
 
   const isNotebook = kind === 'ipynb'
 
+  // 휴대폰에서는 "이미 있는 파일을 열어 실행"만 남긴다. 새 파일 만들기·내 컴퓨터에서 열기·
+  // 데이터 관리·다운로드는 좁은 화면에서 제대로 다룰 수 없어 감춘다(요구사항).
+  // 그래서 남는 메뉴 항목이 클라우드 열기 하나뿐이고, 비로그인이면 아예 없다.
+  const showFileMenu = IS_MOBILE ? signedIn : true
+
   return (
     <div className={styles.group}>
-      <div className={styles.menuWrap} ref={menuRef}>
-        <button className={styles.iconBtn} onClick={() => setMenuOpen((v) => !v)} aria-expanded={menuOpen}>
-          {t('header.files')} ▾
-        </button>
-        {menuOpen && (
-          <div className={styles.menu} role="menu">
-            <button
-              className={styles.menuItem}
-              onClick={() => {
-                setMenuOpen(false)
-                onNew('py')
-              }}
-            >
-              {t('header.newPyFile')}
-            </button>
-            <button
-              className={styles.menuItem}
-              onClick={() => {
-                setMenuOpen(false)
-                onNew('ipynb')
-              }}
-            >
-              {t('header.newNotebookFile')}
-            </button>
-            <button
-              className={styles.menuItem}
-              onClick={() => {
-                setMenuOpen(false)
-                fileInputRef.current?.click()
-              }}
-            >
-              {t('header.openFile')}
-            </button>
-            <button
-              className={styles.menuItem}
-              onClick={() => {
-                setMenuOpen(false)
-                onOpenDataManager()
-              }}
-            >
-              {t('header.uploadData')}
-            </button>
-            {signedIn && (
-              <button
-                className={styles.menuItem}
-                onClick={() => {
-                  setMenuOpen(false)
-                  onBrowse()
-                }}
-              >
-                {t('header.openFromCloud')}
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+      {showFileMenu && (
+        <div className={styles.menuWrap} ref={menuRef}>
+          <button
+            className={styles.iconBtn}
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-expanded={menuOpen}
+            aria-label={t('header.files')}
+            title={t('header.files')}
+          >
+            <ToolbarIcon name="folder" />
+            {!IS_MOBILE && <>{t('header.files')} ▾</>}
+          </button>
+          {menuOpen && (
+            <div className={styles.menu} role="menu">
+              {!IS_MOBILE && (
+                <>
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => {
+                      setMenuOpen(false)
+                      onNew('py')
+                    }}
+                  >
+                    {t('header.newPyFile')}
+                  </button>
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => {
+                      setMenuOpen(false)
+                      onNew('ipynb')
+                    }}
+                  >
+                    {t('header.newNotebookFile')}
+                  </button>
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => {
+                      setMenuOpen(false)
+                      fileInputRef.current?.click()
+                    }}
+                  >
+                    {t('header.openFile')}
+                  </button>
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => {
+                      setMenuOpen(false)
+                      onOpenDataManager()
+                    }}
+                  >
+                    {t('header.uploadData')}
+                  </button>
+                </>
+              )}
+              {signedIn && (
+                <button
+                  className={styles.menuItem}
+                  onClick={() => {
+                    setMenuOpen(false)
+                    onBrowse()
+                  }}
+                >
+                  {t('header.openFromCloud')}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 파일은 브라우저 안에서만 읽는다 — 업로드되지 않는다 */}
       <input
@@ -149,37 +169,73 @@ export default function EditorToolbar({
       <span className={styles.fileName}>{fileName}</span>
 
       {running ? (
-        <button className={styles.stopBtn} onClick={onStop}>
-          ■ {t('header.stop')}
+        <button className={styles.stopBtn} onClick={onStop} aria-label={t('header.stop')} title={t('header.stop')}>
+          <ToolbarIcon name="stop" />
+          {!IS_MOBILE && t('header.stop')}
         </button>
       ) : (
-        <button className={styles.runBtn} onClick={onRun} disabled={!ready}>
-          ▶ {isNotebook ? t('header.runCell') : t('header.run')}
-          <span className={styles.shortcut}>{RUN_HINT}</span>
+        <button
+          className={styles.runBtn}
+          onClick={onRun}
+          disabled={!ready}
+          aria-label={isNotebook ? t('header.runCell') : t('header.run')}
+          title={isNotebook ? t('header.runCell') : t('header.run')}
+        >
+          <ToolbarIcon name="play" />
+          {!IS_MOBILE && (
+            <>
+              {isNotebook ? t('header.runCell') : t('header.run')}
+              <span className={styles.shortcut}>{RUN_HINT}</span>
+            </>
+          )}
         </button>
       )}
 
       {isNotebook && (
-        <button className={styles.iconBtn} onClick={onRunAll} disabled={!ready || running}>
-          ⏭ {t('header.runAll')}
+        <button
+          className={styles.iconBtn}
+          onClick={onRunAll}
+          disabled={!ready || running}
+          aria-label={t('header.runAll')}
+          title={t('header.runAll')}
+        >
+          <ToolbarIcon name="runAll" />
+          {!IS_MOBILE && t('header.runAll')}
         </button>
       )}
 
       {signedIn && !readOnly && (
-        <button className={styles.iconBtn} onClick={onSave} disabled={saveStatus === 'saving'}>
-          {t('header.save')}
+        <button
+          className={styles.iconBtn}
+          onClick={onSave}
+          disabled={saveStatus === 'saving'}
+          aria-label={t('header.save')}
+          title={t('header.save')}
+        >
+          <ToolbarIcon name="save" />
+          {!IS_MOBILE && t('header.save')}
         </button>
       )}
 
       {signedIn && canShare && (
-        <button className={styles.iconBtn} onClick={onShare}>
-          {t('header.share')}
+        <button
+          className={styles.iconBtn}
+          onClick={onShare}
+          aria-label={t('header.share')}
+          title={t('header.share')}
+        >
+          <ToolbarIcon name="share" />
+          {!IS_MOBILE && t('header.share')}
         </button>
       )}
 
-      <button className={styles.iconBtn} onClick={onDownload}>
-        {t('header.download')}
-      </button>
+      {/* 다운로드는 휴대폰에서 감춘다 — 받아도 열어서 이어 쓸 방법이 마땅치 않다 */}
+      {!IS_MOBILE && (
+        <button className={styles.iconBtn} onClick={onDownload}>
+          <ToolbarIcon name="download" />
+          {t('header.download')}
+        </button>
+      )}
 
       {/* 자동 저장이 5분 간격이라 "지금 저장돼 있는지"를 항상 보여줘야 안심하고 쓴다 */}
       {signedIn && (
