@@ -86,13 +86,21 @@ const CSP = [
 // ── 보안 헤더 ────────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response, next: NextFunction) => {
   // Cross-origin isolation. SharedArrayBuffer가 여기에 의존하고, 그게 있어야
-  // Pyodide의 input()을 워커에서 "동기적으로" 구현할 수 있다.
-  // credentialless를 쓰는 이유: require-corp와 달리 CDN(jsDelivr)이 CORP 헤더를
-  // 주지 않아도 자격증명 없이 로드해 통과시킨다. Safari는 credentialless를
-  // 지원하지 않아 crossOriginIsolated가 false가 되며, 그 경우 프론트가 비차단
-  // 입력 UI로 폴백한다.
+  // Pyodide의 input()과 실행 중지를 워커에서 "동기적으로" 구현할 수 있다.
+  //
+  // ⚠️ credentialless를 쓰면 안 된다. **Safari가 지원하지 않고 지원할 계획도 없어서**
+  //    애플 기기에서는 값이 무시되고 crossOriginIsolated가 false가 된다 →
+  //    SharedArrayBuffer가 없어 input()이 즉시 EOFError로 죽고 중지 버튼도 먹지 않았다
+  //    (2026-08-20 실제 버그). 예전 주석은 "그 경우 프론트가 비차단 입력 UI로 폴백한다"고
+  //    적혀 있었지만 그런 폴백은 구현된 적이 없다.
+  //
+  // require-corp는 모든 교차 출처 리소스가 CORP 헤더를 주도록 요구한다. 확인 결과:
+  //   · jsDelivr(Pyodide·Monaco·xterm·D2Coding) — `cross-origin-resource-policy: cross-origin` 있음
+  //   · akademiya.kr(프로필 사진·브랜드 아이콘) — 없었으므로 이번에 붙였다
+  //     (backend/src/routes/avatar.ts, nginx/nginx.conf).
+  // 교차 출처 자산을 새로 추가할 땐 그 응답에 CORP가 있는지 반드시 먼저 확인할 것.
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin')
-  res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless')
+  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp')
   res.setHeader('X-Content-Type-Options', 'nosniff')
   res.setHeader('X-Frame-Options', 'SAMEORIGIN')
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')

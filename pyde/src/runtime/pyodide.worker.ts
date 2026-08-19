@@ -238,7 +238,17 @@ let stdinControl: Int32Array | null = null
 let stdinData: Uint8Array | null = null
 
 function stdinRead(): string | null {
-  if (!stdinControl || !stdinData) return null // SAB 미지원 환경 — input()은 즉시 EOF로 실패한다
+  if (!stdinControl || !stdinData) {
+    // cross-origin isolation이 없어 SharedArrayBuffer를 못 만든 환경.
+    // 그냥 null을 돌려주면 Python이 맥락 없는 EOFError만 던져서, 사용자는 자기 코드가
+    // 틀린 줄 안다(실제로 애플 기기에서 그렇게 보고됐다). 무엇이 왜 안 되는지 먼저 알린다.
+    post({
+      type: 'stderr',
+      runId: currentRunId,
+      text: '[PyDe] 이 브라우저에서는 input()을 쓸 수 없습니다 (cross-origin isolation 미적용).\n',
+    })
+    return null
+  }
   // 대기 상태로 리셋한 "다음"에 요청 메시지를 보내야 한다. 순서가 바뀌면 메인 스레드가
   // 응답을 그새 써버려도 우리가 그걸 0으로 덮어써 영원히 못 깨어나는 레이스가 생긴다.
   Atomics.store(stdinControl, 0, 0)
@@ -339,7 +349,14 @@ async function boot(): Promise<void> {
       stdinData = new Uint8Array(dataSab)
       post({ type: 'stdin-buffers', control: controlSab, data: dataSab })
     } else {
-      log('SharedArrayBuffer를 쓸 수 없어 실행 중지·input() 기능이 비활성화됩니다', 'warn')
+      // 여기 걸리면 서버가 COOP/COEP를 제대로 못 보내고 있다는 뜻이다.
+      // (2026-08-20: COEP를 Safari가 지원하지 않는 credentialless로 보내고 있어서
+      //  애플 기기 전체가 이 분기로 빠졌다 — server/index.ts 주석 참고)
+      log(
+        `SharedArrayBuffer를 쓸 수 없어 실행 중지·input()이 비활성화됩니다 ` +
+          `(crossOriginIsolated=${self.crossOriginIsolated})`,
+        'warn'
+      )
     }
 
     // ⚠️ `batched`가 아니라 `write`를 쓴다. batched는 Pyodide가 JS 쪽에서 `\n`을 만날

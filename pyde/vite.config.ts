@@ -32,9 +32,11 @@ export default defineConfig({
     // 개발 서버에서도 cross-origin isolation을 켜 둔다.
     // SharedArrayBuffer(동기 input() 구현)가 여기에 의존하므로, 프로덕션에서만
     // 켜면 "로컬에선 되는데 배포하면 안 되는" 반대 상황이 생긴다.
+    // ⚠️ 값은 프로덕션(server/index.ts)과 반드시 같아야 한다 — credentialless는
+    //    Safari가 지원하지 않아 애플 기기에서만 조용히 깨진다(그쪽 주석 참고).
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'credentialless',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
     },
   },
   build: {

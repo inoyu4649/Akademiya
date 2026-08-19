@@ -95,6 +95,10 @@ router.get("/:filename", (req, res) => {
   res.setHeader("Content-Type", real.mime);
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Cache-Control", "public, max-age=86400");
+  // 이 이미지는 원래부터 교차 출처 임베드를 전제로 공개 서빙된다(OpenOAuth 서드파티가
+  // URL로 직접 로드). cross-origin isolation(COEP: require-corp)을 켠 앱 — 지금은 PyDe —
+  // 에서는 CORP 헤더가 없으면 이 응답이 차단되어 프로필 사진이 깨진다.
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
   fs.createReadStream(filePath).pipe(res);
 });
 
