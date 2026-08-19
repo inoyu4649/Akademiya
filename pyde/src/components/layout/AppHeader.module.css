@@ -181,6 +181,24 @@
   outline-offset: 2px;
 }
 
+/* 설치 버튼 — 있으면 반갑지만 없어도 그만인 기능이라 강조색을 쓰지 않는다 */
+.installBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.installBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
 .iconBtn {
   display: inline-flex;
   align-items: center;

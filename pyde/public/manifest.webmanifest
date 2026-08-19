@@ -1,0 +1,26 @@
+{
+  "id": "/",
+  "name": "PyDe Web",
+  "short_name": "PyDe",
+  "description": "설치 없이 브라우저에서 바로 Python을 배우고 실행하는 교육용 웹 IDE. 코드는 브라우저 안에서만 실행됩니다.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "capture_links": "existing-client-navigate",
+  "background_color": "#0d0d0d",
+  "theme_color": "#1a1a1a",
+  "lang": "ko",
+  "dir": "ltr",
+  "categories": ["education", "developer", "productivity"],
+  "icons": [
+    {
+      "src": "/pyde_logo.png",
+      "sizes": "800x800",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

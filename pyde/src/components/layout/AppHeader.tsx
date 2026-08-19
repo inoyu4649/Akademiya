@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/authContext'
+import { usePwaInstall } from '../../hooks/usePwaInstall'
 import { IS_MOBILE } from '../../utils/device'
 import { SUPPORTED_LANGS, setLanguage, type SupportedLang } from '../../i18n'
+import ToolbarIcon from './ToolbarIcon'
 import UsagePanel from './UsagePanel'
 import styles from './AppHeader.module.css'
 
@@ -22,6 +24,7 @@ interface Props {
 export default function AppHeader({ children }: Props) {
   const { t, i18n } = useTranslation()
   const { user, signIn, signOut } = useAuth()
+  const { canInstall, promptInstall } = usePwaInstall()
   const [usageOpen, setUsageOpen] = useState(false)
   const userRef = useRef<HTMLDivElement>(null)
 
@@ -85,6 +88,19 @@ export default function AppHeader({ children }: Props) {
               {t('policy.termsShort')}
             </Link>
           </nav>
+        )}
+
+        {/* 설치 조건을 만족하고 아직 설치되지 않았을 때만 나타난다(usePwaInstall 참고) */}
+        {canInstall && (
+          <button
+            className={styles.installBtn}
+            onClick={() => void promptInstall()}
+            title={t('pwa.installHint')}
+            aria-label={t('pwa.install')}
+          >
+            <ToolbarIcon name="install" />
+            {!IS_MOBILE && <span>{t('pwa.install')}</span>}
+          </button>
         )}
 
         <select

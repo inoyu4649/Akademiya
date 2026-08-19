@@ -1,4 +1,12 @@
-export type ToolbarIconName = 'folder' | 'play' | 'stop' | 'save' | 'download' | 'share' | 'runAll'
+export type ToolbarIconName =
+  | 'folder'
+  | 'play'
+  | 'stop'
+  | 'save'
+  | 'download'
+  | 'share'
+  | 'runAll'
+  | 'install'
 
 interface Props {
   name: ToolbarIconName
@@ -73,6 +81,14 @@ export default function ToolbarIcon({ name, className }: Props) {
           <circle cx="3.9" cy="8" r="1.9" />
           <circle cx="12.1" cy="12.4" r="1.9" />
           <path d="M5.6 7.1l4.8-2.6M5.6 8.9l4.8 2.6" />
+        </svg>
+      )
+    case 'install':
+      // 창 안으로 내려받는 모양 — 다운로드(문서 저장)와 구분되게 테두리를 둔다
+      return (
+        <svg {...common}>
+          <rect x="2.2" y="2.4" width="11.6" height="11.2" rx="1.4" />
+          <path d="M8 5v4.6M6 7.9 8 9.9l2-2M5.4 11.6h5.2" />
         </svg>
       )
   }
