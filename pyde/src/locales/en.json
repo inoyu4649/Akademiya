@@ -189,7 +189,8 @@
     "runAll": "Run all",
     "clearOutputs": "Clear outputs",
     "invalidFile": "That is not a valid Jupyter notebook (.ipynb) file.",
-    "shortcuts": "Esc command mode · Enter edit · Shift+Enter run and select below · A/B add cell · DD delete · Ctrl+Shift+↑/↓ reorder · M markdown · Y code"
+    "shortcuts": "Esc command mode · Enter edit · Shift+Enter run and select below · A/B add cell · DD delete · Ctrl+Shift+↑/↓ reorder · M markdown · Y code",
+    "inputPlaceholder": "Waiting for input() — type and press Enter"
   },
   "usage": {
     "title": "PyDe Cloud usage",
@@ -200,6 +201,10 @@
     "loading": "Loading usage…",
     "loadFailed": "Could not load usage.",
     "note": "PyDe can use only a portion of your total Akademiya Cloud storage."
+  },
+  "pwa": {
+    "install": "Install app",
+    "installHint": "Install PyDe Web as an app to run it without the browser address bar and gain editing space."
   },
   "policy": {
     "privacyShort": "Privacy Policy",

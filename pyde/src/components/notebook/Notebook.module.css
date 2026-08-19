@@ -179,6 +179,39 @@
   color: #ffb4ae;
 }
 
+/* ── input() 인라인 입력창 ──────────────────────────────────────────────── */
+.stdinRow {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+}
+
+.stdinPrompt {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.stdinInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-primary);
+}
+.stdinInput:focus {
+  box-shadow: none;
+}
+
 .outputImageWrap {
   display: inline-block;
   padding: 6px;

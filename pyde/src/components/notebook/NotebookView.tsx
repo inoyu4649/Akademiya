@@ -133,6 +133,8 @@ export default function NotebookView({ nb }: Props) {
           editing={nb.mode === 'edit' && cell.id === nb.selectedId}
           running={nb.runningCellId === cell.id}
           queued={nb.isQueued(cell.id)}
+          inputRequested={nb.inputRequestedCellId === cell.id}
+          onSubmitStdin={nb.submitStdin}
           onSelect={() => nb.setSelectedId(cell.id)}
           onEdit={() => {
             nb.setSelectedId(cell.id)

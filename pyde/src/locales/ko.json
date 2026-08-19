@@ -189,7 +189,8 @@
     "runAll": "모두 실행",
     "clearOutputs": "출력 지우기",
     "invalidFile": "올바른 Jupyter 노트북(.ipynb) 파일이 아닙니다.",
-    "shortcuts": "Esc 명령 모드 · Enter 편집 · Shift+Enter 실행 후 다음 · A/B 셀 추가 · DD 삭제 · Ctrl+Shift+↑/↓ 순서 바꾸기 · M 마크다운 · Y 코드"
+    "shortcuts": "Esc 명령 모드 · Enter 편집 · Shift+Enter 실행 후 다음 · A/B 셀 추가 · DD 삭제 · Ctrl+Shift+↑/↓ 순서 바꾸기 · M 마크다운 · Y 코드",
+    "inputPlaceholder": "input() 대기 중 — 입력하고 Enter"
   },
   "usage": {
     "title": "PyDe Cloud 사용량",
@@ -200,6 +201,10 @@
     "loading": "사용량을 불러오는 중…",
     "loadFailed": "사용량을 불러오지 못했습니다.",
     "note": "PyDe는 Akademiya Cloud 전체 사용량 중 일부만 사용할 수 있습니다."
+  },
+  "pwa": {
+    "install": "앱 설치",
+    "installHint": "PyDe Web을 앱으로 설치하면 브라우저 주소창 없이 실행되어 편집 공간이 넓어집니다."
   },
   "policy": {
     "privacyShort": "개인정보 처리방침",

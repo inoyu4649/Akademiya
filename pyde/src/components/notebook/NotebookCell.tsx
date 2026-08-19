@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Editor, { type BeforeMount, type OnMount } from '@monaco-editor/react'
 import type { editor as MonacoEditor } from 'monaco-editor'
@@ -14,6 +14,9 @@ interface Props {
   editing: boolean
   running: boolean
   queued: boolean
+  /** 이 셀의 input()이 한 줄을 기다리는 중 — 인라인 입력창을 띄운다 */
+  inputRequested: boolean
+  onSubmitStdin: (text: string) => void
   onSelect: () => void
   onEdit: () => void
   /** 에디터에 실제로 포커스가 들어왔다 = 편집 모드 */
@@ -56,6 +59,8 @@ export default function NotebookCell({
   editing,
   running,
   queued,
+  inputRequested,
+  onSubmitStdin,
   onSelect,
   onEdit,
   onEnterEdit,
@@ -231,7 +236,45 @@ export default function NotebookCell({
         )}
 
         {isCode && <CellOutputs outputs={cell.outputs ?? []} />}
+
+        {/* input()이 반복 호출될 수 있어(같은 셀 안 루프) 요청마다 새로 마운트한다 —
+            그러면 각 요청이 독립된 useState('')로 시작해, 이전 답이 다음 프롬프트에
+            남아있는 문제를 이펙트로 지우지 않고도 구조적으로 막을 수 있다. */}
+        {isCode && inputRequested && <StdinBox onSubmit={onSubmitStdin} placeholder={t('notebook.inputPlaceholder')} />}
       </div>
+    </div>
+  )
+}
+
+/** input() 인라인 입력창. 컴포넌트 자체가 요청마다 새로 마운트되므로 상태는 항상 빈 값에서 시작한다 */
+function StdinBox({ onSubmit, placeholder }: { onSubmit: (text: string) => void; placeholder: string }) {
+  const [value, setValue] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  return (
+    <div className={styles.stdinRow} onClick={(e) => e.stopPropagation()}>
+      <span className={styles.stdinPrompt} aria-hidden="true">
+        ▶
+      </span>
+      <input
+        ref={inputRef}
+        className={styles.stdinInput}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          // 노트북 전역 단축키(a/b/d/화살표 등)가 타이핑을 가로채면 안 된다
+          e.stopPropagation()
+          if (e.key === 'Enter') onSubmit(value)
+        }}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        spellCheck={false}
+        autoComplete="off"
+      />
     </div>
   )
 }

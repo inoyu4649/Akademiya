@@ -29,8 +29,8 @@ interface Runtime {
   run: (code: string) => number
   interrupt: () => void
   subscribe: (listener: (e: RunEvent) => void) => () => void
-  /** input() 대기를 즉시 EOF로 끊는다 — 노트북 셀에는 입력 UI가 없어서 언제나 이걸로 처리한다 */
-  cancelStdin: () => void
+  /** 실행 중인 셀에서 input()이 기다리는 한 줄을 전달한다 */
+  sendStdin: (text: string) => void
 }
 
 /** 직렬화 비용이 있으므로 타이핑이 잠깐 멈췄을 때만 상위로 알린다 */
@@ -43,6 +43,8 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
   const [selectedId, setSelectedId] = useState<string>(() => notebook.cells[0]?.id ?? '')
   const [mode, setMode] = useState<CellMode>('command')
   const [runningCellId, setRunningCellId] = useState<string | null>(null)
+  /** input()이 기다리는 중인 셀 — 한 번에 하나만 실행되므로 이 값도 하나뿐이다 */
+  const [inputRequestedCellId, setInputRequestedCellId] = useState<string | null>(null)
   /** 셀 id → key 세대. 순서를 바꾼 셀만 올라간다(아래 moveCell 주석 참조) */
   const [keyEpochs, setKeyEpochs] = useState<Record<string, number>>({})
 
@@ -239,15 +241,14 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
           appendOutput(cellId, imageOutput(e.artifact.data))
           break
         case 'stdin-request':
-          // 노트북 셀에는 아직 입력 UI가 없다 — 무한정 블로킹되지 않도록 즉시 EOF로
-          // 끊는다. input()은 EOFError를 던지고 그 셀은 평소처럼 오류로 표시된다.
-          runtime.cancelStdin()
+          setInputRequestedCellId(cellId)
           break
         case 'run-done': {
           const count = ++execCounter.current
           if (e.result !== null) appendOutput(cellId, resultOutput(count, e.result))
           updateCell(cellId, (c) => ({ ...c, execution_count: count }))
           activeRun.current = null
+          setInputRequestedCellId(null)
           startNext()
           break
         }
@@ -256,6 +257,7 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
           appendOutput(cellId, errorOutput(e.friendly))
           updateCell(cellId, (c) => ({ ...c, execution_count: count }))
           activeRun.current = null
+          setInputRequestedCellId(null)
           // 오류가 나면 남은 큐를 버린다 — Jupyter의 "Run All"과 같은 동작이고,
           // 앞 셀이 실패했는데 뒤를 계속 돌리면 오류가 줄줄이 이어져 원인이 묻힌다.
           queue.current = []
@@ -282,8 +284,26 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
 
   const interrupt = useCallback(() => {
     queue.current = []
+    // runtime.interrupt()가 대기 중인 input()도 함께 풀어주지만(usePyodideRuntime 참고),
+    // 그 결과(run-error)가 도착하기 전에 입력창부터 지워야 사용자가 죽은 입력창에 타이핑하지 않는다
+    setInputRequestedCellId(null)
     runtime.interrupt()
   }, [runtime])
+
+  /**
+   * 셀 안 입력창에서 Enter. 실제 터미널이라면 사용자가 친 글자가 화면에 그대로
+   * 남듯이, 방금 입력한 값을 스트림 출력에 이어 붙여서 "무엇을 답했는지"가
+   * 셀 히스토리에 남게 한다(안 그러면 프롬프트만 있고 답은 사라진 것처럼 보인다).
+   */
+  const submitStdin = useCallback(
+    (text: string) => {
+      const cellId = inputRequestedCellId
+      setInputRequestedCellId(null)
+      if (cellId) appendOutput(cellId, streamOutput('stdout', text + '\n'))
+      runtime.sendStdin(text)
+    },
+    [runtime, inputRequestedCellId, appendOutput]
+  )
 
   /** Shift+Enter — 실행하고 아래 셀로 이동(없으면 새로 만든다) */
   const runAndAdvance = useCallback(
@@ -317,6 +337,7 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
     setSelectedId(next.cells[0]?.id ?? '')
     setMode('command')
     setRunningCellId(null)
+    setInputRequestedCellId(null)
     setKeyEpochs({})
   }, [])
 
@@ -343,6 +364,7 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
     cellKey: (id: string) => (keyEpochs[id] ? `${id}#${keyEpochs[id]}` : id),
     mode,
     runningCellId,
+    inputRequestedCellId,
     isQueued: (id: string) => queue.current.includes(id),
     setSelectedId,
     setMode,
@@ -356,6 +378,7 @@ export function useNotebook(runtime: Runtime, initialSource: string, onChange: (
     runAll,
     runAndAdvance,
     interrupt,
+    submitStdin,
     selectRelative,
     reset,
   }

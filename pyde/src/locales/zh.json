@@ -189,7 +189,8 @@
     "runAll": "全部运行",
     "clearOutputs": "清除输出",
     "invalidFile": "这不是有效的 Jupyter 笔记本(.ipynb)文件。",
-    "shortcuts": "Esc 命令模式 · Enter 编辑 · Shift+Enter 运行并选择下一个 · A/B 添加单元格 · DD 删除 · Ctrl+Shift+↑/↓ 调整顺序 · M Markdown · Y 代码"
+    "shortcuts": "Esc 命令模式 · Enter 编辑 · Shift+Enter 运行并选择下一个 · A/B 添加单元格 · DD 删除 · Ctrl+Shift+↑/↓ 调整顺序 · M Markdown · Y 代码",
+    "inputPlaceholder": "等待 input() — 输入后按 Enter"
   },
   "usage": {
     "title": "PyDe Cloud 使用量",
@@ -200,6 +201,10 @@
     "loading": "正在加载使用量…",
     "loadFailed": "无法加载使用量。",
     "note": "PyDe 只能使用 Akademiya Cloud 总容量中的一部分。"
+  },
+  "pwa": {
+    "install": "安装应用",
+    "installHint": "将 PyDe Web 安装为应用后,可在没有浏览器地址栏的窗口中运行,编辑空间更大。"
   },
   "policy": {
     "privacyShort": "隐私政策",
